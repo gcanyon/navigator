@@ -1,0 +1,1 @@
+script "revNavigator_button_Don't_Wrap_behavior_2443_Behavior"on mouseUp  set the dontwrap of fld "setContents" to the hilite of meend mouseUp

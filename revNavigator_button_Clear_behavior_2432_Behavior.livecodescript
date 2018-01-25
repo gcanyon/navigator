@@ -1,0 +1,1 @@
+script "revNavigator_button_Clear_behavior_2432_Behavior"on mouseUp  setColors trueend mouseUp

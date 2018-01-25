@@ -1,0 +1,1 @@
+script "revNavigator_button_Edit_Contents_Cancel_behavior_2440_Behavior"on mouseUp  hideMeend mouseUp

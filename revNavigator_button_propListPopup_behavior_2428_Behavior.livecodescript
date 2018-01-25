@@ -1,0 +1,1 @@
+script "revNavigator_button_propListPopup_behavior_2428_Behavior"on menuPick pWhich  send "setValue" && pWhich to fld "editProps"end menuPick

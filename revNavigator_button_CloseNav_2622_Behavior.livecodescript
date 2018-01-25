@@ -1,0 +1,1 @@
+script "revNavigator_button_CloseNav_2622_Behavior"-- Sent when the mouse is released after clicking-- pMouseButton specifies which mouse button was pressedon mouseUp    setVisNavigatorend mouseUp
