@@ -1112,9 +1112,11 @@ on editObjectScripts pWhichLine,B
    put getList(false,pWhichLine) into idList
    try
       repeat for each line tID in idList
-         if B and the behavior of tID is not empty and exists(the behavior of tID)\
-               then edit the script of (the behavior of tID) \
-               else edit the script of tID
+         put tID into xID
+         repeat until not B or the script of xID is not empty  or the behavior of xID is empty
+            put the behavior of xID into xID
+         end repeat
+         edit the script of xID
       end repeat
    catch someErr
    end try
