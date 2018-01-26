@@ -1718,10 +1718,12 @@ function scriptHandlers S
    repeat for each line L in S
       add 1 to LC
       if not (word 1 of L is among the items of "on,function,getprop,setprop,before,after,command" or (word 1 of L is "private" and word 2 of L is among the items of "on,command,function"))  then next repeat
-      if word 1 of L is "private"
-      then put LC into R["name"][word 1 to 3 of L]
-      else put LC into R["name"][word 1 to 2 of L]
-      put word 1 to -1 of L into R["template"][word 1 to 2 of L]
+      put word 1 to 3 of L into handlerName
+      if word 1 of L is "private" 
+      then put word 1 to 3 of L into handlerName
+      else put word 1 to 2 of L into handlerName
+      put LC into R["name"][handlerName]
+      put word 1 to -1 of L into R["template"][handlerName]
    end repeat
    return R
 end scriptHandlers

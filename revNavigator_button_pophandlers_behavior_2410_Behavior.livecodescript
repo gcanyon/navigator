@@ -49,10 +49,11 @@ on prepareItems tLine
          put the name of xID & cr & tHandlerList[i]["list"] into putMenuItems
          replace cr with cr & tab in putMenuItems
       end if
-      put empty into sendList
-      repeat for each line L in tHandlerList[i]["list"]
-         if word 1 of L is among the items of "on,function,getprop,setprop,command" then put tab & L & cr after sendList
-      end repeat
+      put tab & tHandlerList[i]["list"] into sendList
+      replace cr with cr & tab in sendList
+      --       repeat for each line L in tHandlerList[i]["list"]
+      --          if word 1 of L is among the items of "on,function,getprop,setprop,command" then put tab & L & cr after sendList
+      --       end repeat
       if i > 1 then 
          put tab & tName & cr & tab & sendList after sendMenuItems
       else
@@ -63,8 +64,7 @@ on prepareItems tLine
    end repeat
    
    put tHandlerList[1]["list"] after editMenuItems
-   put objectSendMenuItems after sendMenuItems
-   delete char -1 of sendMenuItems
+   put cr & objectSendMenuItems after sendMenuItems
    
    
    put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
@@ -99,11 +99,24 @@ on menuPick pWhich
       set the itemdelimiter to "|"
       put item -1 of pWhich into tHandler
       set the itemdelimiter to comma
-      repeat with i = 1 to item 2 of the extents of tHandlerList
-         if tHandlerList[i]["template"][tHandler] is not empty then exit repeat
+      repeat with objectIndex = 1 to item 2 of the extents of tHandlerList
+         if tHandlerList[objectIndex]["template"][tHandler] is not empty then exit repeat
       end repeat
-      put tHandlerList[i]["template"][tHandler] into tCommand
+      put tHandlerList[objectIndex]["template"][tHandler] into tCommand
       put word 2 of tCommand into tCommandName
+      if word 1 of tCommand is "private" then
+         put true into privateCall
+         delete word 1 of tCommand
+      end if
+      put word 2 of tCommand into tCommandName
+      if privateCall then
+         if word 1 of tCommand is not "function"
+         then put word 2 to -1 of tCommand into tPrivateCommand
+         else put "return " && word 2 of tCommand & "(" & word 3 to -1 of tCommand & ")" into tPrivateCommand
+         put "x" & ticks() into word 2 of tCommand
+         put tCommand & cr & tPrivateCommand & cr & "end" && word 2 of tCommand into tPublicHandler
+         set the script of objectIDArray[objectIndex] to the script of objectIDArray[objectIndex] & cr & tPublicHandler
+      end if
       put the name of tID into tIDname
       switch word 1 of tCommand
          case "getprop"
@@ -129,14 +142,17 @@ on menuPick pWhich
                put it into tA[i]
             end repeat
             if fKey is empty then 
-               dispatch tCommandName to tID with tA[1],tA[2],tA[3],tA[4],tA[5],tA[6],tA[7],tA[8],tA[9]
+               dispatch word 2 of tCommand to tID with tA[1],tA[2],tA[3],tA[4],tA[5],tA[6],tA[7],tA[8],tA[9]
             else 
-               dispatch function tCommandName to tID with tA[1],tA[2],tA[3],tA[4],tA[5],tA[6],tA[7],tA[8],tA[9]
+               dispatch function word 2 of tCommand to tID with tA[1],tA[2],tA[3],tA[4],tA[5],tA[6],tA[7],tA[8],tA[9]
                put the result into tResult
                ask format("Function %s() of %s returned:",tCommandName,tIDname) with tResult
             end if
             break
       end switch
+      if privateCall is true then 
+         set the script of objectIDArray[objectIndex] to line 1 to -4 of the script of objectIDArray[objectIndex]
+      end if
    else if the menuhistory of me > 7 then
       set the itemdelimiter to "|"
       put item -1 of pWhich into tHandlerName
