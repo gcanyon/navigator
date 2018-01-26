@@ -525,7 +525,7 @@ on prepareItems
    if tCopiedType is "button" then put "Set Copied Btn as Behavior" & cr before tItems
    -- put tObjectType && tCopiedType
    put tObjectType & "Items" into uProp1
-   put uProp1
+   -- put uProp1
    if tCopiedType is not empty then put tObjectType & tCopiedType & "Items" into uProp2
    put the uProp1 of me & the uProp2 of me before tItems
    
