@@ -1,1 +1,4 @@
-script "revNavigator_button_CloseResizer_behavior_2436_Behavior"on mouseUp  hideMeend mouseUp
+﻿script "revNavigator_button_CloseResizer_behavior_2436_Behavior"
+on mouseUp
+  hideMe
+end mouseUp

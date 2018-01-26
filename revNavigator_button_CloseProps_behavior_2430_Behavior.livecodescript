@@ -1,1 +1,4 @@
-script "revNavigator_button_CloseProps_behavior_2430_Behavior"on mouseUp  hideMeend mouseUp
+﻿script "revNavigator_button_CloseProps_behavior_2430_Behavior"
+on mouseUp
+  hideMe
+end mouseUp

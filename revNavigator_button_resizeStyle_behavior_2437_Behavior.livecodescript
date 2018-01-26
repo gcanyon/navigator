@@ -1,1 +1,4 @@
-script "revNavigator_button_resizeStyle_behavior_2437_Behavior"on mouseUp  setResizeModeend mouseUp
+﻿script "revNavigator_button_resizeStyle_behavior_2437_Behavior"
+on mouseUp
+  setResizeMode
+end mouseUp
