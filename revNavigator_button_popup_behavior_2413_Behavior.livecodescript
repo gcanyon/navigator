@@ -320,7 +320,9 @@ on menuPick pWhich
       case "Browse Controls"
          put true into tBrowseControls
       case "Save"
-         put true into tSave
+         if pWhich is "Save" then put true into tSave
+       case "Save StackFiles"
+         if pWhich is "Save StackFiles" then put true into tSaveStackFiles
       case "Go|LM Go"
          put true into tLockMessages
       case "Go|Go"
@@ -355,6 +357,10 @@ on menuPick pWhich
                else if word 1 of tID is "group" then
                   -- no point in continuing, can't save or go
                else if tSave and word 1 of tID is "stack" then save tID
+               else if tSaveStackFiles and word 1 of tID is "stack" then
+                  repeat for each line tStackIDLine in the stackFiles of tID
+                     save stack (item 1 of tStackIDLine)
+                  end repeat
                else if tGo then
                   if tLockMessages is "true" or the optionKey is "down" then lock messages
                   go tID
@@ -519,6 +525,7 @@ on prepareItems
    if tCopiedType is "button" then put "Set Copied Btn as Behavior" & cr before tItems
    -- put tObjectType && tCopiedType
    put tObjectType & "Items" into uProp1
+   -- put uProp1
    if tCopiedType is not empty then put tObjectType & tCopiedType & "Items" into uProp2
    put the uProp1 of me & the uProp2 of me before tItems
    
