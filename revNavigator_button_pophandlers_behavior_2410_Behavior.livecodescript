@@ -5,12 +5,19 @@ global gSBControlSets
 local tMenuText
 local tID
 local tHandlerList
+local putMenuItems
+local objectIDArray
+local behaviorMenuOffset
+local objectMenuOffset
 
 on mouseDown
    prepareItems (the hilitedLines of fld "list")
 end mouseDown
 
 on prepareItems tLine
+   delete variable tHandlerList
+   delete variable objectIDArray
+   
    if tLine is empty then 
       put "(No Selection" into me
       exit prepareItems
@@ -18,36 +25,55 @@ on prepareItems tLine
       put "Edit Script" & cr & "Convert to Behaviors" into me
       exit prepareItems
    end if
+   put the shiftkey is not "down" into sortHandlers
    put getID(tLine) into tID
-   put scriptHandlers(the script of tID) into tHandlerList["script"]
-   if the behavior of tID is not empty 
-   then put scriptHandlers(the script of the behavior of tID) into tHandlerList["behavior"]
-   else put empty into tHandlerList["behavior"]
-   put the keys of tHandlerList["script"]["name"] into scriptHandlerList
-   put the keys of tHandlerList["behavior"]["name"] into behaviorHandlerList
    put "function,0 before,1 on,2 after,3 getprop,4 setprop,5" into sortOrder
    split sortOrder by space and comma
-   if the shiftkey is not "down" then 
-      sort lines of scriptHandlerList by sortOrder[word 1 of each]
-      sort lines of behaviorHandlerList by sortOrder[word 1 of each]
-      sort lines of scriptHandlerList by word 2 of each
-      sort lines of behaviorHandlerList by word 2 of each
-   end if
-   put splice(cr & "(-" & cr,scriptHandlerList,behaviorHandlerList) into handlerList
-   --put handlerList into sendList
-   repeat for each line L in handlerList
-      if word 1 of L is among the items of "on,function,getprop,setprop,command,(-" then put tab & L & cr after sendList
+   put empty into behaviorMenuItems
+   put empty into sendMenuItems
+   repeat with i = 1 to 100000
+      put tID into objectIDArray[i]
+      put scriptHandlers(the script of tID) into tHandlerList[i]
+      put the keys of tHandlerList[i]["name"] into tHandlerList[i]["list"]
+      if sortHandlers then
+         sort lines of tHandlerList[i]["list"] by sortOrder[word 1 of each]
+         sort lines of tHandlerList[i]["list"] by word 2 of each
+      end if
+      if i > 1 then
+         replace cr with cr & tab in tHandlerList[i]["list"]
+         put the short name of tID into tName
+         if length(tName) > 30 then put "..." into char 28 to -1 of tName
+         put tName & cr & tab & tHandlerList[i]["list"] & cr after editMenuItems
+         put cr & the name of tID & cr & tab & tHandlerList[i]["list"] after putMenuItems 
+      else
+         put the name of tID & cr & tHandlerList[i]["list"] into putMenuItems
+         replace cr with cr & tab in putMenuItems
+      end if
+      put empty into sendList
+      repeat for each line L in tHandlerList[i]["list"]
+         if word 1 of L is among the items of "on,function,getprop,setprop,command" then put tab & L & cr after sendList
+      end repeat
+      if i > 1 then 
+         put tab & tName & cr & tab & sendList after sendMenuItems
+      else
+         put sendList into objectSendMenuItems
+      end if
+      put the behavior of tID into tID
+      if tID is empty then exit repeat
    end repeat
-   delete char -1 of sendList
-   --filter lines of sendList with regex pattern "^[on|function|getprop|setprop|-].*"
-   --replace cr with cr & tab in sendList
-   --put tab before sendList
+   
+   put tHandlerList[1]["list"] after editMenuItems
+   put objectSendMenuItems after sendMenuItems
+   delete char -1 of sendMenuItems
    
    
-   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nSend:\n%s\n(-\n%s",sendList,handlerList) into me
+   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
+   put menuContent into me
 end prepareItems
 
 on menuPick pWhich
+   put pWhich && the menuhistory of me
+   exit menuPick
    if pWhich is "Copy Script" then
       set clipboardData["text"] to the script of tID
    else if pWhich is "Paste Script" then
@@ -62,11 +88,7 @@ on menuPick pWhich
          end try 
       end if
    else if pWhich is "Put Handler List" then
-      put the keys of tHandlerList["script"]["name"] into scriptHandlerList
-      put the keys of tHandlerList["behavior"]["name"] into behaviorHandlerList
-      sort lines of scriptHandlerList by word 2 of each
-      sort lines of behaviorHandlerList by word 2 of each
-      put "Script:" & cr & scriptHandlerList & cr & cr & "Behavior:" & cr & behaviorHandlerList
+      put putMenuItems
    else if pWhich is "Edit Script" then
       editObjectScripts
    else if pWhich is "Convert to Behaviors" then
@@ -74,8 +96,13 @@ on menuPick pWhich
       convertToScriptOnlyStackBehaviors  idList
       
    else if char 1 to 6 of pWhich is "Send:|" then
-      put tHandlerList["script"]["template"][char 7 to -1 of pWhich] into tCommand
-      if tCommand is empty then put tHandlerList["behavior"]["template"][char 7 to -1 of pWhich] into tCommand
+      set the itemdelimiter to "|"
+      put item -1 of pWhich into tHandler
+      set the itemdelimiter to comma
+      repeat with i = 1 to item 2 of the extents of tHandlerList
+         if tHandlerList[i]["template"] is not empty then exit repeat
+      end repeat
+      put tHandlerList[i]["template"] into tCommand
       put word 2 of tCommand into tCommandName
       put the name of tID into tIDname
       switch word 1 of tCommand
@@ -110,7 +137,7 @@ on menuPick pWhich
             end if
             break
       end switch
-   else if the menuhistory of me > 6 then
+   else if the menuhistory of me > 7 then
       put the menuhistory of me > 6 + the number of lines of the keys of tHandlerList["script"]["name"] into B
       editObjectScripts ,B
       send "selectScriptLine" && iff(B, tHandlerList["behavior"]["name"][pWhich], tHandlerList["script"]["name"][pWhich]) to me in 5 ticks
