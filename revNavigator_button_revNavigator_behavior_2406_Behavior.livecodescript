@@ -959,6 +959,7 @@ on convertToScriptOnlyStackBehaviors idList
       end if
       set the itemDelimiter to comma
       put relativePath(stackFolder,targetFolder) into stackRelativePath[S]
+      if stackRelativePath[S] is not empty then put "/" after stackRelativePath[S]
       repeat for each line SF in the stackFiles of stack S
          put item 2 of SF into stackFileArray[S][item 1 of SF]
       end repeat
@@ -1009,7 +1010,7 @@ on convertToScriptOnlyStackBehaviors idList
       put the short name of (word -2 to -1 of tID) into stackName
       -- if stackFileArray[stackName][soStackName[tID]] is empty then -- don't think this can ever be false
       -- -- -- add the stack name to the control's stack's stackFiles
-      put splice("/",stackRelativePath[stackName] & soStackName[tID]) & ".livecodescript" into stackFileArray[stackName][soStackName[tID]]
+      put stackRelativePath[stackName] & soStackName[tID] & ".livecodescript" into stackFileArray[stackName][soStackName[tID]]
       set the stackFiles of stack stackName to (the stackFiles of stack stackName) & cr & soStackName[tID],stackFileArray[stackName][soStackName[tID]]
       put "Added" && soStackName[tID],stackFileArray[stackName][soStackName[tID]] && "to the stackFiles of stack" && Q(stackName) & cr after logData
       -- end if
