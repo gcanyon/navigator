@@ -3,24 +3,19 @@ local sProp -- stores the name of the property we're working on
 local sWhichLine -- stores the number of the line we're working on
 
 on mouseDown
+   if the cCustomProperties of me is true then exit mouseDown
+   
    put word 2 of the clickline into sWhichLine
    put line sWhichLine of me into tLineData
    set the itemDelimiter to tab
    put item 1 of tLineData into tProp
    put item 2 of tLineData into tVal
-   put "u" & word 1 of the cSourceID of me & tProp into tCProp
-   if the tCProp of me is not empty then
-      put tProp into sProp
-      put the tCProp of me into btn "propListPopup"
-      popup btn "propListPopup"
-   else
-      put "u" & tProp into tCProp
-      if the tCProp of me is not empty then
-         put tProp into sProp
-         put the tCProp of me into btn "propListPopup"
+   put "u" & tProp into tCProp
+   put "u" & word 1 of the cSourceID of me & tProp into tTypeCProp
+   if the tCProp of me is empty and the tTypeCProp of me is empty then exit mouseDown
+   put tProp into sProp
+   if the tTypeCProp of me is empty then put the tCProp of me into btn "propListPopup" else put the tTypeCProp of me into btn "propListPopup"
          popup btn "propListPopup"
-      end if
-   end if
 end mouseDown
 
 
@@ -30,9 +25,9 @@ on mouseUp
    put line sWhichLine of me into tLineData
    set the itemDelimiter to tab
    put item 1 of tLineData into tProp
-   put "u" & word 1 of the cSourceID of me & tProp into tCProp
    put item 2 of tLineData into tVal
    if the cCustomProperties of me is not true then
+      put ticks()
       if tProp is "colors" then
          send "editColors" && quote & the cSourceID of me & quote & comma & the cIDList of me to group "setColors"
       else if char -5 to -1 of tProp is "color" then
@@ -53,21 +48,20 @@ on mouseUp
          end repeat
          put tBoolean into item 2 of line sWhichLine of me
       end if
+   end if
+   set the uID of group "editContents" to the long id of me
+   put the cSourceID of me into tID
+   
+   if the cCustomProperties of me is true then
+      set the customPropertySet of tID to (the cCustomPropertySet of me)
    else
-      set the uID of group "editContents" to the long id of me
-      put the cSourceID of me into tID
-      
-      if the cCustomProperties of me is true then
-         set the customPropertySet of tID to (the cCustomPropertySet of me)
-      else
-         set the oneLiner of group "editContents" to (tProp is among the lines of the oneLiners of this stack)
-      end if
-      
-      put tProp into sProp
-      put the sProp of tID into tDefaultVal
-      set the uDialogText of group "editContents" to tDefaultVal
-      send "showMe true" to group "editContents"
-   end if    
+      set the oneLiner of group "editContents" to (tProp is among the lines of the oneLiners of this stack)
+   end if
+   
+   put tProp into sProp
+   put the sProp of tID into tDefaultVal
+   set the uDialogText of group "editContents" to tDefaultVal
+   send "showMe true" to group "editContents"
    --put value(the clickline)
 end mouseUp
 
