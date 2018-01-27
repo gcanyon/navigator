@@ -3,6 +3,7 @@ global gSBControlSets
 
 local tIDList
 local sProp -- the name of the property to be set
+local OPA -- objects and properties to edit
 
 on mouseDown
   prepareItems
@@ -44,7 +45,8 @@ end prepareItems
 on menuPick pWhich
    switch pWhich 
       case "Property Editor..."
-         dispatch "setup" to group "editProps" with getClickedID()
+         if OPA["idList"] is empty then exit menuPick
+         dispatch "setup" to group "editProps" with getClickedID(),OPA["idList"],OPA["propList"]
          exit menuPick
       case "Object Inspector (1)"
          objectInspector1

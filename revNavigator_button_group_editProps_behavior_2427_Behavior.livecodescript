@@ -6,32 +6,40 @@ on setSize
   set the loc of button "propListPopup" to -230,30
 end setSize
 
-on setup pID
-   put objectsAndPropertiesToEdit() into OPA -- idList, propList
-   if OPA["idList"] is empty then exit setup
-   set the cIDList of fld "editProps" to OPA["idList"]
-   if not exists(pID) or pID is not among the lines of OPA["idList"] then put line 1 of OPA["idList"] into pID
+on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
+   -- pID: source id for properties
+   -- pIDList: objects to edit
+   -- pPropList: list of properties to edit
+   -- pCustomProperties (optional): if true, editing custom properties
+   -- pCustomPropertySet (optional): the customPropertySet that the properties are in
+
+   if pIDList is empty then exit setup
+   set the cIDList of fld "editProps" to pIDList
+   if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
    set the cSourceID of fld "editProps" to pID
+   set the cCustomProperties of fld "editProps" to pCustomProperties is true
+   set the cCustomPropertySet of fld "editProps" to pCustomPropertySet
    put the name of pID && "[" & the short id of pID & "]" into propTitle
-   put the number of lines of OPA["idList"] into objectCount
+   put the number of lines of pIDList into objectCount
    --put pID & cr & cr & OPA["idList"] & cr & cr & OPA["propList"] ;exit to top
    
    if objectCount > 1 then put " and" && objectCount - 1 && "others" after propTitle
    put propTitle into fld "Prop Title"
-   put "<b>|<font color=100,100,100>" into BP
+   put "<b>|<font color=100,100,100>" into BP -- unused? through:
    put "</b>|</font>" into AP
    split BP using "|"
-   split AP using "|"
+   split AP using "|" -- unused?
    put 1 into pTag
    put 0 into C
-   repeat for each line P in OPA["propList"]
-      if P is "-" then 
+   put 0 into bTagMax
+   repeat for each line P in pPropList
+      if P is "-" and pCustomProperties is not true then 
          put C into bTagMax
          next repeat
       end if
       add 1 to C
       --put P
-      if the P of pID is empty then
+      if the P of pID is empty and pCustomProperties is not true then
          put C & tab after eList
          put P & tab & line 1 of the effective P of pID & cr after tString
       else
