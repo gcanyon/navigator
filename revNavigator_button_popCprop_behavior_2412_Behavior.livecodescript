@@ -41,7 +41,15 @@ end prepareItems
 on menuPick pWhich
    switch
       case the menuhistory of me = 1 
-         -- open property editor with custom props here
+         put getID(the uClickedLine of this card) into tClickedID
+         if not (there is a tClickedID) then put line 1 of tIDList into tClickedID
+         if not there is a tClickedID then break
+         --on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
+         set the custompropertyset of tClickedID to sCustomPropertySet
+         put the customkeys of tClickedID into cPropList
+         sort lines of cPropList
+         
+         dispatch "setup" to group "editProps" with tClickedID,tIDList,cPropList,true,sCustomPropertySet
          break
       case the menuhistory of me = 3
          ask ("New Custom Property Set:")
