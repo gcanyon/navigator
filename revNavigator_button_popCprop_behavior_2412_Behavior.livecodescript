@@ -12,8 +12,14 @@ end mouseDown
 on prepareItems
    get theHilitedIDs() 
    if it is not tIDList then 
-      put empty into sCustomPropertySet
       put it into tIDList
+      put false into setExists
+      repeat for each line tID in tIDList
+         if  sCustomPropertySet is not among the lines of the custompropertysets of tID then next repeat
+         put true into setExists
+         exit repeat
+      end repeat
+      if not setExists then put empty into sCustomPropertySet
    end if
    if tIDList is empty then
       put "(No Objects Selected" into me
@@ -21,7 +27,7 @@ on prepareItems
    end if
    put customPropertiesOfAll(tIDList,sCustomPropertySet) into CPa
    put splice(cr,"<Empty>",CPa["setList"]) into cPropSetList
- -- if CPa["setList"] is empty then put "Empty" into cPropSetList else put "Empty" & cr & CPa["setList"] into 
+   -- if CPa["setList"] is empty then put "Empty" into cPropSetList else put "Empty" & cr & CPa["setList"] into 
    -- put deDupe(splice(cr,CPa["setList"],sCustomPropertySet),cr) into CPa["setList"]
    set the wholematches to true
    get lineoffset(sCustomPropertySet,cPropSetList)
@@ -41,20 +47,42 @@ on menuPick pWhich
          ask ("New Custom Property Set:")
          if the result is empty then put it into pWhich
       case the menuhistory of me <= sSetMax 
-         put pwhich
          if the menuhistory of me = 5 then put empty into pWhich
-         put pWhich into sCustomPropertySet
-         repeat for each line tID in tIDList
-            set the custompropertyset of tID to sCustomPropertySet
-         end repeat
+         if the menuhistory of me > 5 and the optionkey is "down" then
+            answer warning "Delete custom property set" && Q(pWhich) & "?" with "Cancel" or "Delete"
+            if it is "Delete" then 
+               repeat for each line tID in tIDList
+                  put the custompropertysets of tID into setList
+                  filter setList without pWhich
+                  set the custompropertysets of tID to setList
+               end repeat
+            end if
+            exit menuPick
+         else
+            put pWhich into sCustomPropertySet
+            repeat for each line tID in tIDList
+               set the custompropertyset of tID to sCustomPropertySet
+            end repeat
+         end if
          break
       default
          if the menuhistory of me = sSetMax + 2 then
             ask ("New Custom Property Name:")
             if the result is not empty then break
             put it into sProp
-         else
+         else if the optionkey is "up" then
             put pWhich into sProp
+         else
+            answer warning "Delete custom property" && Q(pWhich) & "?" with "Cancel" or "Delete"
+            if it is not "Delete" then exit menuPick
+            repeat for each line tID in tIDList
+               set the customPropertySet of tID to sCustomPropertySet
+               put the customproperties of tID into tempArray
+               delete variable tempArray[pWhich]
+               set the customproperties of tID to tempArray
+            end repeat
+            put empty into sProp
+            exit menuPick
          end if
          put getID(the uClickedLine of this card) into tClickedID
          if not (there is a tClickedID) then put line 1 of tIDList into tClickedID
