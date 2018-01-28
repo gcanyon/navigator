@@ -34,7 +34,7 @@ on prepareItems
    if it is 0 then add 1 to it
    put "!c" before line it of cPropSetList
    put 4 + the number of lines of cPropSetList into sSetMax
-   put sSetMax
+   --put sSetMax
    put splice(cr,"Custom Property Editor...","-","New Custom Property Set...","(Option//Alt to Delete",cPropSetList,"-","New Custom Property...","(Option//Alt to Delete",CPa["customPropList"]) into me
 end prepareItems
 
