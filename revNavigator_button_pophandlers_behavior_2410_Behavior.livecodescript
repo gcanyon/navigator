@@ -21,7 +21,7 @@ on prepareItems tLine
       put "(No Selection" into me
       exit prepareItems
    else if the number of items of tLine > 1 then 
-      put "Edit Script" & cr & "Convert to Behaviors" into me
+      put "Edit Script" & cr & "Convert to Behaviors" & cr & "Restore from Behaviors" into me
       exit prepareItems
    end if
    put the shiftkey is not "down" into sortHandlers
@@ -64,11 +64,12 @@ on prepareItems tLine
    end repeat
    
    put tHandlerList[1]["list"] after editMenuItems
-   put cr & objectSendMenuItems after sendMenuItems
+   put splice(cr,sendMenuItems,objectSendMenuItems) into sendMenuItems
    
    
-   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
+   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nRestore from Behaviors\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
    put menuContent into me
+   put menuContent
 end prepareItems
 
 on menuPick pWhich
@@ -94,8 +95,11 @@ on menuPick pWhich
    else if pWhich is "Convert to Behaviors" then
       put getList(false) into idList
       convertToScriptOnlyStackBehaviors  idList
+   else if pWhich is "Restore from Behaviors" then
+      put getList(false) into idList
+      restoreFromBehaviors idList
       
-   else if the menuhistory of me is 6 then
+   else if the menuhistory of me is 7 then
       set the itemdelimiter to "|"
       put item -1 of pWhich into tHandler
       set the itemdelimiter to comma
@@ -153,11 +157,11 @@ on menuPick pWhich
       if privateCall is true then 
          set the script of objectIDArray[objectIndex] to line 1 to -4 of the script of objectIDArray[objectIndex]
       end if
-   else if the menuhistory of me > 7 then
+   else if the menuhistory of me > 8 then
       set the itemdelimiter to "|"
       put item -1 of pWhich into tHandlerName
       set the itemdelimiter to comma
-      put the menuhistory of me - 6 into objectIndex
+      put the menuhistory of me - 7 into objectIndex
       if objectIndex > item 2 of the extents of objectIDArray then put 1 into objectIndex
       edit the script of objectIDArray[objectIndex]
       send "selectScriptLine" && tHandlerList[objectIndex]["name"][tHandlerName] to me in 5 ticks
