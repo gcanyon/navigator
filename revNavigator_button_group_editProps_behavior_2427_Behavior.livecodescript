@@ -12,7 +12,7 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    -- pPropList: list of properties to edit
    -- pCustomProperties (optional): if true, editing custom properties
    -- pCustomPropertySet (optional): the customPropertySet that the properties are in
-
+   
    if pIDList is empty then exit setup
    set the cIDList of fld "editProps" to pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
@@ -24,39 +24,51 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    --put pID & cr & cr & OPA["idList"] & cr & cr & OPA["propList"] ;exit to top
    
    if objectCount > 1 then put " and" && objectCount - 1 && "others" after propTitle
+   if pCustomProperties is true then put " |" && iff(pCustomPropertySet is empty,"<empty>",pCustomPropertySet) after propTitle
    put propTitle into fld "Prop Title"
-   put "<b>|<font color=100,100,100>" into BP -- unused? through:
-   put "</b>|</font>" into AP
-   split BP using "|"
-   split AP using "|" -- unused?
-   put 1 into pTag
-   put 0 into C
-   put 0 into bTagMax
+   put "<p>" into tag[1]
+   put tab & "<font color=" & quote & "#AAAAAA" & quote & ">" into tag[2][true][true]
+   put tab into tag[2][false][true]
+   put tab & "<b><font color=" & quote & "#AAAAAA" & quote & ">" into tag[2][true][false]
+   put tab & "<b>" into tag[2][false][false]
+   put "</font></p>" into tag[3][true][true]
+   put "</p>" & cr into tag[3][false][true]
+   put "</font></b></p>" into tag[3][true][false]
+   put "</b></p>" & cr into tag[3][false][false]
+   
+   if pCustomProperties is not true then 
+      put "<b>" after tag[1]
+      put "</b>" before tag[2][true][true]
+      put "</b>" before tag[2][false][true]
+      put "</b>" before tag[2][true][false]
+      put "</b>" before tag[2][false][false]
+   end if   
+   put empty into tHTML
+
    repeat for each line P in pPropList
       if P is "-" and pCustomProperties is not true then 
-         put C into bTagMax
+         delete char -3 to -1 of tag[1]
+         delete char 1 to 4 of tag[2][true][true]
+         delete char 1 to 4 of tag[2][false][true]
+         delete char 1 to 4 of tag[2][true][false]
+         delete char 1 to 4 of tag[2][false][false]
          next repeat
       end if
-      add 1 to C
-      --put P
-      if the P of pID is empty and pCustomProperties is not true then
-         put C & tab after eList
-         put P & tab & line 1 of the effective P of pID & cr after tString
-      else
-         put P & tab & line 1 of the P of pID & cr after tString
-      end if
+      put true into allSame
+      put the P of pID into pIDP
+      repeat for each line tID in pIDList
+         if the P of tID is pIDP then next repeat
+         put false into allSame
+         exit repeat
+      end repeat
+      put the P of pID is empty and pCustomProperties is not true into effectiveB
+      if effectiveB
+      then put line 1 of the effective P of pID into tProp
+      else  put line 1 of the P of pID into tProp
+      put tag[1] & P & tag[2][effectiveB][allSame] & tProp & tag[3][effectiveB][allSame] after tHTML
    end repeat
-   lock screen
-   put char 1 to -2 of tString into fld "editProps" of me 
-   set the itemdel to tab
-   repeat with i = 1 to bTagMax
-      set the textstyle of item 1 of line i of fld "editProps" of me to "bold"
-   end repeat
-   repeat for each item i in eList
-      set the textcolor of item 2 of line i of fld "editProps" of me to 170,170,170
-   end repeat
-   
-   unlock screen
+   -- if tHTML is empty then put empty into fld "editProps" of me else 
+   set the htmlText of fld "editProps" of me to tHTML
    showMe
 end setup
 
