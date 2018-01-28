@@ -922,12 +922,13 @@ end theHilitedIDs
 function answerF M,I,T
    put "answer" into C
    if I is not empty then put " " & I after C
-   put " " & Q(M) after C
+   put " " & replaceF(cr,Q("&cr&"),Q(M)) after C
    if paramCount() > 3 then put " with" && Q(param(4)) after C
    repeat with x = 5 to paramCount()
       put " or" && Q(param(x)) after C
    end repeat
    if T is not empty then put " titled" && Q(T) after C
+   if the optionkey is "down" then put C
    do C
    return it
 end answerF
@@ -976,9 +977,6 @@ on restoreFromBehaviors idList
    
 end restoreFromBehaviors
 
-on convertToScriptOnlyStackBehaviors
-   answer "FML"
-end convertToScriptOnlyStackBehaviors
 
 on convertToScriptOnlyStackBehaviors idList
    -- NOTE: THE ANSWER DIALOGS SEEM TO BE WORKING NOW
@@ -991,8 +989,9 @@ on convertToScriptOnlyStackBehaviors idList
    -- 2. An object with a button (not stack) behavior, which does not have its own behavior: 
    -- -- -- creates an SoS with the object's behavior's script, sets it as the object's behavior. Leaves the object's script (if any) in place.
    -- 3. An object with a stack behavior, or a behavior that has its own behavior: do nothing.
+   
    if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit convertToScriptOnlyStackBehaviors
-    if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
    
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
@@ -1029,7 +1028,7 @@ on convertToScriptOnlyStackBehaviors idList
       if soStackName[lID] is not empty then next repeat
       
       if stackifyScriptlessObjects is empty and the script of lID is empty
-         then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
+      then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
       
       if stackifyScriptlessObjects or the script of lID is not empty then
          put safeNameSerial(stackNameList,sosName(lID)) into soStackName[lID]
