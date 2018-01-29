@@ -934,17 +934,16 @@ function answerF M,I,T
 end answerF
 
 on restoreFromBehaviors idList
-   answer warning "This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project." with "Cancel" or "I Understand, Proceed"
-   if it is not "I Understand, Proceed" then exit restoreFromBehaviors
-   answer warning "This function makes major changes to your project." & cr & cr & "You have backups?" with "Cancel" or "Yes, Proceed"
-   if it is not "Yes, Proceed" then exit restoreFromBehaviors
+   if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit restoreFromBehaviors
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit restoreFromBehaviors
    
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
-   put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
+   put "Restoring scripts from behaviors to controls for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
    
    put empty into restoreDuplicateScripts
    put empty into restoreScriptedObjects
+   put empty into followChainBehaviors
    
    repeat for each line tID in idList
       if the behavior of tID is empty then next repeat
@@ -958,22 +957,34 @@ on restoreFromBehaviors idList
       if behaviorMap[tBID] is "skip" then next repeat
       if  the script of tID is not empty and not restoreScriptedObjects then next repeat
       put tID & cr after behaviorMap[tBID]
-      put true into receivesBehavior[tID]
    end repeat
    
    repeat until the keys of behaviorMap is empty
       repeat for each key tBID in behaviorMap
-         if receivesBehavior[tBID] then next repeat
-         if behaviorMap[tBID] is "skip" then put empty into behaviorMap[tBID]
+         if behaviorMap[tBID] is "skip" then 
+            put empty into behaviorMap[tBID]
+            put "Skipping restore for" && the name of tBID & cr after logData
+         else
+            put "Restoring from behavior:" && the name of tBID & cr after logData
+            add 1 to restoreBehaviorCount
+         end if
+         if followChainBehaviors is empty and the behavior of tBID is not empty 
+         then put answerF("Restore from all chain behaviors?",,,"Leave them","Restore All") is "Restore All" into followChainBehaviors
          repeat for each line tID in behaviorMap[tBID]
+            put "Copying script from" && the name of tBID  && "to" && the name of tID & cr after logData
+            add 1 to restoreControlCount
             set the script of tID to splice(cr & cr,(the script of tID),(the script of tBID))
-            set the behavior of tID to empty
-            delete variable receivesBehavior[tID]
+            if the behavior of tBID is empty
+            then set the behavior of tID to empty
+            else if not followChainBehaviors or behaviorMap[the long id of the behavior of tBID] is "skip"
+            then set the behavior of tID to the long id of the behavior of tBID
+            else put tID & cr after behaviorMap[the long id of the behavior of tBID]
          end repeat
          delete variable behaviorMap[tBID]
       end repeat
    end repeat
-   
+   put restoreBehaviorCount && "behaviors were restored to" && restoreControlCount && "controls." & cr & "No errors were detected." into logMessage
+   if answerF(logMessage,,,"Done","Put Log Info") is "Put Log Info" then put logMessage & cr & cr & logData
    
 end restoreFromBehaviors
 
@@ -993,6 +1004,9 @@ on convertToScriptOnlyStackBehaviors idList
    if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit convertToScriptOnlyStackBehaviors
    if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
    
+   ask "Template for Script-Only Stack Names:" with "the name of me && the id of me && the short name of (word -2 to -1 of the long id of me)"
+   if it is empty then exit convertToScriptOnlyStackBehaviors
+   put it into sosNameTemplate
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
    put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
@@ -1031,7 +1045,7 @@ on convertToScriptOnlyStackBehaviors idList
       then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
       
       if stackifyScriptlessObjects or the script of lID is not empty then
-         put safeNameSerial(stackNameList,sosName(lID)) into soStackName[lID]
+         put safeNameSerial(stackNameList,sosName(sosNameTemplate,lID)) into soStackName[lID]
          put soStackName[lID] & cr after stackNameList
       else
          put "skipped" into soStackName[lID]
@@ -1142,10 +1156,10 @@ function uniqueStacksFromIDs idList
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function sosName controlLongID
-   return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,(the name of controlLongID)) && (the id of controlLongID)))
-   --return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,the short name of (word -2 to -1 of controlLongID) &&(the name of controlLongID)) && (the id of controlLongID) && "Behavior"))
+function sosName patternString,controlLongID
+   return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,value(patternString,controlLongID))))
 end sosName
+
 
 function safeNameSerial currentNameList,candidateName
    -- takes a list of existing names and a new name
@@ -1831,3 +1845,8 @@ on doCodeN1 S,xIDList,yID
       end try
    end repeat
 end doCodeN1
+
+
+on mobileStandaloneSaved pTargetType, pAppBundle
+
+end mobileStandaloneSaved
