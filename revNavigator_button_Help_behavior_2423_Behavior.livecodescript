@@ -1,4 +1,0 @@
-﻿script "revNavigator_button_Help_behavior_2423_Behavior"
-on mouseUp
-   setSize
-end mouseUp
