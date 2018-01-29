@@ -919,6 +919,76 @@ function theHilitedIDs
    return getID(the hilitedLines of fld "list")
 end theHilitedIDs
 
+function answerF M,I,T
+   put "answer" into C
+   if I is not empty then put " " & I after C
+   put " " & replaceF(cr,Q("&cr&"),Q(M)) after C
+   if paramCount() > 3 then put " with" && Q(param(4)) after C
+   repeat with x = 5 to paramCount()
+      put " or" && Q(param(x)) after C
+   end repeat
+   if T is not empty then put " titled" && Q(T) after C
+   if the optionkey is "down" then put C
+   do C
+   return it
+end answerF
+
+on restoreFromBehaviors idList
+   if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit restoreFromBehaviors
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit restoreFromBehaviors
+   
+   -- build a list of the stacks containing the controls
+   put uniqueStacksFromIDs(idList) into parentStackList
+   put "Restoring scripts from behaviors to controls for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
+   
+   put empty into restoreDuplicateScripts
+   put empty into restoreScriptedObjects
+   put empty into followChainBehaviors
+   
+   repeat for each line tID in idList
+      if the behavior of tID is empty then next repeat
+      put the long id of the behavior of tID into tBID
+      if restoreDuplicateScripts is empty and behaviorMap[tBID] is not empty 
+      then put answerF("Restore behaviors to multiple objects, duplicating the scripts?",,,"Restore Them","Skip Them") is "Restore Them" into restoreDuplicateScripts
+      if restoreScriptedObjects is empty and the script of tID is not empty 
+      then put answerF("Restore behaviors to scripted objects, appending the scripts?",,,"Restore Them","Skip Them")  is "Restore Them" into restoreScriptedObjects
+      
+      if  behaviorMap[tBID] is not empty and not restoreDuplicateScripts then put "skip" into behaviorMap[tBID]
+      if behaviorMap[tBID] is "skip" then next repeat
+      if  the script of tID is not empty and not restoreScriptedObjects then next repeat
+      put tID & cr after behaviorMap[tBID]
+   end repeat
+   
+   repeat until the keys of behaviorMap is empty
+      repeat for each key tBID in behaviorMap
+         if behaviorMap[tBID] is "skip" then 
+            put empty into behaviorMap[tBID]
+            put "Skipping restore for" && the name of tBID & cr after logData
+         else
+            put "Restoring from behavior:" && the name of tBID & cr after logData
+            add 1 to restoreBehaviorCount
+         end if
+         if followChainBehaviors is empty and the behavior of tBID is not empty 
+         then put answerF("Restore from all chain behaviors?",,,"Leave them","Restore All") is "Restore All" into followChainBehaviors
+         repeat for each line tID in behaviorMap[tBID]
+            put "Copying script from" && the name of tBID  && "to" && the name of tID & cr after logData
+            add 1 to restoreControlCount
+            set the script of tID to splice(cr & cr,(the script of tID),(the script of tBID))
+            if the behavior of tBID is empty
+            then set the behavior of tID to empty
+            else if not followChainBehaviors or behaviorMap[the long id of the behavior of tBID] is "skip"
+            then set the behavior of tID to the long id of the behavior of tBID
+            else put tID & cr after behaviorMap[the long id of the behavior of tBID]
+         end repeat
+         delete variable behaviorMap[tBID]
+      end repeat
+   end repeat
+   put restoreBehaviorCount && "behaviors were restored to" && restoreControlCount && "controls." & cr & "No errors were detected." into logMessage
+   if answerF(logMessage,,,"Done","Put Log Info") is "Put Log Info" then put logMessage & cr & cr & logData
+   
+end restoreFromBehaviors
+
+
 on convertToScriptOnlyStackBehaviors idList
    -- NOTE: THE ANSWER DIALOGS SEEM TO BE WORKING NOW
    -- NEVER CALL THIS FROM ANYWHERE WITHOUT A WARNING
@@ -931,12 +1001,12 @@ on convertToScriptOnlyStackBehaviors idList
    -- -- -- creates an SoS with the object's behavior's script, sets it as the object's behavior. Leaves the object's script (if any) in place.
    -- 3. An object with a stack behavior, or a behavior that has its own behavior: do nothing.
    
-   answer warning "This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project." with "Cancel" or "I Understand, Proceed"
-   if it is not "I Understand, Proceed" then exit convertToScriptOnlyStackBehaviors
-   answer warning "This function makes major changes to your project." & cr & cr & "You have backups?" with "Cancel" or "Yes, Proceed"
-   if it is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
+   if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit convertToScriptOnlyStackBehaviors
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
    
-   
+   ask "Template for Script-Only Stack Names:" with "the name of me && the id of me && the short name of (word -2 to -1 of the long id of me)"
+   if it is empty then exit convertToScriptOnlyStackBehaviors
+   put it into sosNameTemplate
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
    put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
@@ -971,13 +1041,11 @@ on convertToScriptOnlyStackBehaviors idList
       put the long id of tID into lID
       if soStackName[lID] is not empty then next repeat
       
-      if stackifyScriptlessObjects is empty and the script of lID is empty then
-         answer "Convert objects with no script to script-only stack behaviors?" with "Convert Them" or "Skip Them"
-         put it is "Convert Them" into stackifyScriptlessObjects
-      end if
+      if stackifyScriptlessObjects is empty and the script of lID is empty
+      then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
       
       if stackifyScriptlessObjects or the script of lID is not empty then
-         put safeNameSerial(stackNameList,sosName(lID)) into soStackName[lID]
+         put safeNameSerial(stackNameList,sosName(sosNameTemplate,lID)) into soStackName[lID]
          put soStackName[lID] & cr after stackNameList
       else
          put "skipped" into soStackName[lID]
@@ -1088,9 +1156,10 @@ function uniqueStacksFromIDs idList
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function sosName controlLongID
-   return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,the short name of (word -2 to -1 of controlLongID) &&(the name of controlLongID)) && (the id of controlLongID) && "Behavior"))
+function sosName patternString,controlLongID
+   return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,value(patternString,controlLongID))))
 end sosName
+
 
 function safeNameSerial currentNameList,candidateName
    -- takes a list of existing names and a new name
@@ -1776,3 +1845,8 @@ on doCodeN1 S,xIDList,yID
       end try
    end repeat
 end doCodeN1
+
+
+on mobileStandaloneSaved pTargetType, pAppBundle
+
+end mobileStandaloneSaved
