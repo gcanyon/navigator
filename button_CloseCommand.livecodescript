@@ -1,1 +1,4 @@
-script "button_CloseCommand"on mouseUp  hideMeend mouseUp
+﻿script "button_CloseCommand"
+on mouseUp
+  hideMe
+end mouseUp

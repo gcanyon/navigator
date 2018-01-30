@@ -1,1 +1,4 @@
-script "button_CloseNavAll"on mouseUp   setVisNavigator ,trueend mouseUp
+﻿script "button_CloseNavAll"
+on mouseUp
+   setVisNavigator ,true
+end mouseUp

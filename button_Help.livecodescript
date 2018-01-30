@@ -1,1 +1,4 @@
-script "button_Help"on mouseUp   setSizeend mouseUp
+﻿script "button_Help"
+on mouseUp
+   setSize
+end mouseUp

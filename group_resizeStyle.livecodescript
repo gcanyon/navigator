@@ -1,1 +1,4 @@
-script "group_resizeStyle"on mouseUp  setResizeModeend mouseUp
+﻿script "group_resizeStyle"
+on mouseUp
+  setResizeMode
+end mouseUp

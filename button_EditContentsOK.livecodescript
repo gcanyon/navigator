@@ -1,1 +1,5 @@
-script "button_EditContentsOK"on mouseUp  setContents  hideMeend mouseUp
+﻿script "button_EditContentsOK"
+on mouseUp
+  setContents
+  hideMe
+end mouseUp

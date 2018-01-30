@@ -1,1 +1,4 @@
-script "group_colorClosebox"on mouseUp  hidemeend mouseUp
+﻿script "group_colorClosebox"
+on mouseUp
+  hideme
+end mouseUp

@@ -1,1 +1,4 @@
-script "button_CloseResizer"on mouseUp  hideMeend mouseUp
+﻿script "button_CloseResizer"
+on mouseUp
+  hideMe
+end mouseUp
