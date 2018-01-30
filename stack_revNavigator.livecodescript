@@ -536,6 +536,10 @@ function Q S
    return quote & S & quote
 end Q
 
+function QQ S
+   return quote && "& quote &" && quote & S & quote && "& quote &" && quote
+end QQ
+
 
 function getCardOrBGid tStackID
    local N, tReturnID
@@ -1669,31 +1673,32 @@ end objectsAndPropertiesToEdit
 
 
 function customPropertiesOfAll tIDList,uSet
-  local R, tID, U
-  
-  -- returns an array
-  -- "setList" is a list of all the customPropertySets the objects have
-  -- "customPropList" is a list of all the custom properties the objects have within uSet customPropertySet
-  put line 1 of tIDList into tID
-  put the customPropertySets of tID into R["setList"]
-  split R["setList"] using cr as set
-  set the customPropertySet of tID to uSet
-  put the customProperties of tID into R["customPropList"]
-  repeat for each line tID in tIDList
-    union R["setList"] with (the customPropertySets of tID)
-    set the customPropertySet of tID to uSet
-    put the customProperties of tID into U
-    split U using cr as set
-    union R["customPropList"] with U
-  end repeat
-  delete variable R["setList"]["cRevGeneral"]
-  put the keys of R["setList"] into R["setList"]
-  filter R["setList"] without empty
-  sort lines of R["setList"]
-  put the keys of R["customPropList"] into R["customPropList"]
-  filter R["customPropList"] without empty
-  sort lines of R["customPropList"]
-  return R
+   local R, tID, U
+   
+   -- returns an array
+   -- "setList" is a list of all the customPropertySets the objects have
+   -- "customPropList" is a list of all the custom properties the objects have within uSet customPropertySet
+   put line 1 of tIDList into tID
+   put the customPropertySets of tID into R["setList"]
+   split R["setList"] using cr as set
+   set the customPropertySet of tID to uSet
+   put the customProperties of tID into R["customPropList"]
+   repeat for each line tID in tIDList
+      put the customPropertySets of tID into RSL
+      split RSL using cr as set
+      union R["setList"] with RSL
+      set the customPropertySet of tID to uSet
+      put the customProperties of tID into U
+      union R["customPropList"] with U
+   end repeat
+   delete variable R["setList"]["cRevGeneral"]
+   put the keys of R["setList"] into R["setList"]
+   filter R["setList"] without empty
+   sort lines of R["setList"]
+   put the keys of R["customPropList"] into R["customPropList"]
+   filter R["customPropList"] without empty
+   sort lines of R["customPropList"]
+   return R
 end customPropertiesOfAll
 
 
