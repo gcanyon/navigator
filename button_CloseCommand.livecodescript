@@ -1,4 +1,0 @@
-﻿script "button_CloseCommand"
-on mouseUp
-  hideMe
-end mouseUp

@@ -1,5 +1,0 @@
-﻿script "button_EditContentsOK"
-on mouseUp
-  setContents
-  hideMe
-end mouseUp

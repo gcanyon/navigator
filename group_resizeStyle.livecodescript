@@ -1,4 +1,0 @@
-﻿script "group_resizeStyle"
-on mouseUp
-  setResizeMode
-end mouseUp
