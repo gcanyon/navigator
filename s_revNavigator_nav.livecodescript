@@ -1168,8 +1168,8 @@ function uniqueStacksFromIDs idList
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function sosName patternString,controlLongID
-   return char -90 to -1 of replaceF(space,"_",replaceF(comma,empty,replaceF(quote,empty,value(patternString,controlLongID))))
+function sosName patternString,controlLongID,spaceSubstitute
+   return char -90 to -1 of replaceF(space,spaceSubstitute,replaceF(comma,empty,replaceF(quote,empty,value(patternString,controlLongID))))
 end sosName
 
 
@@ -1465,10 +1465,20 @@ function nonGroupChildControlIDsOf pContainerID
   return pContainerID & cr & tReturnIDList
 end nonGroupChildControlIDsOf
 
+function addBehaviorChains tIDList
+   repeat for each line tID in tIDList
+      repeat
+         put tID & cr after R
+         if the behavior of tID is empty then exit repeat else put the behavior of tID into tID
+      end repeat
+   end repeat
+   return R
+end addBehaviorChains
+
 
 function allControlIDsOf pContainerID
   local cIDend, cIDendString, controlIDList, controlList
-  
+  if not exists(pContainerID) then return empty
   put the long id of pContainerID into pContainerID
   --breakpoint
   switch word 1 of the name of pContainerID
