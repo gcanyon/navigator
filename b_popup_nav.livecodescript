@@ -163,7 +163,12 @@ on menuPick pWhich
          end try
          if word 1 of tOwner is  "group" then 
             put "background" into word 1 of tOwner
-            delete word 4 to -4 of tOwner
+            if word -5 of tOwner is "stack" then
+               delete word 4 to -7 of tOwner
+               delete word -3 to -1 of tOwner
+            else
+               delete word 4 to -4 of tOwner
+            end if
             stop editing tOwner
          end if
          unlock screen
@@ -362,7 +367,7 @@ on menuPick pWhich
                else if tSave and word 1 of tID is "stack" then save tID
                else if tSaveStackFiles and word 1 of tID is "stack" then
                   repeat for each line tStackIDLine in the stackFiles of tID
-                    -- put item 1 of tStackIDLine
+                     -- put item 1 of tStackIDLine
                      save stack (item 1 of tStackIDLine)
                   end repeat
                else if tReloadScriptonlyStacks and word 1 of tID is "stack" then

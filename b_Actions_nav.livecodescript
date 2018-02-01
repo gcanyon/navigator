@@ -18,7 +18,6 @@ on menuPick pWhich
          break
       case "New Navigator"
          clone this stack
-         if there is a card "behaviors" of it then delete cd "behaviors" of it
          --put "Navigator Clone" into fld "Navigator Title" of it
          set the backgroundcolor of grc "navTitleBar" of it to "180,180,180"
          put "revNavigator" && ticks() into sName
