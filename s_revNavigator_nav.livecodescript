@@ -998,7 +998,7 @@ end restoreFromBehaviors
 
 
 
-on convertToScriptOnlyStackBehaviors idList
+function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,stackifyScriptlessObjects,spaceSubstitute
    -- NOTE: THE ANSWER DIALOGS SEEM TO BE WORKING NOW
    -- NEVER CALL THIS FROM ANYWHERE WITHOUT A WARNING
    -- FOR SOME REASON ANSWER DIALOGS IN THIS HANDLER CAUSE IT TO DIE
@@ -1018,13 +1018,13 @@ on convertToScriptOnlyStackBehaviors idList
    put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
    
    -- ask the user to select a folder to place the SoS files in
-   answer folder "Save Script-Only Stack Files In:"
-   if it is empty then exit convertToScriptOnlyStackBehaviors
-   put it into targetFolder
+   --    answer folder "Save Script-Only Stack Files In:"
+   --    if it is empty then exit convertToScriptOnlyStackBehaviors
+   --    put it into targetFolder
    
-   ask "Template for Script-Only Stack Names:" with "the name of me && the id of me"
-   if it is empty then exit convertToScriptOnlyStackBehaviors
-   put it into sosNameTemplate
+   --    ask "Template for Script-Only Stack Names:" with "the name of me && the id of me"
+   --    if it is empty then exit convertToScriptOnlyStackBehaviors
+   --    put it into sosNameTemplate
    
    -- get a list of the existing file names in that folder & other excluded stack names
    put scriptOnlyStackNamesFromFolderList(targetFolder) into stackNameList
@@ -1046,17 +1046,17 @@ on convertToScriptOnlyStackBehaviors idList
       end repeat
    end repeat
    
-   put empty into stackifyScriptlessObjects
+   --put empty into stackifyScriptlessObjects
    
    repeat for each line tID in idList
       put the long id of tID into lID
       if soStackName[lID] is not empty then next repeat
       
-      if stackifyScriptlessObjects is empty and the script of lID is empty
-      then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
+      --       if stackifyScriptlessObjects is empty and the script of lID is empty
+      --       then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
       
       if stackifyScriptlessObjects or the script of lID is not empty then
-         put safeNameSerial(stackNameList,sosName(sosNameTemplate,lID)) into soStackName[lID]
+         put safeNameSerial(stackNameList,sosName(sosNameTemplate,lID,spaceSubstitute)) into soStackName[lID]
          put cr & soStackName[lID] & cr after stackNameList
       else
          put "skipped" into soStackName[lID]
@@ -1118,6 +1118,11 @@ on convertToScriptOnlyStackBehaviors idList
          add 1 to behaviorSetCount
       end if
    end repeat
+   
+   put logMessage & cr & cr & logData into returnData
+   if scriptForSoSStackBehaviors is not empty then put cr & cr & "Use this script to set behaviors for script-only stacks:" & cr & cr & scriptForSoSStackBehaviors after returnData
+   return returnData
+   
    
    put soStackCreatedCount && "script-only stacks were created." & cr & \
          "Set" && behaviorSetCount && "behaviors for controls and script-only stacks." & cr & \
