@@ -94,8 +94,8 @@ on menuPick pWhich
    else if pWhich is "Edit Script" then
       editObjectScripts
    else if pWhich is "Convert to Behaviors" then
-      put getList(false) into idList
-      convertToScriptOnlyStackBehaviors  idList
+      showScriptConversion getList(false) 
+      --convertToScriptOnlyStackBehaviors  idList
    else if pWhich is "Restore from Behaviors" then
       put getList(false) into idList
       restoreFromBehaviors idList
