@@ -1,1 +1,4 @@
-script "f_SoS_Name_Template_nav"on textChanged   evaluateNameend textChanged
+﻿script "f_SoS_Name_Template_nav"
+on textChanged
+   evaluateName
+end textChanged

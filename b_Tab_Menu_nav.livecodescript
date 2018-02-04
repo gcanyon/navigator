@@ -1,1 +1,9 @@
-script "b_Tab_Menu_nav"on menuPick pWhich   lock screen   hide grp "Convert"   hide grp "Restore"   hide grp "Log"   show grp pWhich   unlock screenend menuPick
+﻿script "b_Tab_Menu_nav"
+on menuPick pWhich
+   lock screen
+   hide grp "Convert"
+   hide grp "Restore"
+   hide grp "Log"
+   show grp pWhich
+   unlock screen
+end menuPick

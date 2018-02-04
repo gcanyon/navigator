@@ -97,9 +97,7 @@ on menuPick pWhich
       showScriptConversion getList(false) 
       --convertToScriptOnlyStackBehaviors  idList
    else if pWhich is "Restore from Behaviors" then
-      put getList(false) into idList
-      restoreFromBehaviors idList
-      
+      showRestoreBehaviors getList(false)
    else if the menuhistory of me is 7 then
       set the itemdelimiter to "|"
       put item -1 of pWhich into tHandler

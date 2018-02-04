@@ -1,4 +1,4 @@
-﻿script "b_Add:_nav"
+﻿script "b_Add_nav"
 on menuPick pChosenItem
    put item (itemoffset(pChosenItem,"Control Name,Control Short Name,Control ID,Owner Name,Stack Name,String Literal")) \
          of ("the name of me,the short name of me,the id of me,the name of the owner of me,the name of (word -2 to -1 of the long name of me)," & quote & "literal" & quote) && "&& " \

@@ -1123,11 +1123,19 @@ end convertToScriptOnlyStackBehaviors
 
 on showScriptConversion tIDList
    put tIDList into fld "id list convert" of stack "revBehavior Conversion"
-   send "menuPick" && "Convert" to btn "Tab Menu" of stack "revBehavior Conversion"
+   set the menuhistory of btn "tab menu" of stack "revBehavior Conversion" to 1
    set the minWidth of stack "revBehavior Conversion" to 520
    set the minHeight of stack "revBehavior Conversion" to 370
    palette stack "revBehavior Conversion"
 end showScriptConversion
+
+on showRestoreBehaviors tIDList
+   put tIDList into fld "id list restore" of stack "revBehavior Conversion"
+   set the menuhistory of btn "tab menu" of stack "revBehavior Conversion" to 2
+   set the minWidth of stack "revBehavior Conversion" to 520
+   set the minHeight of stack "revBehavior Conversion" to 370
+   palette stack "revBehavior Conversion"
+end showRestoreBehaviors
 
 function relativePath P1,P2
    -- returns the relative path from P1 to P2
@@ -1164,7 +1172,7 @@ function uniqueStacksFromIDs idList
 end uniqueStacksFromIDs
 
 function sosName patternString,controlLongID,spaceSubstitute
-   return char -90 to -1 of replaceF(space,spaceSubstitute,replaceF(comma,empty,replaceF(quote,empty,value(patternString,controlLongID))))
+   return char -90 to -1 of replaceF(space,spaceSubstitute,replaceF(comma,empty,replaceF("/",empty,replaceF(":",empty,replaceF(quote,empty,value(patternString,controlLongID))))))
 end sosName
 
 
@@ -1193,6 +1201,11 @@ on editObjectScripts pWhichLine,B
             put the behavior of xID into xID
          end repeat
          edit the script of xID
+         repeat for each line W in the windows
+            if word 1 of W is not "revNewScriptEditor" then next repeat
+            go stack W
+            exit repeat
+         end repeat
       end repeat
    catch someErr
    end try
