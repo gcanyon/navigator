@@ -1,0 +1,1 @@
+script "b_Add_Enclosed_Controls_nav"on mouseUp   put allUniqueIDsOf(fld "id list convert") into fld "id List convert"end mouseUp

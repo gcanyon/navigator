@@ -12,6 +12,7 @@ local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObj
 
 
 on openStack
+   if word 1 of the short name of this stack is not "revNavigator" then exit openStack
    put false into sSetupComplete
    doSetup
 end openStack
@@ -57,6 +58,7 @@ end doSetup
 
 on closeStack
    if the filename of me is empty then exit closeStack
+   if word 1 of the short name of this stack is not "revNavigator" then exit closeStack
    put the navigatorStackFileVersion of me into sStackFileVersion
    --send "cleanMyControlSets" to btn "Actions"
    set the customPropertySet of me to "gSBControlSetsProp"
@@ -88,23 +90,27 @@ end setLCVersion
 
 
 on revPreOpenCard
+   if word 1 of the short name of this stack is not "revNavigator" then exit revPreOpenCard
    if sSetupComplete is not false then updateDisplay
 end revPreOpenCard
 
 
 on revPreOpenStack
+   if word 1 of the short name of this stack is not "revNavigator" then exit revPreOpenStack
    if sSetupComplete is not false then updateDisplay
 end revPreOpenStack
 
 
 on revResumeStack
+   if word 1 of the short name of this stack is not "revNavigator" then exit revResumeStack
    if sSetupComplete is not false then updateDisplay
 end revResumeStack
 
 
 on revSelectedObjectChanged
-      --put "revSelectedObjectChanged" && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
-
+   --put "revSelectedObjectChanged" && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
+   if word 1 of the short name of this stack is not "revNavigator" then exit revSelectedObjectChanged
+   
    if sSetupComplete is not false then updateListSelection
 end revSelectedObjectChanged
 
@@ -941,26 +947,18 @@ function answerF M,I,T
    return it
 end answerF
 
-on restoreFromBehaviors idList
-   if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit restoreFromBehaviors
-   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit restoreFromBehaviors
+function restoreFromBehaviors idList,restoreDuplicateScripts,restoreScriptedObjects,followChainBehaviors
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then return "Cancel"
+   put answerf("You should test the command first, which will generate a log file but not change anything.","warning",,"Just Do It","Test and Report") is "Just Do It" into justDoIt
+   put convertToUniqueLongIDs(idList) into idList
    
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
    put "Restoring scripts from behaviors to controls for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
    
-   put empty into restoreDuplicateScripts
-   put empty into restoreScriptedObjects
-   put empty into followChainBehaviors
-   
    repeat for each line tID in idList
       if the behavior of tID is empty then next repeat
-      put the long id of the behavior of tID into tBID
-      if restoreDuplicateScripts is empty and behaviorMap[tBID] is not empty 
-      then put answerF("Restore behaviors to multiple objects, duplicating the scripts?",,,"Restore Them","Skip Them") is "Restore Them" into restoreDuplicateScripts
-      if restoreScriptedObjects is empty and the script of tID is not empty 
-      then put answerF("Restore behaviors to scripted objects, appending the scripts?",,,"Restore Them","Skip Them")  is "Restore Them" into restoreScriptedObjects
-      
+      put the long id of the behavior of tID into tBID      
       if  behaviorMap[tBID] is not empty and not restoreDuplicateScripts then put "skip" into behaviorMap[tBID]
       if behaviorMap[tBID] is "skip" then next repeat
       if  the script of tID is not empty and not restoreScriptedObjects then next repeat
@@ -976,55 +974,51 @@ on restoreFromBehaviors idList
             put "Restoring from behavior:" && the name of tBID & cr after logData
             add 1 to restoreBehaviorCount
          end if
-         if followChainBehaviors is empty and the behavior of tBID is not empty 
-         then put answerF("Restore from all chain behaviors?",,,"Leave them","Restore All") is "Restore All" into followChainBehaviors
          repeat for each line tID in behaviorMap[tBID]
             put "Copying script from" && the name of tBID  && "to" && the name of tID & cr after logData
             add 1 to restoreControlCount
-            set the script of tID to splice(cr & cr,(the script of tID),(the script of tBID))
-            if the behavior of tBID is empty
-            then set the behavior of tID to empty
-            else if not followChainBehaviors or behaviorMap[the long id of the behavior of tBID] is "skip"
-            then set the behavior of tID to the long id of the behavior of tBID
-            else put tID & cr after behaviorMap[the long id of the behavior of tBID]
+            if justDoIt then set the script of tID to splice(cr & cr,(the script of tID),(the script of tBID))
+            if the behavior of tBID is empty then 
+               if justDoIt then 
+                  set the behavior of tID to empty 
+               end if
+            else if not followChainBehaviors or behaviorMap[the long id of the behavior of tBID] is "skip" then 
+               if justDoIt then 
+                  set the behavior of tID to the long id of the behavior of tBID
+               end if
+            else 
+               put tID & cr after behaviorMap[the long id of the behavior of tBID]
+            end if
          end repeat
          delete variable behaviorMap[tBID]
       end repeat
    end repeat
    put restoreBehaviorCount && "behaviors were restored to" && restoreControlCount && "controls." & cr & "No errors were detected." into logMessage
-   if answerF(logMessage,,,"Done","Put Log Info") is "Put Log Info" then put logMessage & cr & cr & logData
-   
+   return logMessage  & cr & cr & logData
 end restoreFromBehaviors
 
+function convertToUniqueLongIDs idList
+   --also filters for bad ids, missing controls, etc.
+   repeat for each line tID in idList
+      try
+         put 1 into R[the long id of tID]
+      catch someErr
+      end try
+   end repeat
+   return the keys of R
+end convertToUniqueLongIDs
 
 
-function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,stackifyScriptlessObjects,spaceSubstitute
-   -- NOTE: THE ANSWER DIALOGS SEEM TO BE WORKING NOW
-   -- NEVER CALL THIS FROM ANYWHERE WITHOUT A WARNING
-   -- FOR SOME REASON ANSWER DIALOGS IN THIS HANDLER CAUSE IT TO DIE
-   -- HENCE THE COMMENTED DIALOGS BELOW
+function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,stackifyScriptlessObjects,stackifySoSStacks,spaceSubstitute
+   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then return "cancel"
+   put answerf("You should test the command first, which will generate a log file but not change anything.","warning",,"Just Do It","Test and Report") is "Just Do It" into justDoIt
    
-   -- three use cases (which can be done in the same pass)
-   -- 1. An object with no behavior: creates an SoS with the object's script (if any), sets it as the object's behavior
-   -- 2. An object with a button (not stack) behavior, which does not have its own behavior: 
-   -- -- -- creates an SoS with the object's behavior's script, sets it as the object's behavior. Leaves the object's script (if any) in place.
-   -- 3. An object with a stack behavior, or a behavior that has its own behavior: do nothing.
+   put convertToUniqueLongIDs(idList) into idList
    
-   if answerf("This function is for testing purposes only." & cr & cr & "You should only work on a copy of your project.","warning",,"Cancel","I Understand, Proceed") is not "I Understand, Proceed" then exit convertToScriptOnlyStackBehaviors
-   if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then exit convertToScriptOnlyStackBehaviors
    
    -- build a list of the stacks containing the controls
    put uniqueStacksFromIDs(idList) into parentStackList
    put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
-   
-   -- ask the user to select a folder to place the SoS files in
-   --    answer folder "Save Script-Only Stack Files In:"
-   --    if it is empty then exit convertToScriptOnlyStackBehaviors
-   --    put it into targetFolder
-   
-   --    ask "Template for Script-Only Stack Names:" with "the name of me && the id of me"
-   --    if it is empty then exit convertToScriptOnlyStackBehaviors
-   --    put it into sosNameTemplate
    
    -- get a list of the existing file names in that folder & other excluded stack names
    put scriptOnlyStackNamesFromFolderList(targetFolder) into stackNameList
@@ -1034,36 +1028,24 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
    repeat for each line S in parentStackList
       set the itemDelimiter to "/"
       put item 1 to -2 of the filename of stack S into stackFolder
-      if stackFolder is empty then
-         answer warning "All stacks need to be saved to files in order to convert to script-only stack behaviors." with "Cancel"
-         exit convertToScriptOnlyStackBehaviors
-      end if
+      if stackFolder is empty and answerf("All stacks need to be saved to files to convert to script-only stack behaviors.","warning",,"Cancel") is "Cancel" then return S & cr & stackFolder & cr & cr & parentStackList
       set the itemDelimiter to comma
       put relativePath(stackFolder,targetFolder) into stackRelativePath[S]
       if stackRelativePath[S] is not empty then put "/" after stackRelativePath[S]
-      repeat for each line SF in the stackFiles of stack S
-         put item 2 of SF into stackFileArray[S][item 1 of SF]
-      end repeat
    end repeat
    
-   --put empty into stackifyScriptlessObjects
    
    repeat for each line tID in idList
-      put the long id of tID into lID
-      if soStackName[lID] is not empty then next repeat
-      
-      --       if stackifyScriptlessObjects is empty and the script of lID is empty
-      --       then put answerf("Convert objects with no script to script-only stack behaviors?",,,"Convert Them","Skip Them") is "Convert Them" into stackifyScriptlessObjects
-      
-      if stackifyScriptlessObjects or the script of lID is not empty then
-         put safeNameSerial(stackNameList,sosName(sosNameTemplate,lID,spaceSubstitute)) into soStackName[lID]
-         put cr & soStackName[lID] & cr after stackNameList
+      if (stackifyScriptlessObjects or the script of tID is not empty) and (stackifySoSStacks or word 1 of the name of tID is not "stack" or the scriptonly of tID is false) then
+         put safeNameSerial(stackNameList,sosName(sosNameTemplate,tID,spaceSubstitute)) into soStackName[tID]
+         put cr & soStackName[tID] after stackNameList
       else
-         put "skipped" into soStackName[lID]
+         put "skipped" into soStackName[tID]
       end if
    end repeat
    
    put empty into scriptForSoSBehaviors
+   put empty into scriptForScriptDeletions
    
    put 0 into skippedControlCount
    put 0 into soStackCreatedCount
@@ -1078,21 +1060,22 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
       
       -- -- -- write everything to the file
       put targetFolder & "/" & soStackName[tID] & ".livecodescript" into sosFilePath
-      if there is a file sosFilePath then
-         answer warning "Something went wrong. There has been a file name duplication:" && soStackName[tID] & ".livecodescript" & cr & "Conversion is incomplete." with "OK"
-         exit convertToScriptOnlyStackBehaviors
-      end if
-      put sosScript into url ("file:/" & sosFilePath)
+      if there is a file sosFilePath then return answerf("Something went wrong. There has been a file name duplication:" && soStackName[tID] & ".livecodescript" & cr & "Conversion is incomplete.","warning",,"Cancel")
+      if justDoIt then put sosScript into url ("file:/" & sosFilePath)
       put cr & "Wrote the script of:" & cr & "    " & tID & cr & "to script-only stack:" & cr & "    " & sosFilePath & cr after logData
-      set the script of tID to empty
-      put "Deleted the script of:" & cr & "    " & tID & cr after logData
+      try
+         if justDoIt then set the script of tID to empty
+         put "Deleted the script of:" & cr & "    " & tID & cr after logData
+      catch someErr
+         put "Failed to delete the script of:" & cr & "    " & tID & cr after logData
+         put "set the script of" && tID && "to empty" after scriptForScriptDeletions
+      end try
       -- -- if the stack name is not in the stackFiles for the control's stack
       put the short name of (word -2 to -1 of tID) into stackName
-      -- if stackFileArray[stackName][soStackName[tID]] is empty then -- don't think this can ever be false
       -- -- -- add the stack name to the control's stack's stackFiles
-      put stackRelativePath[stackName] & soStackName[tID] & ".livecodescript" into stackFileArray[stackName][soStackName[tID]]
-      set the stackFiles of stack stackName to (the stackFiles of stack stackName) & cr & soStackName[tID],stackFileArray[stackName][soStackName[tID]]
-      put "Added to the stackFiles of stack" && Q(stackName) & ":" & cr & "    " & soStackName[tID],stackFileArray[stackName][soStackName[tID]] & cr after logData
+      put stackRelativePath[stackName] & soStackName[tID] & ".livecodescript" into stackFilePath
+      if justDoIt then set the stackFiles of stack stackName to (the stackFiles of stack stackName) & cr & soStackName[tID],stackFilePath
+      put "Added to the stackFiles of stack" && Q(stackName) & ":" & cr & "    " & soStackName[tID],stackFilePath & cr after logData
       -- end if
       --put the long id of stack soStackName[tID] into behaviorMap[tID]
    end repeat
@@ -1107,37 +1090,44 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
       then put "stack" && Q(soStackName[the long id of tNewBehavior]) into tNewBehavior
       if soStackName[tID] is not "skipped" then
          if tNewBehavior is not empty then
-            set the behavior of stack soStackName[tID] to the long id of tNewBehavior
+            if justDoIt then set the behavior of stack soStackName[tID] to the long id of tNewBehavior
+            put "Set the behavior of stack" && Q(soStackName[tID]) && "to:" & cr & "    " & tNewBehavior & cr after logData
             add 1 to sosBehaviorCount
             put format("set the behavior of stack \"%s\" to the long id of %s\n",soStackName[tID],tNewBehavior) after scriptForSoSStackBehaviors
          end if
-         put the long id of stack soStackName[tID] into tNewBehavior
+         if justDoIt 
+         then put the long id of stack soStackName[tID] into tNewBehavior
+         else put "stack" && Q(soStackName[tID]) into tNewBehavior
       end if
       if tNewBehavior is not the behavior of tID then
-         set the behavior of tID to the long id of tNewBehavior
+         if justDoIt then set the behavior of tID to the long id of tNewBehavior
+         put "Set the behavior of" && tID && "to:" & cr & "    " & tNewBehavior & cr after logData
+         
          add 1 to behaviorSetCount
       end if
    end repeat
    
-   put logMessage & cr & cr & logData into returnData
-   if scriptForSoSStackBehaviors is not empty then put cr & cr & "Use this script to set behaviors for script-only stacks:" & cr & cr & scriptForSoSStackBehaviors after returnData
-   return returnData
-   
    
    put soStackCreatedCount && "script-only stacks were created." & cr & \
          "Set" && behaviorSetCount && "behaviors for controls and script-only stacks." & cr & \
-         iff(stackifyScriptlessObjects,"",skippedControlCount && "controls skipped because of no script." & cr) & \
-         iff(sosBehaviorCount = 0,"",sosBehaviorCount && "script-only stacks with behaviors." & cr) & \
+         iff(not stackifyScriptlessObjects,skippedControlCount && "controls skipped because of no script." & cr) & \
+         iff(sosBehaviorCount > 0,"Set" && sosBehaviorCount && "behaviors for script-only stacks." & cr) & \
          "No errors were detected." into logMessage
-   if scriptForSoSStackBehaviors is not empty then put "Put Log Info & SoS Behavior Script" into yesButton else put "Put Log Info" into yesButton
-   answer logMessage with "Done" or yesButton
-   if it is yesButton then 
-      put logMessage & cr & cr & logData into putData
-      if scriptForSoSStackBehaviors is not empty then put cr & cr & "Use this script to set behaviors for script-only stacks:" & cr & cr & scriptForSoSStackBehaviors after putData
-      put putData
-   end if
+   put logMessage & cr & cr & logData into returnData
+   if scriptForSoSStackBehaviors is not empty then put cr & cr & "Use this script to set behaviors for script-only stacks:" & cr & cr & scriptForSoSStackBehaviors after returnData
+   if scriptForScriptDeletions is not empty then put cr & cr & "Use this script to delete scripts that failed to delete:" & cr & cr & scriptForScriptDeletions after returnData
+   if not justDoIt then put "THIS IS A TEST REPORT. NOTHING WAS ACTUALLY CHANGED." & cr & cr before returnData
+   return returnData
    
 end convertToScriptOnlyStackBehaviors
+
+on showScriptConversion tIDList
+   put tIDList into fld "id list convert" of stack "revBehavior Conversion"
+   send "menuPick" && "Convert" to btn "Tab Menu" of stack "revBehavior Conversion"
+   set the minWidth of stack "revBehavior Conversion" to 520
+   set the minHeight of stack "revBehavior Conversion" to 370
+   palette stack "revBehavior Conversion"
+end showScriptConversion
 
 function relativePath P1,P2
    -- returns the relative path from P1 to P2
@@ -1884,8 +1874,3 @@ function stitchPaths P1,P2
    if char 1 of P2 is "/" then delete char 1 of P2
    return P1 & "/" & P2
 end stitchPaths
-
-
-on mobileStandaloneSaved pTargetType, pAppBundle
-
-end mobileStandaloneSaved

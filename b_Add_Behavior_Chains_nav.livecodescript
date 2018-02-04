@@ -1,0 +1,1 @@
+script "b_Add_Behavior_Chains_nav"on mouseUp   put addBehaviorChains(fld "id list convert") into fld "id list convert"end mouseUp
