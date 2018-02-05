@@ -369,12 +369,17 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
-   --put dragStarted && externalDrag && ticks()
+   --put "list" && dragStarted && externalDrag && ticks()
    if dragStarted then 
       --put ticks()
       trackReorder X,Y 
    else if externalDrag then
-      dispatch "trackMovement" to this cd of stack "revDragRep"
+      if the mouse is "down" then 
+         dispatch "trackMovement" to this cd of stack "revDragRep"
+      else
+         cleanUpExternalDrag
+         stackCleanUpExternalDrag
+      end if
    else if tDragListClickLine > 0 then 
       startDragging X,Y
    end if
@@ -388,8 +393,8 @@ after mouseUp
 end mouseUp
 
 after mouseRelease
+   --put "mouseRelease" && ticks() && the mouse
    if the mouse is "down" then exit mouseRelease
-   put "mouseRelease" && ticks() && the mouse
    if dragStarted then finishReorder 
    cleanUp
    cleanUpExternalDrag
@@ -460,6 +465,7 @@ on trackReorder X,Y
       cleanUp
       dispatch "startDragging" to this cd of stack "revDragRep" with getID(tDragList) 
       put true into externalDrag
+      stackStartExternalDrag
       exit trackReorder
    end if
    set the topLeft of theDraggerID to (X - item 1 of the clickLoc + the left of me),(Y - vDraggerOffset)

@@ -13,7 +13,7 @@ local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 
 
 on openStack
-   if word 1 of the short name of this stack is not "revNavigator" then exit openStack
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit openStack
    put false into sSetupComplete
    doSetup
 end openStack
@@ -59,7 +59,7 @@ end doSetup
 
 on closeStack
    if the filename of me is empty then exit closeStack
-   if word 1 of the short name of this stack is not "revNavigator" then exit closeStack
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit closeStack
    put the navigatorStackFileVersion of me into sStackFileVersion
    --send "cleanMyControlSets" to btn "Actions"
    set the customPropertySet of me to "gSBControlSetsProp"
@@ -91,26 +91,26 @@ end setLCVersion
 
 
 on revPreOpenCard
-   if word 1 of the short name of this stack is not "revNavigator" then exit revPreOpenCard
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit revPreOpenCard
    if sSetupComplete is not false then updateDisplay
 end revPreOpenCard
 
 
 on revPreOpenStack
-   if word 1 of the short name of this stack is not "revNavigator" then exit revPreOpenStack
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit revPreOpenStack
    if sSetupComplete is not false then updateDisplay
 end revPreOpenStack
 
 
 on revResumeStack
-   if word 1 of the short name of this stack is not "revNavigator" then exit revResumeStack
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit revResumeStack
    if sSetupComplete is not false then updateDisplay
 end revResumeStack
 
 
 on revSelectedObjectChanged
    --put "revSelectedObjectChanged" && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
-   if word 1 of the short name of this stack is not "revNavigator" then exit revSelectedObjectChanged
+   if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit revSelectedObjectChanged
    
    if sSetupComplete is not false then updateListSelection
 end revSelectedObjectChanged
@@ -930,12 +930,19 @@ end mouseLeave
 
 
 on mouseMove
-   if externalDrag then dispatch "trackMovement" to this cd of stack "revDragRep"
+   if externalDrag then 
+      if the mouse is "down" then 
+         dispatch "trackMovement" to this cd of stack "revDragRep"
+      else
+         dispatch "cleanUpExternalDrag" to fld "List"
+         stackCleanUpExternalDrag
+      end if
+   end if
 end mouseMove
 
 on mouseRelease
+   --put "mouseRelease stack" && ticks() && the mouse
    if the mouse is "down" then exit mouseRelease
-   put "mouseRelease stack" && ticks() && the mouse
    dispatch "cleanUpExternalDrag" to fld "List"
    stackCleanUpExternalDrag
 end mouseRelease
