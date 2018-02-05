@@ -20,7 +20,9 @@ on menuPick pWhich
          clone this stack
          --put "Navigator Clone" into fld "Navigator Title" of it
          set the backgroundcolor of grc "navTitleBar" of it to "180,180,180"
-         put "revNavigator" && ticks() into sName
+         if the optionKey is "down"
+         then put "Navigator" && ticks() into sName
+         else put "revNavigator" && ticks() into sName
          set the name of it to sName
          repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
             do "put" && V & "[the short name of this stack] into" && V & "[sName]"

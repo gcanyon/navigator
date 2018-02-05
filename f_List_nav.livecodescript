@@ -342,6 +342,7 @@ local vDraggerOffset        #THE VERTICAL OFFSET FOR POSITIONING _DRAGGER
 local thePointerID          #THE ID OF THE POINTER GRAPHIC
 local theDraggerID          #THE ID OF THE DRAGGER IMAGE
 local startDraggingCount
+local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 --local mouseMoveCounter
 
 before mouseDown
@@ -368,9 +369,12 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
+   --put dragStarted && externalDrag && ticks()
    if dragStarted then 
       --put ticks()
       trackReorder X,Y 
+   else if externalDrag then
+      dispatch "trackMovement" to this cd of stack "revDragRep"
    else if tDragListClickLine > 0 then 
       startDragging X,Y
    end if
@@ -378,12 +382,18 @@ after mouseMove X,Y
 end mouseMove
 
 after mouseUp
+   put "mouseUp" && ticks() && the mouse
    if dragStarted then finishReorder else if tDragListClickLine > 0 then cleanUp fieldClickLine
+   cleanUpExternalDrag
 end mouseUp
 
 after mouseRelease
+   if the mouse is "down" then exit mouseRelease
+   put "mouseRelease" && ticks() && the mouse
    if dragStarted then finishReorder 
    cleanUp
+   cleanUpExternalDrag
+   stackCleanUpExternalDrag
 end mouseRelease
 
 after selectionChanged
@@ -405,9 +415,16 @@ on cleanUp restoreLine
    if restoreLine is not empty then restoreHilites restoreLine
    put 0 into tDragListClickLine
    put false into dragStarted
+   
    if there is a thePointerID then delete thePointerID
    if there is a theDraggerID then delete theDraggerID
+   --put ticks()
 end cleanUp
+
+on cleanUpExternalDrag
+   if externalDrag then dispatch "finishDrag" to this cd of stack "revDragRep"
+   put false into externalDrag
+end cleanUpExternalDrag
 
 on restoreHilites H
    put the scroll of me into S
@@ -441,6 +458,8 @@ end startDragging
 on trackReorder X,Y
    if not (X,Y is within noFlyRect) then 
       cleanUp
+      dispatch "startDragging" to this cd of stack "revDragRep" with getID(tDragList) 
+      put true into externalDrag
       exit trackReorder
    end if
    set the topLeft of theDraggerID to (X - item 1 of the clickLoc + the left of me),(Y - vDraggerOffset)
@@ -450,8 +469,8 @@ on trackReorder X,Y
    put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
    set the top of thePointerID to pointerTop
    set the points of thePointerID to the points of thePointerID
-      --if the optionkey is down then set the topLeft of thePointerID to X,(Y+20)
-
+   --if the optionkey is down then set the topLeft of thePointerID to X,(Y+20)
+   
    --put X,Y && noFlyRect && the vis of thePointerID && pointerTop & cr & the top of thePointerID & cr & the points of thePointerID
 end trackReorder
 

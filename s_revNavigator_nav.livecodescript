@@ -9,6 +9,7 @@ global gSBWhichBackground, gSBWhichCard, gSBWhichStack
 local sDisableCount, sDoUpdateDisplayCount, sHilitedIDList, sHilitedLineList, sLines
 local sSetupComplete, sStackFileVersion, sUpdatingRevSelection, sWindowLoc
 local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObjectCount,navLastFieldUpdate
+local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 
 
 on openStack
@@ -926,6 +927,27 @@ end setNavRect
 
 on mouseLeave
 end mouseLeave
+
+
+on mouseMove
+   if externalDrag then dispatch "trackMovement" to this cd of stack "revDragRep"
+end mouseMove
+
+on mouseRelease
+   if the mouse is "down" then exit mouseRelease
+   put "mouseRelease stack" && ticks() && the mouse
+   dispatch "cleanUpExternalDrag" to fld "List"
+   stackCleanUpExternalDrag
+end mouseRelease
+
+on stackCleanUpExternalDrag
+   put false into externalDrag
+end stackCleanUpExternalDrag
+
+on stackStartExternalDrag
+   put true into externalDrag
+end stackStartExternalDrag
+
 
 
 function theHilitedIDs
@@ -1876,6 +1898,7 @@ on doCodeN1 S,xIDList,yID
       end try
    end repeat
 end doCodeN1
+
 
 function stitchPaths P1,P2
    set the itemdelimiter to "/"
