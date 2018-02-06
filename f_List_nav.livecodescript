@@ -374,12 +374,12 @@ after mouseMove X,Y
       --put ticks()
       trackReorder X,Y 
    else if externalDrag then
-      if the mouse is "down" then 
-         dispatch "trackMovement" to this cd of stack "revDragRep"
-      else
-         cleanUpExternalDrag
-         stackCleanUpExternalDrag
-      end if
+      -- if the mouse is "down" then 
+      dispatch "trackMovement" to this cd of stack "revDragRep"
+      -- else
+     -- cleanUpExternalDrag
+      --stackCleanUpExternalDrag
+      --end if
    else if tDragListClickLine > 0 then 
       startDragging X,Y
    end if
@@ -387,18 +387,21 @@ after mouseMove X,Y
 end mouseMove
 
 after mouseUp
-   put "mouseUp" && ticks() && the mouse
+   --put "mouseUp" && ticks() && the mouse
    if dragStarted then finishReorder else if tDragListClickLine > 0 then cleanUp fieldClickLine
-   cleanUpExternalDrag
+   if externalDrag then cleanUpExternalDrag
 end mouseUp
 
 after mouseRelease
    --put "mouseRelease" && ticks() && the mouse
-   if the mouse is "down" then exit mouseRelease
-   if dragStarted then finishReorder 
-   cleanUp
-   cleanUpExternalDrag
-   stackCleanUpExternalDrag
+   --if the mouse is "down" then exit mouseRelease
+   if dragStarted then 
+      finishReorder 
+      set the hScrollbar of me to true
+      cleanUp
+   end if
+   if externalDrag then cleanUpExternalDrag true
+   --stackCleanUpExternalDrag
 end mouseRelease
 
 after selectionChanged
@@ -426,8 +429,9 @@ on cleanUp restoreLine
    --put ticks()
 end cleanUp
 
-on cleanUpExternalDrag
-   if externalDrag then dispatch "finishDrag" to this cd of stack "revDragRep"
+on cleanUpExternalDrag notifyRevDragRep
+   if notifyRevDragRep and the vis of stack "revDragRep" then dispatch "finishDrag" to this cd of stack "revDragRep"
+   set the hScrollbar of me to true
    put false into externalDrag
 end cleanUpExternalDrag
 
@@ -447,6 +451,7 @@ on startDragging X,Y
    --put startDraggingCount && ticks()
    if abs(X - item 1 of the clickLoc)  < the dragDelta and abs(Y - item 2 of the clickLoc) < the dragDelta then exit startDragging
    put true into dragStarted
+   set the hScrollbar of me to false
    --put ticks()
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
@@ -463,9 +468,9 @@ end startDragging
 on trackReorder X,Y
    if not (X,Y is within noFlyRect) then 
       cleanUp
-      dispatch "startDragging" to this cd of stack "revDragRep" with getID(tDragList) 
+      dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),getID(tDragList)
       put true into externalDrag
-      stackStartExternalDrag
+      --stackStartExternalDrag
       exit trackReorder
    end if
    set the topLeft of theDraggerID to (X - item 1 of the clickLoc + the left of me),(Y - vDraggerOffset)

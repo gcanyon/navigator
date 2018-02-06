@@ -21,6 +21,9 @@ local tClickedID -- the id of the object the user clicked on
 local sSearchString -- the search string for finding in enclosed scripts
 local sCondition -- the condition for finding enclosed by test
 
+local sClickedID -- new local to store universally within this script the id that was clicked
+local sHighlightedList -- new local to store universally within this script the ids highlighted when click occurred
+
 on menuPick pWhich
    --global gRevDevelopment;put true into gRevDevelopment
    --breakpoint
@@ -31,6 +34,9 @@ on menuPick pWhich
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
    put getID(tClickedLine) into tClickedID
    switch pWhich
+      case "Export to Behaviors"
+         get convertToScriptOnlyStackBehaviorsAutomatic(sHighlightedList)
+         break
       case "Edit Behavior Script"
       case "Edit Behavior Scripts"
          editObjectScripts ,true
@@ -509,19 +515,40 @@ end reportScripts
 on prepareItems
    put the hilitedLines of fld "list" into tLines
    put getID(tLines) into tIDList
+   put tIDList into sHighlightedList -- local to store universally within this script the ids highlighted when click occurred
+   put word 2 of the clickLine into tClickedLine
+   if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
+   put getID(tClickedLine) into sClickedID --  local to store universally within this script the id that was clicked
+
+   
+   
    put the basicItems of btn "popup" into tItems
    put gSBCustomCommands after tItems
    put true into allBehaviors
    put true into tContainer
    put word 1 of tIDList into tObjectType
    put true into noCardStack
+   put true into exportToBehaviors
    repeat for each line tID in tIDList
       if tObjectType is not "mixed" and word 1 of tID is not tObjectType then put "mixed" into tObjectType
       if allBehaviors and the behavior of tID is empty then put false into allBehaviors
+      if exportToBehaviors and the behavior of tID is not empty then put false into exportToBehaviors
       if tContainer and word 1 of tID is not among the items of "card,stack,group" then put false into tContainer
       if noCardStack and word 1 of tID is among the items of "card,stack" then put false into noCardStack
-      if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack then exit repeat
+      if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack  and  not exportToBehaviors then exit repeat
    end repeat
+   if exportToBehaviors then
+      put uniqueStacksFromIDs(tIDList) into parentStackList
+      repeat for each line stackName in parentStackList
+         put the customPropertySet of stack stackName into prevSet
+         set the customPropertySet of stack stackName to "navSoStackSettings"
+         put the customproperties of stack stackName into templateArray[stackName]
+         set the customPropertySet of stack stackName to prevSet
+         if templateArray[stackName]["template"] is not empty then next repeat
+         put false into exportToBehaviors
+         exit repeat
+      end repeat
+   end if
    if tContainer and tObjectType is "mixed" then put "container" into tObjectType
    if the number of items of tLines > 1 then put "multi" before tObjectType
    put true into noStacks
@@ -554,6 +581,7 @@ on prepareItems
    else if item -1 of tLines <= the separatorLine of fld "list" then
       put the bookmarkItems of me before tItems
    end if
+   if exportToBehaviors then put "Export to Behaviors" & cr before tItems
    if tCopiedType is "button" then put "Set Copied Btn as Behavior" & cr before tItems
    -- put tObjectType && tCopiedType
    put tObjectType & "Items" into uProp1

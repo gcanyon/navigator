@@ -1,6 +1,7 @@
 ﻿script "c_card_id_1002_nav"
 on resizeStack pNewWidth, pNewHeight
    set the rect of fld "id list convert" to 0,300,pNewWidth,pNewHeight
+   set the right of button "Set as template for this/these stack(s)" to pNewWidth - 10
    set the rect of fld "id list restore" to 0,195,pNewWidth,pNewHeight
    set the rect of fld "log" to 0,70,pNewWidth,pNewHeight
    set the rect of fld "Behavior Folder" to 1,(the top of fld "Behavior Folder"),pNewWidth - 1,(the bottom of fld "Behavior Folder")

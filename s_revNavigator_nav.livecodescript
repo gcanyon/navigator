@@ -929,31 +929,31 @@ on mouseLeave
 end mouseLeave
 
 
-on mouseMove
-   if externalDrag then 
-      if the mouse is "down" then 
-         dispatch "trackMovement" to this cd of stack "revDragRep"
-      else
-         dispatch "cleanUpExternalDrag" to fld "List"
-         stackCleanUpExternalDrag
-      end if
-   end if
-end mouseMove
+-- on mouseMove
+--    if externalDrag then 
+--       if the mouse is "down" then 
+--          dispatch "trackMovement" to this cd of stack "revDragRep"
+--       else
+--          dispatch "cleanUpExternalDrag" to fld "List"
+--          stackCleanUpExternalDrag
+--       end if
+--    end if
+-- end mouseMove
 
-on mouseRelease
-   --put "mouseRelease stack" && ticks() && the mouse
-   if the mouse is "down" then exit mouseRelease
-   dispatch "cleanUpExternalDrag" to fld "List"
-   stackCleanUpExternalDrag
-end mouseRelease
+-- on mouseRelease
+--    --put "mouseRelease stack" && ticks() && the mouse
+--    if the mouse is "down" then exit mouseRelease
+--    dispatch "cleanUpExternalDrag" to fld "List"
+--    stackCleanUpExternalDrag
+-- end mouseRelease
 
-on stackCleanUpExternalDrag
-   put false into externalDrag
-end stackCleanUpExternalDrag
+-- on stackCleanUpExternalDrag
+--    put false into externalDrag
+-- end stackCleanUpExternalDrag
 
-on stackStartExternalDrag
-   put true into externalDrag
-end stackStartExternalDrag
+-- on stackStartExternalDrag
+--    put true into externalDrag
+-- end stackStartExternalDrag
 
 
 
@@ -1037,11 +1037,26 @@ function convertToUniqueLongIDs idList
    return the keys of R
 end convertToUniqueLongIDs
 
-
-function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,stackifyScriptlessObjects,stackifySoSStacks,spaceSubstitute
+function convertToScriptOnlyStackBehaviorsAutomatic idList
+   put convertToUniqueLongIDs(idList) into idList
+   put stackMapFromIDs(idList) into SM
    if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then return "cancel"
-   put answerf("You should test the command first, which will generate a log file but not change anything.","warning",,"Just Do It","Test and Report") is "Just Do It" into justDoIt
-   
+   repeat for each key stackName in SM
+      put the customProperties["navSoStackSettings"] of stack stackName into CP
+      if CP["template"] is empty then next repeat
+      get convertToScriptOnlyStackBehaviors(SM[stackName],CP["behaviorFolder"],CP["template"],true,true,CP["space"],true)
+   end repeat
+   return empty
+end convertToScriptOnlyStackBehaviorsAutomatic
+
+
+function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,stackifyScriptlessObjects,stackifySoSStacks,spaceSubstitute,withoutWarning
+   if withoutWarning then
+      put true into justDoIt
+   else
+      if answerf("This function makes major changes to your project." & cr & cr & "You have backups?","warning",,"Cancel","Yes, Proceed") is not "Yes, Proceed" then return "cancel"
+      put answerf("You should test the command first, which will generate a log file but not change anything.","warning",,"Just Do It","Test and Report") is "Just Do It" into justDoIt
+   end if
    put convertToUniqueLongIDs(idList) into idList
    
    
@@ -1200,6 +1215,14 @@ function uniqueStacksFromIDs idList
    return the keys of stackList
 end uniqueStacksFromIDs
 
+function stackMapFromIDs idList
+   repeat for each line tID in idList
+      put the short name of (word -2 to -1 of tID) into SN
+      if R[SN] is empty then put tID into R[SN] else put cr & tID after R[SN]
+   end repeat
+   return R
+end stackMapFromIDs
+
 function sosName patternString,controlLongID,spaceSubstitute
    return char -90 to -1 of replaceF(space,spaceSubstitute,replaceF(comma,empty,replaceF("/",empty,replaceF(":",empty,replaceF(quote,empty,value(patternString,controlLongID))))))
 end sosName
@@ -1225,7 +1248,7 @@ on editObjectScripts pWhichLine,B
    put getList(false,pWhichLine) into idList
    try
       repeat for each line tID in idList
-         put tID into xID
+         if B and the behavior of tID is not empty then put the behavior of tID into xID else put tID into xID
          repeat until not B or the script of xID is not empty  or the behavior of xID is empty
             put the behavior of xID into xID
          end repeat
@@ -1917,3 +1940,14 @@ function stitchPaths P1,P2
    if char 1 of P2 is "/" then delete char 1 of P2
    return P1 & "/" & P2
 end stitchPaths
+
+on forceNControls pID,N
+   if N = 0 then put 2 into S else put N + 1 into S
+   repeat the number of controls of pID - S + 1
+      delete control S of pID
+   end repeat
+   repeat N - the number of controls of pID
+      clone control 1 of pID
+   end repeat 
+end forceNControls
+
