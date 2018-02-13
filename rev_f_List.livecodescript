@@ -53,14 +53,6 @@ on popit
    if bName is not "popup" then set the menumode of btn bName to "pulldown"
 end popit
 
-on mouseMove
-   if not gSBshowTooltip then exit mouseMove
-   put word 2 of the mouseLine into tKey
-   put getID(tKey) into tID
-   set the tooltip of the target to tID
-end mouseMove
-
-
 on mouseDoubleUp
    put the mouseLoc into XY
    if ticks() > sClickTicks + 60 or abs(item 1 of XY - item 1 of the clickloc) >= the dragdelta or abs(item 2 of XY - item 2 of the clickloc) >= the dragdelta then exit mouseDoubleUp
@@ -190,77 +182,77 @@ on relayerBookmarkList pTargetLine,pLinesToRelayerList
 end relayerBookmarkList
 
 on addBookmarkedControls pLineList,pTargetLine
-  put getID(pLineList) into tLineIDList
-  put the separatorLine of the target into tSeparatorLine
-  put pTargetLine - (tSeparatorLine + 2) into tTargetLayer
-  put getID(tSeparatorLine+1) into tStackRef
-  put the value of word -1 of tStackRef into tStackName
-  put the long id of tStackRef into tStackID
-  if gSBShowList[the short name of this stack] then
-    put getID(pTargetLine) into tCardBGRef
-  else
-    put getID(tSeparatorLine+2) into tCardBGRef
-  end if
-  repeat for each line tID in tLineIDList
-    put word 1 of tID into tType
-    switch tType
-    case "stack"
-      set the mainStack of tID to tStackName
-      break
-    case "card"
-      if word -1 of tID is not word -1 of tStackID then
-        copy tID to tStackRef
-        put it into tNewID
-      else
-        put tID into tNewID
-      end if
-      if gSBShowList[the short name of this stack] and gSBCardOrBackground[the short name of this stack] is "card" then
-        try
-          set the layer of tNewID to tTargetLayer
-        catch pSomeErr
-          set the relayerGroupedControls to true
-          set the layer of tNewID to tTargetLayer
-        end try
-        add 1 to tTargetLayer
-      end if
-      break
-    case "group"
-      --do group here
-      put "background id" && word 3 of tID && word -3 to -1 of tID into tBGID
-      if word -1 of tID is word -1 of tStackID then
-        try
-          place tBGID onto tCardBGRef
-          put tBGID into tNewID
-          put "group" into word 1 of tNewID
-        catch tSomeErr
-        end try
-      else
-        copy tID to tCardBGRef
-        put it into tNewID
-      end if
-      if not gSBShowList[the short name of this stack] then
-        try
-          set the layer of tNewID to tTargetLayer
-        catch pSomeErr
-          set the relayerGroupedControls to true
-          set the layer of tNewID to tTargetLayer
-        end try
-        add ((the number of controls of tNewID)+1) to tTargetLayer
-      end if
-      break
-    default
-      copy tID to tCardBGRef
-      if not gSBShowList[the short name of this stack] then
-        try
-          set the layer of it to tTargetLayer
-        catch pSomeErr
-          set the relayerGroupedControls to true
-          set the layer of it to tTargetLayer
-        end try
-        add 1 to tTargetLayer
-      end if
-    end switch
-  end repeat
+   put getID(pLineList) into tLineIDList
+   put the separatorLine of the target into tSeparatorLine
+   put pTargetLine - (tSeparatorLine + 2) into tTargetLayer
+   put getID(tSeparatorLine+1) into tStackRef
+   put the value of word -1 of tStackRef into tStackName
+   put the long id of tStackRef into tStackID
+   if gSBShowList[the short name of this stack] then
+      put getID(pTargetLine) into tCardBGRef
+   else
+      put getID(tSeparatorLine+2) into tCardBGRef
+   end if
+   repeat for each line tID in tLineIDList
+      put word 1 of tID into tType
+      switch tType
+         case "stack"
+            set the mainStack of tID to tStackName
+            break
+         case "card"
+            if word -1 of tID is not word -1 of tStackID then
+               copy tID to tStackRef
+               put it into tNewID
+            else
+               put tID into tNewID
+            end if
+            if gSBShowList[the short name of this stack] and gSBCardOrBackground[the short name of this stack] is "card" then
+               try
+                  set the layer of tNewID to tTargetLayer
+               catch pSomeErr
+                  set the relayerGroupedControls to true
+                  set the layer of tNewID to tTargetLayer
+               end try
+               add 1 to tTargetLayer
+            end if
+            break
+         case "group"
+            --do group here
+            put "background id" && word 3 of tID && word -3 to -1 of tID into tBGID
+            if word -1 of tID is word -1 of tStackID then
+               try
+                  put tBGID into tNewID
+                  put "group" into word 1 of tNewID
+                  place tBGID onto tCardBGRef
+               catch tSomeErr
+               end try
+            else
+               copy tID to tCardBGRef
+               put it into tNewID
+            end if
+            if not gSBShowList[the short name of this stack] then
+               try
+                  set the layer of tNewID to tTargetLayer
+               catch pSomeErr
+                  set the relayerGroupedControls to true
+                  set the layer of tNewID to tTargetLayer
+               end try
+               add ((the number of controls of tNewID)+1) to tTargetLayer
+            end if
+            break
+         default
+            copy tID to tCardBGRef
+            if not gSBShowList[the short name of this stack] then
+               try
+                  set the layer of it to tTargetLayer
+               catch pSomeErr
+                  set the relayerGroupedControls to true
+                  set the layer of it to tTargetLayer
+               end try
+               add 1 to tTargetLayer
+            end if
+      end switch
+   end repeat
 end addBookmarkedControls
 
 on placeGroupOntoCards pWhichLine,tObjectList
@@ -338,11 +330,11 @@ local myLineCount           #THE NUMBER OF LINES IN THE FIELD
 local fieldClickLine        #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE FIELD
 local tDragListClickLine    #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE HILITEDLINES
 local myTH                  #THE EFFECTIVE TEXT HEIGHT OF THE FIELD
-local vDraggerOffset        #THE VERTICAL OFFSET FOR POSITIONING _DRAGGER
 local thePointerID          #THE ID OF THE POINTER GRAPHIC
 local theDraggerID          #THE ID OF THE DRAGGER IMAGE
 local startDraggingCount
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
+local sNavWindowRectList   #A LIST OF OPEN NAVIGATOR WINDOWS THAT MIGHT BE DRAGGED TO
 --local mouseMoveCounter
 
 before mouseDown
@@ -350,8 +342,6 @@ before mouseDown
    put word 2 of the clickLine into fieldClickLine
    set the wholeMatches to true
    put itemOffset(fieldClickline,tDragList) into tDragListClickLine
-   --    put fieldClickline && tDragList && tDragListClickLine into tTattle
-   --    send "tattle" && tTattle to me in 2 seconds
    
    if tDragListClickLine > 0 then restoreHilites tDragList
 end mouseDown
@@ -374,12 +364,7 @@ after mouseMove X,Y
       --put ticks()
       trackReorder X,Y 
    else if externalDrag then
-      -- if the mouse is "down" then 
       dispatch "trackMovement" to this cd of stack "revDragRep"
-      -- else
-     -- cleanUpExternalDrag
-      --stackCleanUpExternalDrag
-      --end if
    else if tDragListClickLine > 0 then 
       startDragging X,Y
    end if
@@ -446,24 +431,40 @@ on dTattle M
    send "tattle" & M to me in 2 seconds
 end dTattle
 
+
+
 on startDragging X,Y
    add 1 to startDraggingCount
    --put startDraggingCount && ticks()
    if abs(X - item 1 of the clickLoc)  < the dragDelta and abs(Y - item 2 of the clickLoc) < the dragDelta then exit startDragging
    put true into dragStarted
    set the hScrollbar of me to false
+   put navWindowRects() into sNavWindowRectList
    --put ticks()
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
    put the number of lines of myHTMLtext into myLineCount
-   put the effective textHeight of me into myTH
-   put max(1,min(item 2 of the clickLoc - the top of me,tDragListClickLine * myTH + item 2 of the clickLoc - item 4 of the formattedrect of line fieldClickLine of me)) into vDraggerOffset
+   put the effective textHeight of me + 1 into myTH
    lock screen
    --put "made it! 1" && startDraggingCount && ticks()
    put newPointer() into thePointerID
    put newDragger() into theDraggerID
    trackReorder X,Y
 end startDragging
+
+on startDraggingExternal tExternalDraggerID,gX,gY
+   lock screen
+   put newPointer() into thePointerID
+   copy tExternalDraggerID to this cd of stackNameFromID(the long id of me)
+   put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
+   put the number of lines of me into myLineCount
+   put the effective textHeight of me + 1 into myTH
+   trackReorderExternal gX,gY
+end startDraggingExternal
+
+on trackReorderExternal gX,gY
+   
+end trackReorderExternal
 
 on trackReorder X,Y
    if not (X,Y is within noFlyRect) then 
@@ -472,7 +473,7 @@ on trackReorder X,Y
       put true into externalDrag
       exit trackReorder
    end if
-   set the topLeft of theDraggerID to (X - item 1 of the clickLoc + the left of me),(Y - vDraggerOffset)
+   set the topLeft of theDraggerID to (X + 8),(Y + 8)
    
    autoScrollTheField
    put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .5))) into targetLine

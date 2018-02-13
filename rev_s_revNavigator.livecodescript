@@ -1225,14 +1225,19 @@ end scriptOnlyStackNamesFromFolderList
 
 function uniqueStacksFromIDs idList
    repeat for each line tID in idList
-      add 1 to stackList[the short name of (word -2 to -1 of tID)]
+      add 1 to stackList[stackNameFromID(tID)]
    end repeat
    return the keys of stackList
 end uniqueStacksFromIDs
 
+function stackNameFromID tID
+   if word -5 of tID is "stack" then return word -5 to -4 of tID
+   return the name of stack (word -2 to -1 of tID)
+end stackNameFromID
+
 function stackMapFromIDs idList
    repeat for each line tID in idList
-      put the short name of (word -2 to -1 of tID) into SN
+      put the short name of stackNameFromID(tID) into SN
       if R[SN] is empty then put tID into R[SN] else put cr & tID after R[SN]
    end repeat
    return R
@@ -1679,6 +1684,16 @@ end appendWithoutDupes
 function navStack
   return "revNavigator"
 end navStack
+
+function navWindowRects includeCollapsed,includeHidden
+   repeat for each line W in the windows
+      if word 1 of W is not among the items of "revNavigator,Navigator" then next repeat
+      if not (the vis of stack W or includeHidden) then next repeat
+      if not (not the cIAmHidden of stack W or includeCollapsed) then next repeat
+      put (the rect of stack W) && W & cr after R
+   end repeat
+   return char 1 to -2 of R
+end navWindowRects
 
 
 function deDupe L,D
