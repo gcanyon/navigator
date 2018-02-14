@@ -334,6 +334,7 @@ local thePointerID          #THE ID OF THE POINTER GRAPHIC
 local theDraggerID          #THE ID OF THE DRAGGER IMAGE
 local startDraggingCount
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
+local externalDragNav        #SET TO TRUE WHEN A DRAG ENTERS ANOTHER NAV WINDOW
 local sNavWindowRectList   #A LIST OF OPEN NAVIGATOR WINDOWS THAT MIGHT BE DRAGGED TO
 --local mouseMoveCounter
 
@@ -359,34 +360,34 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
-   --put "list" && dragStarted && externalDrag && ticks()
-   if dragStarted then 
-      --put ticks()
-      trackReorder X,Y 
-   else if externalDrag then
-      dispatch "trackMovement" to this cd of stack "revDragRep"
+   --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
+   if externalDrag then
+      if (X,Y is within noFlyRect) then
+         unTidyUp X,Y
+      else 
+         dispatch "trackMovement" to this cd of stack "revDragRep"
+      end if
+   else if dragStarted then 
+      trackReorder X,Y  
    else if tDragListClickLine > 0 then 
       startDragging X,Y
    end if
-   -- send "tattle" && dragStarted && tDragListClickLine to me in 2 seconds
 end mouseMove
 
 after mouseUp
-   --put "mouseUp" && ticks() && the mouse
    if dragStarted then finishReorder else if tDragListClickLine > 0 then cleanUp fieldClickLine
-   if externalDrag then cleanUpExternalDrag
+   -- if externalDrag then cleanUpExternalDrag
+   cleanUpExternalDrag
 end mouseUp
 
 after mouseRelease
-   --put "mouseRelease" && ticks() && the mouse
-   --if the mouse is "down" then exit mouseRelease
    if dragStarted then 
       finishReorder 
       set the hScrollbar of me to true
-      cleanUp
    end if
-   if externalDrag then cleanUpExternalDrag true
-   --stackCleanUpExternalDrag
+   cleanUp
+   -- if externalDrag then cleanUpExternalDrag true
+   cleanUpExternalDrag externalDrag
 end mouseRelease
 
 after selectionChanged
@@ -413,6 +414,27 @@ on cleanUp restoreLine
    if there is a theDraggerID then delete theDraggerID
    --put ticks()
 end cleanUp
+
+on tidyUp -- for when the pointer leaves the window during a drag, but might come back
+   put true into externalDrag
+   if there is a thePointerID then hide thePointerID
+   if there is a theDraggerID then hide theDraggerID
+   dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),getID(tDragList)
+end tidyUp
+
+on unTidyUp X,Y -- for when the pointer re-enters the window after leaving during a drag
+   put false into externalDrag
+   if there is a thePointerID then show thePointerID
+   if there is a theDraggerID then show theDraggerID
+   dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
+   trackReorder X,Y
+end unTidyUp
+
+on cleanUpExternal   
+   if there is a thePointerID then delete thePointerID
+   if there is a theDraggerID then delete theDraggerID
+end cleanUpExternal
+
 
 on cleanUpExternalDrag notifyRevDragRep
    if notifyRevDragRep and the vis of stack "revDragRep" then dispatch "finishDrag" to this cd of stack "revDragRep"
@@ -446,7 +468,7 @@ on startDragging X,Y
    put the number of lines of myHTMLtext into myLineCount
    put the effective textHeight of me + 1 into myTH
    lock screen
-   --put "made it! 1" && startDraggingCount && ticks()
+  -- put "made it! 1" && startDraggingCount && ticks()
    put newPointer() into thePointerID
    put newDragger() into theDraggerID
    trackReorder X,Y
@@ -462,19 +484,28 @@ on startDraggingExternal tExternalDraggerID,gX,gY
    trackReorderExternal gX,gY
 end startDraggingExternal
 
-on trackReorderExternal gX,gY
-   
+function trackReorderExternal gX,gY
+   put the topleft of stackNameFromID(the long id of me) into TL
+   put gX - item 1 of TL into X
+   put gY - item 2 of TL into Y
+   if not (X,Y is within noFlyRect) then
+      cleanUpExternal
+      return "exited"
+   end if
+   set the topLeft of theDraggerID to (X + 8),(Y + 8)
+   autoScrollTheField
+   put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .5))) into targetLine
+   put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
+   set the top of thePointerID to pointerTop
+   set the points of thePointerID to the points of thePointerID
 end trackReorderExternal
 
 on trackReorder X,Y
    if not (X,Y is within noFlyRect) then 
-      cleanUp
-      dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),getID(tDragList)
-      put true into externalDrag
+      tidyUp
       exit trackReorder
    end if
    set the topLeft of theDraggerID to (X + 8),(Y + 8)
-   
    autoScrollTheField
    put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .5))) into targetLine
    put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop

@@ -28,6 +28,29 @@ on debugBroken
    put splice(cr,1,navLineArray[1],2,navLineArray[2],3,navLineArray[3],4,navLineArray[4])
 end debugBroken
 
+function addList SL,TL
+   -- adds the items of SL to TL, repeating if necessary
+   put 1 into i
+   put the number of items of SL into C
+   repeat for each item n in TL
+      put (n + item i of SL) & comma after R
+      add 1 to i
+      if i > C then put 1 into i
+   end repeat
+   return char 1 to -2 of R
+end addList
+
+function subtractList SL,TL
+   put 1 into i
+   put the number of items of SL into C
+   repeat for each item n in TL
+      put (n - item i of SL) & comma after R
+      add 1 to i
+      if i > C then put 1 into i
+   end repeat
+   return char 1 to -2 of R
+end subtractList
+
 on doSetup
    if the short name of this stack is "revNavigator" then 
       setVisNavigator true
@@ -1225,7 +1248,7 @@ end scriptOnlyStackNamesFromFolderList
 
 function uniqueStacksFromIDs idList
    repeat for each line tID in idList
-      add 1 to stackList[stackNameFromID(tID)]
+      add 1 to stackList[the short name of stackNameFromID(tID)]
    end repeat
    return the keys of stackList
 end uniqueStacksFromIDs
@@ -1234,6 +1257,7 @@ function stackNameFromID tID
    if word -5 of tID is "stack" then return word -5 to -4 of tID
    return the name of stack (word -2 to -1 of tID)
 end stackNameFromID
+
 
 function stackMapFromIDs idList
    repeat for each line tID in idList
