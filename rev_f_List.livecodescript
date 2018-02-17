@@ -1,4 +1,4 @@
-﻿script "rev_f_List"
+script "rev_f_List"
 global gLastLineClicked
 global gSBWhichStack,gSBWhichCard,gSBlastHilitedLines,gSBshowTooltip
 global gSBCustomCommands -- the menu of custom commands available
@@ -568,12 +568,13 @@ on finishReorderExternal idList
    if targetLine <= tSeparatorLine + 1 then -- drag into bookmarks
       setBookmarks targetLine,idList
    else -- drag into live display
+ put getCardOrBGid() into tTargetContainer
       repeat for each line tID in idList
-         --copy tID to 
+         copy tID to tTargetContainer
+         put it & cr after tDragList
       end repeat
-   end if
-   
-   
+  dispatch "dragLines" to me with tDragList,targetLine -- may not be right
+   end if   
 end finishReorderExternal
 
 on finishReorder
@@ -600,6 +601,9 @@ on finishReorder
    put the hilitedLines of me into tDragList
 end finishReorder
 
+on dragLines pDragList,pTargetLine
+   -- put pDragList & cr & pTargetLine
+end dragLines
 
 function newPointer
    put left of me + 2 into L
