@@ -290,7 +290,7 @@ on startDragging tCallerID,tIDList
    unlock screen
 end startDragging
 
-on trackMovement
+function trackMovement
    cancel sTargetMessage
    put empty into targetID
    put the screenmouseLoc into SML
@@ -326,6 +326,7 @@ on trackMovement
          if word 1 of pID is empty then targetContainer 0,"windows" else targetContainer 0,pID
       end if
    end if
+   return sTargetID
 end trackMovement
 
 

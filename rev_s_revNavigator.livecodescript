@@ -582,7 +582,7 @@ end QQ
 
 function getCardOrBGid tStackID
    local N, tReturnID
-   
+   if tStackID is empty then put gSBWhichStack[the short name of this stack] into tStackID
    put the short name of this stack into N
    if gSBCardOrBackground[N] is "card" then
       if gSBWhichCard[N] is "this card" then
@@ -607,6 +607,10 @@ function getCardOrBGid tStackID
    end if
 end getCardOrBGid
 
+function testFunction
+   return "FML"
+end testFunction
+
 
 on setBookmarks pWhichLine,pIDList
    local tAddList, tCheckScripts, tColor, tEndString, tKey
@@ -624,10 +628,7 @@ on setBookmarks pWhichLine,pIDList
    end if
    set the wholeMatches to true
    put empty into tAddList
-   
-   
    put the ColorScriptedObjects of this stack into tCheckScripts
-   
    put "<p><font color=" & quote & the pColorDefault of this stack & quote & "><a name=" & quote into tColor[false]
    put "<p><font color=" & quote & the pColorScriptedObject of this stack & quote & "><a name=" & quote into tColor[true]
    put "</a></font></p>" & cr into tEndString

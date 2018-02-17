@@ -334,8 +334,9 @@ local thePointerID          #THE ID OF THE POINTER GRAPHIC
 local theDraggerID          #THE ID OF THE DRAGGER IMAGE
 local startDraggingCount
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
-local externalDragNav        #SET TO TRUE WHEN A DRAG ENTERS ANOTHER NAV WINDOW
+local navigatorDragID        #SET TO THE ID WHEN A DRAG ENTERS ANOTHER NAV WINDOW
 local sNavWindowRectList   #A LIST OF OPEN NAVIGATOR WINDOWS THAT MIGHT BE DRAGGED TO
+local startedExternalDrag #A LIST OF NAVIGATORS THAT HAVE ALREADY STARTED THE CURRENT DRAG
 --local mouseMoveCounter
 
 before mouseDown
@@ -361,11 +362,30 @@ end isDragStarted
 
 after mouseMove X,Y
    --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
-   if externalDrag then
+   if navigatorDragID is not empty then
+      dispatch function "trackReorderExternal" to fld "list" of navigatorDragID
+      if the result is "exited" then
+         put empty into navigatorDragID
+      end if
+   else if externalDrag then      
       if (X,Y is within noFlyRect) then
-         unTidyUp X,Y
+         resumeInternalDrag X,Y
       else 
-         dispatch "trackMovement" to this cd of stack "revDragRep"
+         repeat for each line navLine in sNavWindowRectList
+            if not (X,Y is within (word 1 of navLine)) then next repeat
+            put "stack" & Q(word 2 to -1 of navLine) into navigatorDragID
+            exit repeat
+         end repeat
+         -- if not continueExternal then put word 2 to -1 of navLine else put empty
+         if navigatorDragID is empty then 
+            dispatch function "trackMovement" to this cd of stack "revDragRep"
+            put the result into externalDragID
+         else if startedExternalDrag[navigatorDragID] is empty then
+            put true into startedExternalDrag[navigatorDragID]
+            dispatch "startDraggingExternal" to fld "list" of navigatorDragID with theDraggerID
+         else
+            dispatch "resumeDraggingExternal" to fld "list" of navigatorDragID
+         end if
       end if
    else if dragStarted then 
       trackReorder X,Y  
@@ -375,7 +395,11 @@ after mouseMove X,Y
 end mouseMove
 
 after mouseUp
-   if dragStarted then finishReorder else if tDragListClickLine > 0 then cleanUp fieldClickLine
+   if dragStarted then 
+      finishReorder 
+   else if tDragListClickLine > 0 then 
+      cleanUp fieldClickLine
+   end if
    -- if externalDrag then cleanUpExternalDrag
    cleanUpExternalDrag
 end mouseUp
@@ -409,7 +433,8 @@ on cleanUp restoreLine
    if restoreLine is not empty then restoreHilites restoreLine
    put 0 into tDragListClickLine
    put false into dragStarted
-   
+   put empty into navigatorDragID
+   put false into externalDrag
    if there is a thePointerID then delete thePointerID
    if there is a theDraggerID then delete theDraggerID
    --put ticks()
@@ -422,13 +447,13 @@ on tidyUp -- for when the pointer leaves the window during a drag, but might com
    dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),getID(tDragList)
 end tidyUp
 
-on unTidyUp X,Y -- for when the pointer re-enters the window after leaving during a drag
+on resumeInternalDrag X,Y -- for when the pointer re-enters the window after leaving during a drag
    put false into externalDrag
    if there is a thePointerID then show thePointerID
    if there is a theDraggerID then show theDraggerID
    dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
    trackReorder X,Y
-end unTidyUp
+end resumeInternalDrag
 
 on cleanUpExternal   
    if there is a thePointerID then delete thePointerID
@@ -460,34 +485,53 @@ on startDragging X,Y
    --put startDraggingCount && ticks()
    if abs(X - item 1 of the clickLoc)  < the dragDelta and abs(Y - item 2 of the clickLoc) < the dragDelta then exit startDragging
    put true into dragStarted
+   put false into externalDrag
    set the hScrollbar of me to false
-   put navWindowRects() into sNavWindowRectList
+   put the topleft of this stack into TL
+   delete variable startedExternalDrag
+   put empty into sNavWindowRectList
+   repeat for each line navLine in navWindowRects() 
+      if word 2 to -1 of navLine is the short name of this stack then next repeat
+      put subtractList(TL,word 1 of navLine) && word 2 to -1 of navLine & cr after sNavWindowRectList
+   end repeat
+   delete char -1 of sNavWindowRectList
    --put ticks()
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
    put the number of lines of myHTMLtext into myLineCount
    put the effective textHeight of me + 1 into myTH
    lock screen
-  -- put "made it! 1" && startDraggingCount && ticks()
+   -- put "made it! 1" && startDraggingCount && ticks()
    put newPointer() into thePointerID
    put newDragger() into theDraggerID
    trackReorder X,Y
 end startDragging
 
-on startDraggingExternal tExternalDraggerID,gX,gY
+on startDraggingExternal tExternalDraggerID
    lock screen
    put newPointer() into thePointerID
    copy tExternalDraggerID to this cd of stackNameFromID(the long id of me)
+   put the long id of it into theDraggerID
+   set the vis of theDraggerID to true
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the number of lines of me into myLineCount
    put the effective textHeight of me + 1 into myTH
-   trackReorderExternal gX,gY
+   dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
+   get trackReorderExternal()
 end startDraggingExternal
 
-function trackReorderExternal gX,gY
+on resumeDraggingExternal
+   if there is a thePointerID then show thePointerID
+   if there is a theDraggerID then show theDraggerID
+   dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
+   trackReorderExternal
+end resumeDraggingExternal
+
+function trackReorderExternal
+   put the screenMouseLoc into SML
    put the topleft of stackNameFromID(the long id of me) into TL
-   put gX - item 1 of TL into X
-   put gY - item 2 of TL into Y
+   put item 1 of SML - item 1 of TL into X
+   put item 2 of SML - item 2 of TL into Y
    if not (X,Y is within noFlyRect) then
       cleanUpExternal
       return "exited"
@@ -516,6 +560,22 @@ on trackReorder X,Y
    --put X,Y && noFlyRect && the vis of thePointerID && pointerTop & cr & the top of thePointerID & cr & the points of thePointerID
 end trackReorder
 
+on finishReorderExternal idList
+   cleanUp
+   put the scroll of me into S
+   put the htmlText of me into myHTMLtext
+   put the separatorLine of me into tSeparatorLine
+   if targetLine <= tSeparatorLine + 1 then -- drag into bookmarks
+      setBookmarks targetLine,idList
+   else -- drag into live display
+      repeat for each line tID in idList
+         --copy tID to 
+      end repeat
+   end if
+   
+   
+end finishReorderExternal
+
 on finishReorder
    cleanUp
    if not the reportDragAndDropOnly of me then 
@@ -540,9 +600,6 @@ on finishReorder
    put the hilitedLines of me into tDragList
 end finishReorder
 
-on dragLines pDragList,pTargetLine
-   -- put pDragList & cr & pTargetLine
-end dragLines
 
 function newPointer
    put left of me + 2 into L
