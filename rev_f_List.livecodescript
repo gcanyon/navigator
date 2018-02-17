@@ -1,4 +1,4 @@
-script "rev_f_List"
+﻿script "rev_f_List"
 global gLastLineClicked
 global gSBWhichStack,gSBWhichCard,gSBlastHilitedLines,gSBshowTooltip
 global gSBCustomCommands -- the menu of custom commands available
@@ -275,6 +275,7 @@ on placeGroupOntoCards pWhichLine,tObjectList
 end placeGroupOntoCards
 
 on dragLines pDragList,pTargetLine
+  -- put pTargetLine & cr & cr & pDragList
    put the separatorLine of me into tSeparatorLine
    put splitList(tSeparatorLine,pDragList) into dragA
    switch
@@ -321,6 +322,7 @@ end selectionChanged
 --------------------
 
 local tDragList             #THE LIST OF LINES TO DRAG
+local tDragIDList          #THE LIST OF IDs TO DRAG
 local tDragArray            #THE ARRAY OF LINES TO DRAG
 local dragStarted           #SET TO TRUE WHEN DRAGGING IS IN PROGRESS
 local noFlyRect             #IF THE MOUSE MOVES OUTSIDE THIS RECT, CANCEL DRAG DROP
@@ -373,7 +375,7 @@ after mouseMove X,Y
       else 
          repeat for each line navLine in sNavWindowRectList
             if not (X,Y is within (word 1 of navLine)) then next repeat
-            put "stack" & Q(word 2 to -1 of navLine) into navigatorDragID
+            put "stack" && Q(word 2 to -1 of navLine) into navigatorDragID
             exit repeat
          end repeat
          -- if not continueExternal then put word 2 to -1 of navLine else put empty
@@ -406,7 +408,11 @@ end mouseUp
 
 after mouseRelease
    if dragStarted then 
-      finishReorder 
+      if navigatorDragID is not empty then
+         dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList
+      else
+         finishReorder 
+      end if
       set the hScrollbar of me to true
    end if
    cleanUp
@@ -444,7 +450,7 @@ on tidyUp -- for when the pointer leaves the window during a drag, but might com
    put true into externalDrag
    if there is a thePointerID then hide thePointerID
    if there is a theDraggerID then hide theDraggerID
-   dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),getID(tDragList)
+   dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
 end tidyUp
 
 on resumeInternalDrag X,Y -- for when the pointer re-enters the window after leaving during a drag
@@ -487,6 +493,7 @@ on startDragging X,Y
    put true into dragStarted
    put false into externalDrag
    set the hScrollbar of me to false
+   put getID(tDragList) into tDragIDList
    put the topleft of this stack into TL
    delete variable startedExternalDrag
    put empty into sNavWindowRectList
@@ -561,20 +568,31 @@ on trackReorder X,Y
 end trackReorder
 
 on finishReorderExternal idList
-   cleanUp
+   cleanUpExternal
    put the scroll of me into S
    put the htmlText of me into myHTMLtext
    put the separatorLine of me into tSeparatorLine
+   put empty into tDragIDList
    if targetLine <= tSeparatorLine + 1 then -- drag into bookmarks
       setBookmarks targetLine,idList
    else -- drag into live display
- put getCardOrBGid() into tTargetContainer
+      put getCardOrBGid() into tTargetContainer
+      set the relayergroupedcontrols to the optionkey is "up"
+      put targetLine - tSeparatorLine - 2 into targetLayer
+      -- answer targetLayer
       repeat for each line tID in idList
          copy tID to tTargetContainer
-         put it & cr after tDragList
+         put it into tCopiedID
+         --answer tCopiedID
+         set the layer of tCopiedID to targetLayer
       end repeat
-  dispatch "dragLines" to me with tDragList,targetLine -- may not be right
+      
+      --       relayerControlList targetLine,tDragIDList
+      --       dispatch "dragLines" to me with tDragList,targetLine -- may not be right
    end if   
+   put numberItems(targetLine,(targetLine + the number of lines of idList - 1)) into hiliteList
+   doUpdateDisplay true
+   set the hilitedlines of me to hiliteList
 end finishReorderExternal
 
 on finishReorder
@@ -601,9 +619,6 @@ on finishReorder
    put the hilitedLines of me into tDragList
 end finishReorder
 
-on dragLines pDragList,pTargetLine
-   -- put pDragList & cr & pTargetLine
-end dragLines
 
 function newPointer
    put left of me + 2 into L
@@ -688,3 +703,7 @@ function newImage P,pRect,pID
    return the long id of the last image
 end newImage
 
+
+on mouseLeave
+
+end mouseLeave

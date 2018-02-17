@@ -579,11 +579,20 @@ function QQ S
    return quote && "& quote &" && quote & S & quote && "& quote &" && quote
 end QQ
 
+on reportStack
+   put the short name of this stack into N
+   answer gSBWhichStack[N] 
+end reportStack
+
 
 function getCardOrBGid tStackID
    local N, tReturnID
-   if tStackID is empty then put gSBWhichStack[the short name of this stack] into tStackID
    put the short name of this stack into N
+   if tStackID is empty then put "stack" && Q(gSBWhichStack[N]) into tStackID
+   if existenceWarning(tStackID) is empty then
+      put "the topStack" into gSBWhichStack[N]
+      put the name of the topStack into tStackID
+   end if
    if gSBCardOrBackground[N] is "card" then
       if gSBWhichCard[N] is "this card" then
          put the long id of this cd of tStackID into tReturnID
@@ -602,6 +611,7 @@ function getCardOrBGid tStackID
    if existenceWarning(tReturnID) is empty then
       put "card" into gSBCardOrBackground[N]
       put "this card" into gSBWhichCard[N]
+      return the long id of this cd of stack tStackID
    else
       return tReturnID
    end if
