@@ -417,7 +417,7 @@ after mouseRelease
    end if
    cleanUp
    -- if externalDrag then cleanUpExternalDrag true
-   cleanUpExternalDrag externalDrag
+   cleanUpExternalDrag true -- externalDrag
 end mouseRelease
 
 after selectionChanged
@@ -468,7 +468,9 @@ end cleanUpExternal
 
 
 on cleanUpExternalDrag notifyRevDragRep
-   if notifyRevDragRep and the vis of stack "revDragRep" then dispatch "finishDrag" to this cd of stack "revDragRep"
+   if notifyRevDragRep and the vis of stack "revDragRep" then 
+      dispatch "finishDrag" to this cd of stack "revDragRep"
+   end if
    set the hScrollbar of me to true
    put false into externalDrag
 end cleanUpExternalDrag
