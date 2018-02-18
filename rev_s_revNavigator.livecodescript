@@ -588,7 +588,13 @@ end reportStack
 function getCardOrBGid tStackID
    local N, tReturnID
    put the short name of this stack into N
-   if tStackID is empty then put "stack" && Q(gSBWhichStack[N]) into tStackID
+   if tStackID is empty then 
+      if gSBWhichStack[N] is "the topStack" then
+         put the topStack into tStackID
+      else
+         put "stack" && Q(gSBWhichStack[N]) into tStackID
+      end if
+   end if
    if existenceWarning(tStackID) is empty then
       put "the topStack" into gSBWhichStack[N]
       put the name of the topStack into tStackID

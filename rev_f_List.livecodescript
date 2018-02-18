@@ -371,18 +371,24 @@ after mouseMove X,Y
       end if
    else if externalDrag then      
       if (X,Y is within noFlyRect) then
+         go stack (word -2 to -1 of the long id of me)
          resumeInternalDrag X,Y
       else 
          repeat for each line navLine in sNavWindowRectList
             if not (X,Y is within (word 1 of navLine)) then next repeat
             put "stack" && Q(word 2 to -1 of navLine) into navigatorDragID
+            go navigatorDragID
             exit repeat
          end repeat
          -- if not continueExternal then put word 2 to -1 of navLine else put empty
          if navigatorDragID is empty then 
-            dispatch function "trackMovement" to this cd of stack "revDragRep"
-            put the result into externalDragID
-         else if startedExternalDrag[navigatorDragID] is empty then
+            if the vis of stack "revDragRep" then
+               dispatch function "trackMovement" to this cd of stack "revDragRep"
+               put the result into externalDragID
+            else
+               dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
+            end if
+         else if true or startedExternalDrag[navigatorDragID] is empty then
             put true into startedExternalDrag[navigatorDragID]
             dispatch "startDraggingExternal" to fld "list" of navigatorDragID with theDraggerID
          else
@@ -450,7 +456,6 @@ on tidyUp -- for when the pointer leaves the window during a drag, but might com
    put true into externalDrag
    if there is a thePointerID then hide thePointerID
    if there is a theDraggerID then hide theDraggerID
-   dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
 end tidyUp
 
 on resumeInternalDrag X,Y -- for when the pointer re-enters the window after leaving during a drag
