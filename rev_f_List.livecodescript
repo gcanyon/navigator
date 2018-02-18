@@ -5,6 +5,7 @@ global gSBCustomCommands -- the menu of custom commands available
 global gSBShowList -- if true, show a list of cards/backgrounds
 global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
+global gSBDragStartNav -- the short name of the Navigator originating a drag
 local tOriginalScroll,tClickLine
 local tStartDragMessage
 local sDropLines -- the items that actually need to be rearranged on dropping.
@@ -275,7 +276,7 @@ on placeGroupOntoCards pWhichLine,tObjectList
 end placeGroupOntoCards
 
 on dragLines pDragList,pTargetLine
-  -- put pTargetLine & cr & cr & pDragList
+   -- put pTargetLine & cr & cr & pDragList
    put the separatorLine of me into tSeparatorLine
    put splitList(tSeparatorLine,pDragList) into dragA
    switch
@@ -290,8 +291,9 @@ on dragLines pDragList,pTargetLine
          relayerBookmarkList pTargetLine,numberItems(1,tNewBookmarkCount)
          break
       default -- drag into control list
-         if gSBShowList[the short name of this stack] then
-            if gSBCardOrBackground[the short name of this stack] is not "card" then
+         put the short name of this stack into SN 
+         if gSBShowList[SN] then 
+            if gSBCardOrBackground[SN] is not "card" then 
                put empty into dragA[2] -- we don't rearrange stacks or groups
             else if word 1 of getID(tWhichLine) is "group" then
                placeGroupOntoCards tWhichLine,dragA[2]
@@ -301,6 +303,7 @@ on dragLines pDragList,pTargetLine
          end if
          if dragA[2] is not empty then relayerControlList pTargetLine,dragA[2]
          if dragA[1] is not empty then
+            go stack SN
             addBookmarkedControls dragA[1],pTargetLine
             doUpdateDisplay true
          end if
@@ -370,31 +373,31 @@ after mouseMove X,Y
          put empty into navigatorDragID
       end if
    else if externalDrag then      
-      if (X,Y is within noFlyRect) then
-         go stack (word -2 to -1 of the long id of me)
-         resumeInternalDrag X,Y
-      else 
-         repeat for each line navLine in sNavWindowRectList
-            if not (X,Y is within (word 1 of navLine)) then next repeat
-            put "stack" && Q(word 2 to -1 of navLine) into navigatorDragID
-            go navigatorDragID
-            exit repeat
-         end repeat
-         -- if not continueExternal then put word 2 to -1 of navLine else put empty
-         if navigatorDragID is empty then 
-            if the vis of stack "revDragRep" then
-               dispatch function "trackMovement" to this cd of stack "revDragRep"
-               put the result into externalDragID
-            else
-               dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
-            end if
-         else if true or startedExternalDrag[navigatorDragID] is empty then
-            put true into startedExternalDrag[navigatorDragID]
-            dispatch "startDraggingExternal" to fld "list" of navigatorDragID with theDraggerID
+      --       if (X,Y is within noFlyRect) then
+      --          go stack (word -2 to -1 of the long id of me)
+      --          resumeInternalDrag X,Y
+      --       else 
+      repeat for each line navLine in sNavWindowRectList
+         if not (X,Y is within (word 1 of navLine)) then next repeat
+         put "stack" && Q(word 2 to -1 of navLine) into navigatorDragID
+         go navigatorDragID
+         exit repeat
+      end repeat
+      -- if not continueExternal then put word 2 to -1 of navLine else put empty
+      if navigatorDragID is empty then 
+         if the vis of stack "revDragRep" then
+            dispatch function "trackMovement" to this cd of stack "revDragRep"
+            put the result into externalDragID
          else
-            dispatch "resumeDraggingExternal" to fld "list" of navigatorDragID
+            dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
          end if
+      else if true or startedExternalDrag[navigatorDragID] is empty then
+         put true into startedExternalDrag[navigatorDragID]
+         dispatch "startDraggingExternal" to fld "list" of navigatorDragID with theDraggerID
+      else
+         dispatch "resumeDraggingExternal" to fld "list" of navigatorDragID
       end if
+      --    end if
    else if dragStarted then 
       trackReorder X,Y  
    else if tDragListClickLine > 0 then 
@@ -402,28 +405,75 @@ after mouseMove X,Y
    end if
 end mouseMove
 
+after mouseMove X,Y
+   --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
+   if navigatorDragID is not empty then
+      dispatch function "trackReorderExternal" to fld "list" of navigatorDragID
+      if the result is "exited" then
+         put empty into navigatorDragID
+      end if
+   else if externalDrag then      
+      --       if (X,Y is within noFlyRect) then
+      --          go stack (word -2 to -1 of the long id of me)
+      --          resumeInternalDrag X,Y
+      --       else 
+      repeat for each line navLine in sNavWindowRectList
+         if not (X,Y is within (word 1 of navLine)) then next repeat
+         put "stack" && Q(word 2 to -1 of navLine) into navigatorDragID
+         go navigatorDragID
+         exit repeat
+      end repeat
+      -- if not continueExternal then put word 2 to -1 of navLine else put empty
+      if navigatorDragID is empty then 
+         if the vis of stack "revDragRep" then
+            dispatch function "trackMovement" to this cd of stack "revDragRep"
+            put the result into externalDragID
+         else
+            dispatch "startDragging" to this cd of stack "revDragRep" with (the long id of me),tDragIDList
+         end if
+      else if true or startedExternalDrag[navigatorDragID] is empty then
+         put true into startedExternalDrag[navigatorDragID]
+         dispatch "startDraggingExternal" to fld "list" of navigatorDragID with theDraggerID
+      else
+         dispatch "resumeDraggingExternal" to fld "list" of navigatorDragID
+      end if
+      --    end if
+   else if dragStarted then 
+      trackReorder X,Y  
+   else if tDragListClickLine > 0 then 
+      startDragging X,Y
+   end if
+end mouseMove
+
+
 after mouseUp
    if dragStarted then 
-      finishReorder 
+      if navigatorDragID is not empty then 
+         dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 
+      else 
+         lock messages 
+         finishReorder  
+         unlock messages 
+      end if 
+      set the hScrollbar of me to true 
+      cleanUp 
+      cleanUpExternalDrag  
    else if tDragListClickLine > 0 then 
       cleanUp fieldClickLine
    end if
-   -- if externalDrag then cleanUpExternalDrag
-   cleanUpExternalDrag
 end mouseUp
 
 after mouseRelease
-   if dragStarted then 
-      if navigatorDragID is not empty then
-         dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList
-      else
-         finishReorder 
-      end if
-      set the hScrollbar of me to true
-   end if
-   cleanUp
-   -- if externalDrag then cleanUpExternalDrag true
-   cleanUpExternalDrag true -- externalDrag
+   if not dragStarted then exit mouseRelease 
+   if navigatorDragID is not empty then 
+      dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 
+   else if the vis of stack "revDragRep" then 
+      cleanUpExternalDrag true 
+   else 
+      finishReorder  
+   end if 
+   set the hScrollbar of me to true 
+   cleanUp 
 end mouseRelease
 
 after selectionChanged
@@ -467,8 +517,14 @@ on resumeInternalDrag X,Y -- for when the pointer re-enters the window after lea
 end resumeInternalDrag
 
 on cleanUpExternal   
-   if there is a thePointerID then delete thePointerID
-   if there is a theDraggerID then delete theDraggerID
+   put the short name of stackNameFromID(the long id of me) into SN
+   if SN is not gSBDragStartNav then
+      if there is a thePointerID then; delete thePointerID; end if
+      if there is a theDraggerID then; delete theDraggerID; end if
+   else
+      if there is a thePointerID then; hide thePointerID; end if
+      if there is a theDraggerID then; hide theDraggerID; end if
+   end if
 end cleanUpExternal
 
 
@@ -498,6 +554,7 @@ on startDragging X,Y
    --put startDraggingCount && ticks()
    if abs(X - item 1 of the clickLoc)  < the dragDelta and abs(Y - item 2 of the clickLoc) < the dragDelta then exit startDragging
    put true into dragStarted
+   put the short name of this stack into gSBDragStartNav
    put false into externalDrag
    set the hScrollbar of me to false
    put getID(tDragList) into tDragIDList
@@ -505,7 +562,9 @@ on startDragging X,Y
    delete variable startedExternalDrag
    put empty into sNavWindowRectList
    repeat for each line navLine in navWindowRects() 
-      if word 2 to -1 of navLine is the short name of this stack then next repeat
+      -- if word 2 to -1 of navLine is the short name of this stack then next repeat
+      put the short name of stack (word 2 to -1 of navLine) into SN
+      if gSBCardOrBackground[SN] is "stack" then next repeat
       put subtractList(TL,word 1 of navLine) && word 2 to -1 of navLine & cr after sNavWindowRectList
    end repeat
    delete char -1 of sNavWindowRectList
@@ -523,9 +582,13 @@ end startDragging
 
 on startDraggingExternal tExternalDraggerID
    lock screen
-   put newPointer() into thePointerID
-   copy tExternalDraggerID to this cd of stackNameFromID(the long id of me)
-   put the long id of it into theDraggerID
+   put the short name of stackNameFromID(the long id of me) into SN
+   if SN is not gSBDragStartNav then
+      put newPointer() into thePointerID
+      copy tExternalDraggerID to this cd of stackNameFromID(the long id of me)
+      put the long id of it into theDraggerID
+   end if
+   set the vis of thePointerID to true
    set the vis of theDraggerID to true
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the number of lines of me into myLineCount
@@ -577,12 +640,13 @@ end trackReorder
 on finishReorderExternal idList
    cleanUpExternal
    put the scroll of me into S
+   put the short name of this stack into SN 
    put the htmlText of me into myHTMLtext
    put the separatorLine of me into tSeparatorLine
    put empty into tDragIDList
    if targetLine <= tSeparatorLine + 1 then -- drag into bookmarks
       setBookmarks targetLine,idList
-   else -- drag into live display
+   else if gSBShowList[SN] is false then -- drag into live display,  
       put getCardOrBGid() into tTargetContainer
       set the relayergroupedcontrols to the optionkey is "up"
       put targetLine - tSeparatorLine - 2 into targetLayer
@@ -592,6 +656,25 @@ on finishReorderExternal idList
          put it into tCopiedID
          --answer tCopiedID
          set the layer of tCopiedID to targetLayer
+         add 1 to targetLayer 
+      end repeat 
+   else if gSBCardOrBackground[SN] is "stack" then -- don't drag into stack lists 
+   else if gSBCardOrBackground[SN] is "card" then -- card list, copy cards 
+      if gSBWhichStack[SN] = "the topstack" then put the topstack into tSN else put "stack" && Q(gSBWhichStack[SN]) into tSN 
+      put targetLine - tSeparatorLine - 1 into targetLayer 
+      repeat for each line tID in idList 
+         if word 1 of tID is not "card" then next repeat 
+         copy tID to tSN 
+         put it into tCopiedID 
+         --answer tCopiedID 
+         set the layer of tCopiedID to targetLayer 
+         add 1 to targetLayer 
+      end repeat 
+   else if gSBCardOrBackground[SN] is "background" then -- background list, copy backgrounds 
+      if gSBWhichStack[SN] = "the topstack" then put the topstack into tSN else put "stack" && Q(gSBWhichStack[SN]) into tSN 
+      repeat for each line tID in idList 
+         if word 1 of tID is not "group" then next repeat 
+         copy tID to tSN 
       end repeat
       
       --       relayerControlList targetLine,tDragIDList
@@ -604,23 +687,23 @@ end finishReorderExternal
 
 on finishReorder
    cleanUp
-   if not the reportDragAndDropOnly of me then 
-      put the scroll of me into S
-      set the wholeMatches to true 
-      repeat for each line L in myHTMLtext  --the HTMLtext of me
-         add 1 to LC
-         if tDragArray[LC] is not empty then put L & cr after H[0]
-         else if LC < targetLine then put L & cr after H[1]
-         else put L & cr after H[2]
-      end repeat
-      repeat with i = the number of lines of H[1] + 1 to myLineCount - the number of lines of H[2]
-         put i & comma after newHilite
-      end repeat
-      delete char -1 of newHilite
-      set the HTMLtext of me to H[1] & H[0] & H[2]
-      set the hilitedLines of me to newHilite
-      set the scroll of me to S
-   end if
+   --    if not the reportDragAndDropOnly of me then 
+   --       put the scroll of me into S
+   --       set the wholeMatches to true 
+   --       repeat for each line L in myHTMLtext  --the HTMLtext of me
+   --          add 1 to LC
+   --          if tDragArray[LC] is not empty then put L & cr after H[0]
+   --          else if LC < targetLine then put L & cr after H[1]
+   --          else put L & cr after H[2]
+   --       end repeat
+   --       repeat with i = the number of lines of H[1] + 1 to myLineCount - the number of lines of H[2]
+   --          put i & comma after newHilite
+   --       end repeat
+   --       delete char -1 of newHilite
+   --       set the HTMLtext of me to H[1] & H[0] & H[2]
+   --       set the hilitedLines of me to newHilite
+   --       set the scroll of me to S
+   --    end if
    dispatch "dragLines" to me with tDragList,targetLine
    --dispatch "dragLines" to me with tDragList,newHilite
    put the hilitedLines of me into tDragList
