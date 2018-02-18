@@ -1,4 +1,5 @@
 ﻿script "rev_s_revNavigator"
+script "rev_s_revNavigator"
 //>GLOBALS
 global gREVMessageDispatch, gSBCardOrBackground, gSBControlSets, gSBCustomCommands
 global gSBLeadSpaces
@@ -825,15 +826,15 @@ end listFrom
 
 function getList pIncludeLines,pWhichLines
    local R, tColorObjectMissing, tID, tReturnArray, tSeparator
-   
+   put the long id of fld "list" of me into fList
    put empty into tReturnArray
-   put the pColorObjectMissing of this stack into tColorObjectMissing
-   put the separatorLine of fld "list" into tSeparator
-   if pWhichLines is empty then put the hilitedlines of fld "list" into pWhichLines
+   put the pColorObjectMissing of me into tColorObjectMissing
+   put the separatorLine of fList into tSeparator
+   if pWhichLines is empty then put the hilitedlines of fList into pWhichLines
    if pWhichLines is "all" then put listFrom(1,the number of lines of fld "list") into pWhichLines
    repeat for each item tLine in pWhichLines
       if tLine <= tSeparator then
-         put the linkText of line tLine of fld "list" into tID
+         put the linkText of line tLine of fList into tID
          replace numtochar(1) with quote in tID
       else
          put navLineArray[(tLine - tSeparator)] into tID
@@ -844,7 +845,7 @@ function getList pIncludeLines,pWhichLines
          if tReturnArray[tID] is empty then put tID & cr after R
          add 1 to tReturnArray[tID]
       else
-         set the textColor of line tLine of fld "list" of this stack to tColorObjectMissing
+         set the textColor of line tLine of fList to tColorObjectMissing
       end if
    end repeat
    return char 1 to -2 of R
