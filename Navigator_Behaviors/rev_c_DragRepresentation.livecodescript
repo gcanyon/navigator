@@ -12,14 +12,10 @@ function findContainer P
    -- takes a point P and finds the deepest container in sRectArrayArchive that contains it
 end findContainer
 
-function stackFromID tID
-   if word -5 of tID is "stack" then return the name of stack (word -5 to -4 of tID)
-   return the name of stack (word -2 to -1 of tID)
-end stackFromID
 
 function objectRect tID
    if tID is "screen" then return the working screenrect
-   put the rect of stack stackFromID(tID) into SR
+   put the rect of stack stackNameFromID(tID) into SR
 
    if word 1 of tID is "card" then
       subtract 20 from item 2 of SR
@@ -266,27 +262,7 @@ on targetContainer i,pID
    --dispatch mimicIDList to card "DragTargets" of stack "revDragTarget" with sCArray[pID]["list"],sCArray[pID]["cRect"]
 end targetContainer
 
-function addList SL,TL
-   put 1 into i
-   put the number of items of SL into C
-   repeat for each item n in TL
-      put (n + item i of SL) & comma after R
-      add 1 to i
-      if i > C then put 1 into i
-   end repeat
-   return char 1 to -2 of R
-end addList
 
-function subtractList SL,TL
-   put 1 into i
-   put the number of items of SL into C
-   repeat for each item n in TL
-      put (n - item i of SL) & comma after R
-      add 1 to i
-      if i > C then put 1 into i
-   end repeat
-   return char 1 to -2 of R
-end subtractList
 
 
 on startDragging tCallerID,tIDList
@@ -314,7 +290,7 @@ on startDragging tCallerID,tIDList
    unlock screen
 end startDragging
 
-on trackMovement
+function trackMovement
    cancel sTargetMessage
    put empty into targetID
    put the screenmouseLoc into SML
@@ -350,6 +326,7 @@ on trackMovement
          if word 1 of pID is empty then targetContainer 0,"windows" else targetContainer 0,pID
       end if
    end if
+   return sTargetID
 end trackMovement
 
 
@@ -357,14 +334,15 @@ function testtestF
    return testF()
 end testtestF
 
-on finishDrag
+on finishDrag tTargetID
    cancel sTargetMessage
+   if tTargetID is not empty then put tTargetID into sTargetID
    lock screen
    set the vis of this stack to false
    dispatch "cleanUp" to this cd of stack "revDragTarget"
    --put sTargetID & cr & cr & sIDList
    if sTargetID is "windows" then exit finishDrag
-   put stackFromID(sTargetID) into targetStack
+   put stackNameFromID(sTargetID) into targetStack
    put the topleft of targetStack into TLt
    
    put subtractList(TLt,addList(the margins of group "rects",the topleft of stack "revDragRep")) into tOffset

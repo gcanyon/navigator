@@ -1,4 +1,5 @@
 ﻿script "rev_s_revNavigator"
+script "rev_s_revNavigator"
 //>GLOBALS
 global gREVMessageDispatch, gSBCardOrBackground, gSBControlSets, gSBCustomCommands
 global gSBLeadSpaces
@@ -27,6 +28,29 @@ on debugBroken
    put the number of lines of the keys of navLineArray & cr & the keys of navLineArray;exit debugbroken
    put splice(cr,1,navLineArray[1],2,navLineArray[2],3,navLineArray[3],4,navLineArray[4])
 end debugBroken
+
+function addList SL,TL
+   -- adds the items of SL to TL, repeating if necessary
+   put 1 into i
+   put the number of items of SL into C
+   repeat for each item n in TL
+      put (n + item i of SL) & comma after R
+      add 1 to i
+      if i > C then put 1 into i
+   end repeat
+   return char 1 to -2 of R
+end addList
+
+function subtractList SL,TL
+   put 1 into i
+   put the number of items of SL into C
+   repeat for each item n in TL
+      put (n - item i of SL) & comma after R
+      add 1 to i
+      if i > C then put 1 into i
+   end repeat
+   return char 1 to -2 of R
+end subtractList
 
 on doSetup
    if the short name of this stack is "revNavigator" then 
@@ -556,11 +580,26 @@ function QQ S
    return quote && "& quote &" && quote & S & quote && "& quote &" && quote
 end QQ
 
+on reportStack
+   put the short name of this stack into N
+   answer gSBWhichStack[N] 
+end reportStack
+
 
 function getCardOrBGid tStackID
    local N, tReturnID
-   
    put the short name of this stack into N
+   if tStackID is empty then 
+      if gSBWhichStack[N] is "the topStack" then
+         put the topStack into tStackID
+      else
+         put "stack" && Q(gSBWhichStack[N]) into tStackID
+      end if
+   end if
+   if existenceWarning(tStackID) is empty then
+      put "the topStack" into gSBWhichStack[N]
+      put the name of the topStack into tStackID
+   end if
    if gSBCardOrBackground[N] is "card" then
       if gSBWhichCard[N] is "this card" then
          put the long id of this cd of tStackID into tReturnID
@@ -579,10 +618,15 @@ function getCardOrBGid tStackID
    if existenceWarning(tReturnID) is empty then
       put "card" into gSBCardOrBackground[N]
       put "this card" into gSBWhichCard[N]
+      return the long id of this cd of stack tStackID
    else
       return tReturnID
    end if
 end getCardOrBGid
+
+function testFunction
+   return "FML"
+end testFunction
 
 
 on setBookmarks pWhichLine,pIDList
@@ -601,10 +645,7 @@ on setBookmarks pWhichLine,pIDList
    end if
    set the wholeMatches to true
    put empty into tAddList
-   
-   
    put the ColorScriptedObjects of this stack into tCheckScripts
-   
    put "<p><font color=" & quote & the pColorDefault of this stack & quote & "><a name=" & quote into tColor[false]
    put "<p><font color=" & quote & the pColorScriptedObject of this stack & quote & "><a name=" & quote into tColor[true]
    put "</a></font></p>" & cr into tEndString
@@ -785,15 +826,15 @@ end listFrom
 
 function getList pIncludeLines,pWhichLines
    local R, tColorObjectMissing, tID, tReturnArray, tSeparator
-   
+   put the long id of fld "list" of me into fList
    put empty into tReturnArray
-   put the pColorObjectMissing of this stack into tColorObjectMissing
-   put the separatorLine of fld "list" into tSeparator
-   if pWhichLines is empty then put the hilitedlines of fld "list" into pWhichLines
+   put the pColorObjectMissing of me into tColorObjectMissing
+   put the separatorLine of fList into tSeparator
+   if pWhichLines is empty then put the hilitedlines of fList into pWhichLines
    if pWhichLines is "all" then put listFrom(1,the number of lines of fld "list") into pWhichLines
    repeat for each item tLine in pWhichLines
       if tLine <= tSeparator then
-         put the linkText of line tLine of fld "list" into tID
+         put the linkText of line tLine of fList into tID
          replace numtochar(1) with quote in tID
       else
          put navLineArray[(tLine - tSeparator)] into tID
@@ -804,7 +845,7 @@ function getList pIncludeLines,pWhichLines
          if tReturnArray[tID] is empty then put tID & cr after R
          add 1 to tReturnArray[tID]
       else
-         set the textColor of line tLine of fld "list" of this stack to tColorObjectMissing
+         set the textColor of line tLine of fList to tColorObjectMissing
       end if
    end repeat
    return char 1 to -2 of R
@@ -1225,14 +1266,20 @@ end scriptOnlyStackNamesFromFolderList
 
 function uniqueStacksFromIDs idList
    repeat for each line tID in idList
-      add 1 to stackList[the short name of (word -2 to -1 of tID)]
+      add 1 to stackList[the short name of stackNameFromID(tID)]
    end repeat
    return the keys of stackList
 end uniqueStacksFromIDs
 
+function stackNameFromID tID
+   if word -5 of tID is "stack" then return word -5 to -4 of tID
+   return the name of stack (word -2 to -1 of tID)
+end stackNameFromID
+
+
 function stackMapFromIDs idList
    repeat for each line tID in idList
-      put the short name of (word -2 to -1 of tID) into SN
+      put the short name of stackNameFromID(tID) into SN
       if R[SN] is empty then put tID into R[SN] else put cr & tID after R[SN]
    end repeat
    return R
@@ -1679,6 +1726,16 @@ end appendWithoutDupes
 function navStack
   return "revNavigator"
 end navStack
+
+function navWindowRects includeCollapsed,includeHidden
+   repeat for each line W in the windows
+      if word 1 of W is not among the items of "revNavigator,Navigator" then next repeat
+      if not (the vis of stack W or includeHidden) then next repeat
+      if not (not the cIAmHidden of stack W or includeCollapsed) then next repeat
+      put (the rect of stack W) && W & cr after R
+   end repeat
+   return char 1 to -2 of R
+end navWindowRects
 
 
 function deDupe L,D
