@@ -148,7 +148,7 @@ function containerInfo tID
          add item 1 of SR to item 1 of R["gRect"][i]; add item 1 of SR to item 3 of R["gRect"][i]
          add item 2 of SR to item 2 of R["gRect"][i]; add item 2 of SR to item 4 of R["gRect"][i]
       end repeat
-      if i = 0 then
+      if false and i = 0 then
          put SR into R["opaque"] 
          subtract windowTitleHeight from item 2 of R["opaque"] 
          put the rect of tID into r["rect"][1]

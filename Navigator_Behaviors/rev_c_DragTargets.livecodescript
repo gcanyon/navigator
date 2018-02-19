@@ -32,6 +32,7 @@ end mimicIDList
 on doSetupA rectA,pRect
    lock screen
    put item 2 of the extents of rectA into controlCount
+   if controlCount is empty then put 0 into controlCount
    forceNControls (the long id of me),controlCount
    repeat with i = 1 to controlCount
       set the rect of control i of me to rectA[i]
