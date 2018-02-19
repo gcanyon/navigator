@@ -9,7 +9,9 @@ To install Navigator, you have two options:
 Whichever way you download Navigator, place Navigator.rev, the commands folder, and the plugins folder in the "My Livecode/Plugins" folder.
 
 Navigator documentation is at https://gcanyon.wordpress.com/navigator-documentation/
+
 Documentation on Navigator's convert to behaviors function is at https://gcanyon.wordpress.com/navigator-convert-to-behaviors-details/
+
 Navigator videos are at https://www.youtube.com/watch?v=RkW1QJvgEa0&list=PL6Q9z_3xloyJJ92D-98ZiOB8ySuUW6sZJ
 
 
