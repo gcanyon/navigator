@@ -749,6 +749,7 @@ function newDragger
 end newDragger
 
 on autoScrollTheField
+   if the vis of stack "revDragRep" or (navigatorDragID is not empty and navigatorDragID is not the name of this stack) then exit autoScrollTheField
    put (mouseV() - item 2 of the loc of me) div (the height of me div 2) * myTH into scrollInc 
    if "autoScrollTheField" is in pendingMessages() or scrollInc = 0 then exit autoScrollTheField
    put the scroll of me into S
