@@ -377,13 +377,26 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       put the pObjectLimit of this stack into tObjectLimit
       put empty into tControlList
       put 0 into tCurrentLine
+      put fld "filter" into tFilter
       
       repeat for each line tStack in tStackList
+         put the name of stack tStack into tStackName
          
          if (not gSBShowAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+         if tFilter is not empty and tFilter is not in tStack then next repeat
+         if the filterString of stack tThisStack is not empty then
+            put the filterString of stack tThisStack into tFilterString
+            replace "tID" with tStackName in tFilterString
+            try
+               if not value(tFilterString) then next repeat
+            catch someErr
+               next repeat
+            end try
+         end if
+         
+         
          add 1 to tCurrentLine
          if tCurrentLine > tObjectLimit then exit repeat
-         put the name of stack tStack into tStackName
          if tCheckScripts and (the password of tStackName is empty) \
                then put tColor[whichColor(tStackName)] & tStackName after tControlList \
                else put tColor[1] & tStackName after tControlList
@@ -392,6 +405,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          put the substacks of stack tStack into tSubstackList
          
          repeat for each line tSubstack in tSubstackList
+            if tFilter is not empty and tFilter is not in tSubstack then next repeat
             add 1 to tCurrentLine
             if tCurrentLine > tObjectLimit then exit repeat
             put the name of stack tSubStack into tSubstackName
