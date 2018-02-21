@@ -30,6 +30,7 @@ on menuPick pWhich
    put false into tGo
    put false into tSave
    put false into tBrowseControls
+   put false into tOpenInNewNavigator
    put word 2 of the clickLine into tClickedLine
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
    put getID(tClickedLine) into tClickedID
@@ -328,6 +329,9 @@ on menuPick pWhich
          break
       case "Remove"
          removeBookmarks; break
+      case "Open in New Navigator"
+         put true into tOpenInNewNavigator
+         break
       case "Browse Controls"
          put true into tBrowseControls
       case "Save"
@@ -594,6 +598,10 @@ on prepareItems
          ((tContainer and noCards) or (char -5 to -1 of tObjectType is "stack" and char -4 to -1 of tCopiedType is "card"))\
    then put "Paste Objects" & cr before tItems
    --/maybe?
+   set the wholeMatches to true
+   put lineOffset("Browse Controls",tItems) into tLine
+   --if tContainer then put "Open in New Navigator" & cr before tItems
+   if tLine > 0 then put cr & "Open in New Navigator" after line tLine of tItems
    
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me

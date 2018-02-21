@@ -9,9 +9,9 @@ local addPropertiesForType
 on menuPick pWhich
    switch pWhich
       case "About Navigator..."
-         repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
-            do "put" && V & "[the short name of this stack] & cr after R"
-         end repeat
+         --          repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
+         --             do "put" && V & "[the short name of this stack] & cr after R"
+         --          end repeat
          --put R into line 9 to 99 of fld "aboutHead"
          
          send "showMe" to group "about"
