@@ -330,10 +330,19 @@ on menuPick pWhich
       case "Remove"
          removeBookmarks; break
       case "Open in New Navigator"
-         put true into tOpenInNewNavigator
+         put the hilitedLines of fld "list" into tLines
+         repeat for each item tItem in tLines
+            put getID(tItem) into tID
+            if not (word 1 of tID is among the items of "group,card,stack") then next repeat
+            if word 1 of tID is "stack" then put "this card of " after newNavContainerList
+            put tID & cr after newNavContainerList
+         end repeat
+         if newNavContainerList is not empty then get newNavigator(newNavContainerList)
          break
       case "Browse Controls"
          put true into tBrowseControls
+      case "Save All"
+         if pWhich is "Save All" then put true into tSaveAll
       case "Save"
          if pWhich is "Save" then put true into tSave
       case "Save StackFiles"
@@ -374,6 +383,11 @@ on menuPick pWhich
                   updateDisplay true
                else if word 1 of tID is "group" then
                   -- no point in continuing, can't save or go
+               else if tSaveAll and word 1 of tID is "stack" then
+                  save tID
+                  repeat for each line tStackIDLine in the stackFiles of tID
+                     save stack (item 1 of tStackIDLine)
+                  end repeat
                else if tSave and word 1 of tID is "stack" then save tID
                else if tSaveStackFiles and word 1 of tID is "stack" then
                   repeat for each line tStackIDLine in the stackFiles of tID
@@ -523,7 +537,7 @@ on prepareItems
    put word 2 of the clickLine into tClickedLine
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
    put getID(tClickedLine) into sClickedID --  local to store universally within this script the id that was clicked
-
+   
    
    
    put the basicItems of btn "popup" into tItems
@@ -599,9 +613,14 @@ on prepareItems
    then put "Paste Objects" & cr before tItems
    --/maybe?
    set the wholeMatches to true
-   put lineOffset("Browse Controls",tItems) into tLine
-   --if tContainer then put "Open in New Navigator" & cr before tItems
-   if tLine > 0 then put cr & "Open in New Navigator" after line tLine of tItems
+   if tContainer then put "Open in New Navigator" & cr before line lineOffset("-",tItems) of tItems
+   --    put lineOffset("Browse Controls",tItems) into tLine
+   --    if tLine > 0 then 
+   --       put cr & "Open in New Navigator" after line tLine of tItems
+   --    else if tContainer then 
+   --       put lineOffset("-",tItems) into tLine
+   --       put "Open in New Navigator" & cr before tItems 
+   --    end if
    
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me

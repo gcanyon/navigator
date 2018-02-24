@@ -1889,12 +1889,29 @@ function propertiesInCommon tIDList
   return R
 end propertiesInCommon
 
-function newNavigator targetContainer,navName
-   if navName is empty then put iff(the optionKey is "up","rev","") & "Navigator" && ticks() into navName
-   clone this stack
-   set the name of it to navName
-   set the backgroundcolor of grc "navTitleBar" of stack navName to "180,180,180"
-   setNavigatorTarget navName,targetContainer
+function newNavigator targetContainerList,navNameList
+   lock screen
+   put ticks() into navIndex
+   put the loc of this stack into navLoc
+   repeat with i = 1 to the number of lines of targetContainerList
+      put line i of targetContainerList into targetContainer
+      put line i of navNameList into navName
+      if navName is empty then 
+         put iff(the optionKey is "up","rev","") & "Navigator" && navIndex into navName
+         add 1 to navIndex
+      end if
+      clone this stack
+      put it && the name of it into fld 1 of stack "untitled 1"
+      set the name of it to navName
+      if item 1 of navLoc < item 3 of the screenRect then add 20 to item 1 of navLoc
+      if item 2 of navLoc < item 4 of the screenRect then add 20 to item 2 of navLoc
+      set the loc of stack navName to navLoc
+      set the backgroundcolor of grc "navTitleBar" of stack navName to "180,180,180"
+      setNavigatorTarget navName,targetContainer
+   end repeat
+   cleangREVMessageDispatch
+   unloack screen
+   return navName
 end newNavigator
 
 on setNavigatorTarget navName,targetContainer
@@ -1902,9 +1919,10 @@ on setNavigatorTarget navName,targetContainer
       dispatch "setNavigatorTarget" to stack navName with empty,targetContainer
       exit setNavigatorTarget
    end if
+   if navName is empty then put the short name of me into navName
    put targetContainer into navigatorTarget
    setGlobalsFromTarget navigatorTarget
-   cleangREVMessageDispatch
+   doUpdateDisplay true
 end setNavigatorTarget
 
 function reportGlobals
@@ -1915,11 +1933,24 @@ function reportGlobals
 end reportGlobals
 
 on setGlobalsFromTarget targetContainer
-   repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
-      do "put" && V & "[the short name of this stack] into" && V & "[sName]"
-   end repeat
+   put the short name of me into navName
+   put globalsFromTarget(targetContainer) into V
+   --    put targetContainer into fld 1 of stack "untitled 1"
+   --    exit setGlobalsFromTarget
+   put V["WhichStack"] into gSBWhichStack[navName]
+   put V["WhichCard"] into gSBWhichCard[navName]
+   put V["CardOrBackground"] into gSBCardOrBackground[navName]
+   put V["WhichBackground"] into gSBWhichBackground[navName]
+   put V["ShowList"] into gSBShowList[navName]
    
-   
+   --    repeat for each item G in "WhichStack,WhichCard,CardOrBackground,WhichBackground,ShowList"
+   --       put "put V[" & Q(G) & "] into gSB" & G & "[navName]" & cr after T
+   --    end repeat
+   --    put T into fld 1 of stack "untitled 1"
+   --    lock messages
+   --    do T
+   --    unlock messages
+   --set the loc of stack navName to 300,300
 end setGlobalsFromTarget
 
 
@@ -1932,7 +1963,7 @@ end targetFromNavigatorGlobals
 
 function targetFromGlobals whichStack,showList,cardOrBackground,whichCard,whichBackground
    put whichStack into SN
-   if SN is not "the topStack" then put the long id of stack SN into SN
+   if SN is not "the topStack" and SN is not empty then put the long id of stack SN into SN
    if showList is "true" then 
       if cardOrBackground = "stack" then return "stack list"
       return cardOrBackground && "list of" && SN
@@ -1943,7 +1974,26 @@ end targetFromGlobals
 
 function globalsFromTarget navTarget
    -- returns an array with whichStack,showList,cardOrBackground,whichCard,whichBackground
+   put (word 2 of navTarget is "list") into R["showList"]
+   put word iff(word 1 of navTarget is "this",2,1) of navTarget into R["cardOrBackground"]
+   if R["cardOrBackground"] is "group" then put "background" into R["cardOrBackground"]
    
+   if word -5 of navTarget is "stack" then put the value of word -4 of navTarget into R["whichStack"]
+   else if word -2 to -1 of navTarget is "the topstack" then put "the topstack" into R["whichStack"]
+   else if navTarget is not "stack list" then put the short name of stack (word -2 to -1 of navTarget) into R["whichStack"]
+   
+   if R["showList"] then
+      if R["cardOrBackground"] is not "stack" then put R["cardOrBackground"] && "list" into R["which" & R["cardOrBackground"]]
+      return R
+   end if
+   if word 1 to 2 of navTarget is "this card" then 
+      put "this card" into R["whichCard"]
+   else if R["whichStack"] is "the topStack" then 
+      put word 1 to -4 of navTarget into R["whichCard"]
+   else if R["cardOrBackground"] is not "stack" then
+      put the long id of navTarget into R["which" & R["cardOrBackground"]]
+   end if
+   return R
 end globalsFromTarget
 
 
