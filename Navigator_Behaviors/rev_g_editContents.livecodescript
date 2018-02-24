@@ -30,26 +30,27 @@ on editButton
 end editButton
 
 on showMe pAsAskDialog
-  put pAsAskDialog into sAsAskDialog
-  if sAsAskDialog then
-    put the uDialogText of me into fld "setContents"
-    put the uID of me into sCallingObjectID
-    set the uID of me to empty
-  else
-    put empty into sCallingObjectID
-    put getID() into sIDList
-    put getID(the uClickedLine of this card) into sClickedID
-    set the textFont of fld "setContents" to the effective textFont of sClickedID
-    if sIsField then
-      set the htmlText of fld "setContents" to the htmlText of sClickedID
-    else
-      put value(sClickedID) into fld "setContents"
-    end if
-  end if
-  
-  setSize
-  showGroup the long id of me
-  select after text of fld "setContents"
+   put pAsAskDialog into sAsAskDialog
+   if sAsAskDialog then
+      put the uDialogText of me into fld "setContents"
+      put the uID of me into sCallingObjectID
+      set the uID of me to empty
+   else
+      put empty into sCallingObjectID
+      put getID() into sIDList
+      put getID(the uClickedLine of this card) into sClickedID
+      set the textFont of fld "setContents" to the effective textFont of sClickedID
+      if sIsField then
+         set the htmlText of fld "setContents" to the htmlText of sClickedID
+      else
+         put value(sClickedID) into fld "setContents"
+      end if
+   end if
+   
+   setSize
+   set the hilite of btn "editContentsHTML" to false
+   showGroup the long id of me
+   select after text of fld "setContents"
 end showMe
 
 on hideMe

@@ -1,5 +1,4 @@
 ﻿script "rev_s_revNavigator"
-script "rev_s_revNavigator"
 //>GLOBALS
 global gREVMessageDispatch, gSBCardOrBackground, gSBControlSets, gSBCustomCommands
 global gSBLeadSpaces
@@ -11,6 +10,15 @@ local sDisableCount, sDoUpdateDisplayCount, sHilitedIDList, sHilitedLineList, sL
 local sSetupComplete, sStackFileVersion, sUpdatingRevSelection, sWindowLoc
 local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObjectCount,navLastFieldUpdate
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
+local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
+   -- stack list
+   -- this card of the topstack
+   -- this card of stack "<stack name>"
+   -- <card long id>
+   -- <group long id>
+   -- card list of stack "<stack name>"
+   -- background list of stack "<stack name>"
+
 
 
 on openStack
@@ -369,13 +377,26 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       put the pObjectLimit of this stack into tObjectLimit
       put empty into tControlList
       put 0 into tCurrentLine
+      put fld "filter" into tFilter
       
       repeat for each line tStack in tStackList
+         put the name of stack tStack into tStackName
          
          if (not gSBShowAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+         if tFilter is not empty and tFilter is not in tStack then next repeat
+         if the filterString of stack tThisStack is not empty then
+            put the filterString of stack tThisStack into tFilterString
+            replace "tID" with tStackName in tFilterString
+            try
+               if not value(tFilterString) then next repeat
+            catch someErr
+               next repeat
+            end try
+         end if
+         
+         
          add 1 to tCurrentLine
          if tCurrentLine > tObjectLimit then exit repeat
-         put the name of stack tStack into tStackName
          if tCheckScripts and (the password of tStackName is empty) \
                then put tColor[whichColor(tStackName)] & tStackName after tControlList \
                else put tColor[1] & tStackName after tControlList
@@ -384,6 +405,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          put the substacks of stack tStack into tSubstackList
          
          repeat for each line tSubstack in tSubstackList
+            if tFilter is not empty and tFilter is not in tSubstack then next repeat
             add 1 to tCurrentLine
             if tCurrentLine > tObjectLimit then exit repeat
             put the name of stack tSubStack into tSubstackName
@@ -1867,47 +1889,136 @@ function propertiesInCommon tIDList
   return R
 end propertiesInCommon
 
+function newNavigator targetContainerList,navNameList
+   lock screen
+   put ticks() into navIndex
+   put the loc of this stack into navLoc
+   repeat with i = 1 to the number of lines of targetContainerList
+      put line i of targetContainerList into targetContainer
+      put line i of navNameList into navName
+      if navName is empty then 
+         put iff(the optionKey is "up","rev","") & "Navigator" && navIndex into navName
+         add 1 to navIndex
+      end if
+      clone this stack
+      put it && the name of it into fld 1 of stack "untitled 1"
+      set the name of it to navName
+      if item 1 of navLoc < item 3 of the screenRect then add 20 to item 1 of navLoc
+      if item 2 of navLoc < item 4 of the screenRect then add 20 to item 2 of navLoc
+      set the loc of stack navName to navLoc
+      set the backgroundcolor of grc "navTitleBar" of stack navName to "180,180,180"
+      setNavigatorTarget navName,targetContainer
+   end repeat
+   cleangREVMessageDispatch
+   unloack screen
+   return navName
+end newNavigator
 
-on setNavigatorStackName pStackname
-  local QS, tID2, tIDList
-  
-  if pStackname is empty then put "Navigator" into pStackname
-  set the itemdel to quote
-  put allIDsOfMainstack(the long id of stack "revNavigator") into tIDList
-  --   put tIDList
-  --   exit setNavigatorStackName
-  
-  set the name of stack "revNavigator" to pStackname
-  put Q(pStackname) into QS
-  save this stack
-  repeat for each line tID in tIDList
-    put (word 1 to -2 of tID) && QS into tID2
-    if the behavior of tID2 is not empty then \
-          set the behavior of tID2 to \
-          the long id of ((item 1 of the behavior of tID2) & QS)
-  end repeat
-end setNavigatorStackName
+on setNavigatorTarget navName,targetContainer
+   if navName is not empty and navName is not the short name of me then 
+      dispatch "setNavigatorTarget" to stack navName with empty,targetContainer
+      exit setNavigatorTarget
+   end if
+   if navName is empty then put the short name of me into navName
+   put targetContainer into navigatorTarget
+   setGlobalsFromTarget navigatorTarget
+   doUpdateDisplay true
+end setNavigatorTarget
+
+function reportGlobals
+   repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
+      do "put" && V &  "[the short name of this stack] into R[" & Q(V) & "]"
+   end repeat
+   return R
+end reportGlobals
+
+on setGlobalsFromTarget targetContainer
+   put the short name of me into navName
+   put globalsFromTarget(targetContainer) into V
+   --    put targetContainer into fld 1 of stack "untitled 1"
+   --    exit setGlobalsFromTarget
+   put V["WhichStack"] into gSBWhichStack[navName]
+   put V["WhichCard"] into gSBWhichCard[navName]
+   put V["CardOrBackground"] into gSBCardOrBackground[navName]
+   put V["WhichBackground"] into gSBWhichBackground[navName]
+   put V["ShowList"] into gSBShowList[navName]
+   
+   --    repeat for each item G in "WhichStack,WhichCard,CardOrBackground,WhichBackground,ShowList"
+   --       put "put V[" & Q(G) & "] into gSB" & G & "[navName]" & cr after T
+   --    end repeat
+   --    put T into fld 1 of stack "untitled 1"
+   --    lock messages
+   --    do T
+   --    unlock messages
+   --set the loc of stack navName to 300,300
+end setGlobalsFromTarget
 
 
-on setRevNavigatorStackName pStackname
-  local QS, tID2, tIDList
-  
-  if pStackname is empty then put "revNavigator" into pStackname
-  set the itemdel to quote
-  put allIDsOfMainstack(the long id of stack "Navigator") into tIDList
-  --   put tIDList
-  --   exit setNavigatorStackName
-  
-  set the name of stack "Navigator" to pStackname
-  put Q(pStackname) into QS
-  save this stack
-  repeat for each line tID in tIDList
-    put (word 1 to -2 of tID) && QS into tID2
-    if the behavior of tID2 is not empty then \
-          set the behavior of tID2 to \
-          the long id of ((item 1 of the behavior of tID2) & QS)
-  end repeat
-end setRevNavigatorStackName
+function targetFromNavigatorGlobals navName
+   if navName is empty then put the short name of me into navName
+   if navName is the short name of me then return targetFromGlobals(gSBWhichStack[navName],gSBShowList[navName],gSBCardOrBackground[navName],gSBWhichCard[navName],gSBWhichBackground[navName])
+   dispatch function "targetFromGlobals" to stack navName with navName
+   return the result
+end targetFromNavigatorGlobals
+
+function targetFromGlobals whichStack,showList,cardOrBackground,whichCard,whichBackground
+   put whichStack into SN
+   if SN is not "the topStack" and SN is not empty then put the long id of stack SN into SN
+   if showList is "true" then 
+      if cardOrBackground = "stack" then return "stack list"
+      return cardOrBackground && "list of" && SN
+   end if
+   if cardOrBackground is "background" then return the long id of group (whichBackground && "of" && SN)
+   return whichCard && "of" && SN 
+end targetFromGlobals
+
+function globalsFromTarget navTarget
+   -- returns an array with whichStack,showList,cardOrBackground,whichCard,whichBackground
+   put (word 2 of navTarget is "list") into R["showList"]
+   put word iff(word 1 of navTarget is "this",2,1) of navTarget into R["cardOrBackground"]
+   if R["cardOrBackground"] is "group" then put "background" into R["cardOrBackground"]
+   
+   if word -5 of navTarget is "stack" then put the value of word -4 of navTarget into R["whichStack"]
+   else if word -2 to -1 of navTarget is "the topstack" then put "the topstack" into R["whichStack"]
+   else if navTarget is not "stack list" then put the short name of stack (word -2 to -1 of navTarget) into R["whichStack"]
+   
+   if R["showList"] then
+      if R["cardOrBackground"] is not "stack" then put R["cardOrBackground"] && "list" into R["which" & R["cardOrBackground"]]
+      return R
+   end if
+   if word 1 to 2 of navTarget is "this card" then 
+      put "this card" into R["whichCard"]
+   else if R["whichStack"] is "the topStack" then 
+      put word 1 to -4 of navTarget into R["whichCard"]
+   else if R["cardOrBackground"] is not "stack" then
+      put the long id of navTarget into R["which" & R["cardOrBackground"]]
+   end if
+   return R
+end globalsFromTarget
+
+
+function navigatorTarget navName
+   -- returns one of the following:
+
+   -- <card id> of the topstack
+   -- this card of the topstack
+   -- this card of stack "<stack name>"
+   
+   -- stack list
+   -- card list of the topstack
+   -- card list of stack "<stack name>"
+   -- background list of the topstack
+   -- background list of stack "<stack name>"
+   
+   -- <card long id>
+   -- <group long id>
+   
+   if navName is empty or navName is the short name of me then return navigatorTarget
+   dispatch function "navigatorTarget" to stack navName
+   return the result
+end navigatorTarget
+
+
 
 
 function existenceWarning pID
@@ -2024,4 +2135,49 @@ on forceNControls pID,N
    end repeat 
    if N = 0 then hide control 1 of pID else show control 1 of pID
 end forceNControls
+
+
+-- MAYBE UNNEEDED?
+
+on setRevNavigatorStackName pStackname
+  local QS, tID2, tIDList
+  
+  if pStackname is empty then put "revNavigator" into pStackname
+  set the itemdel to quote
+  put allIDsOfMainstack(the long id of stack "Navigator") into tIDList
+  --   put tIDList
+  --   exit setNavigatorStackName
+  
+  set the name of stack "Navigator" to pStackname
+  put Q(pStackname) into QS
+  save this stack
+  repeat for each line tID in tIDList
+    put (word 1 to -2 of tID) && QS into tID2
+    if the behavior of tID2 is not empty then \
+          set the behavior of tID2 to \
+          the long id of ((item 1 of the behavior of tID2) & QS)
+  end repeat
+end setRevNavigatorStackName
+
+
+
+on setNavigatorStackName pStackname
+  local QS, tID2, tIDList
+  
+  if pStackname is empty then put "Navigator" into pStackname
+  set the itemdel to quote
+  put allIDsOfMainstack(the long id of stack "revNavigator") into tIDList
+  --   put tIDList
+  --   exit setNavigatorStackName
+  
+  set the name of stack "revNavigator" to pStackname
+  put Q(pStackname) into QS
+  save this stack
+  repeat for each line tID in tIDList
+    put (word 1 to -2 of tID) && QS into tID2
+    if the behavior of tID2 is not empty then \
+          set the behavior of tID2 to \
+          the long id of ((item 1 of the behavior of tID2) & QS)
+  end repeat
+end setNavigatorStackName
 
