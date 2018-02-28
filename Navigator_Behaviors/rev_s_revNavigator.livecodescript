@@ -1901,8 +1901,9 @@ function newNavigator targetContainerList,navNameList
          add 1 to navIndex
       end if
       clone this stack
-      put it && the name of it into fld 1 of stack "untitled 1"
       set the name of it to navName
+      put navName,targetContainer & cr & there is a stack navName & cr & ticks() into fld 1 of stack "behavior demo"
+      
       if item 1 of navLoc < item 3 of the screenRect then add 20 to item 1 of navLoc
       if item 2 of navLoc < item 4 of the screenRect then add 20 to item 2 of navLoc
       set the loc of stack navName to navLoc
@@ -1978,14 +1979,26 @@ function globalsFromTarget navTarget
    put word iff(word 1 of navTarget is "this",2,1) of navTarget into R["cardOrBackground"]
    if R["cardOrBackground"] is "group" then put "background" into R["cardOrBackground"]
    
-   if word -5 of navTarget is "stack" then put the value of word -4 of navTarget into R["whichStack"]
-   else if word -2 to -1 of navTarget is "the topstack" then put "the topstack" into R["whichStack"]
-   else if navTarget is not "stack list" then put the short name of stack (word -2 to -1 of navTarget) into R["whichStack"]
-   
    if R["showList"] then
       if R["cardOrBackground"] is not "stack" then put R["cardOrBackground"] && "list" into R["which" & R["cardOrBackground"]]
       return R
    end if
+   
+   if word -5 of navTarget is "stack" then 
+      put the value of word -4 of navTarget into R["whichStack"]
+      put word 1 to -7 of navTarget into R["which" & R["cardOrBackground"]]
+   else if word -2 to -1 of navTarget is "the topstack" then 
+      put "the topstack" into R["whichStack"]
+      put word 1 to -4 of navTarget into R["which" & R["cardOrBackground"]]
+   else if navTarget is not "stack list" then 
+      put the short name of stack (word -2 to -1 of navTarget) into R["whichStack"]
+      put word 1 to -4 of navTarget into R["which" & R["cardOrBackground"]]
+   end if
+   
+   return R
+   
+   
+   
    if word 1 to 2 of navTarget is "this card" then 
       put "this card" into R["whichCard"]
    else if R["whichStack"] is "the topStack" then 
@@ -2135,6 +2148,11 @@ on forceNControls pID,N
    end repeat 
    if N = 0 then hide control 1 of pID else show control 1 of pID
 end forceNControls
+
+on debugNavigator B
+   global gRevDevelopment
+   put B into gRevDevelopment
+end debugNavigator
 
 
 -- MAYBE UNNEEDED?
