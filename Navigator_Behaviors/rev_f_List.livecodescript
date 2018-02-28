@@ -56,7 +56,10 @@ end popit
 
 on mouseDoubleUp
    put the mouseLoc into XY
-   if ticks() > sClickTicks + 60 or abs(item 1 of XY - item 1 of the clickloc) >= the dragdelta or abs(item 2 of XY - item 2 of the clickloc) >= the dragdelta then exit mouseDoubleUp
+   
+   if ticks() > sClickTicks + 60 and (the commandKey is "up" or the optionKey is "up") then exit mouseDoubleUp
+   if abs(item 1 of XY - item 1 of the clickloc) >= the dragdelta or abs(item 2 of XY - item 2 of the clickloc) >= the dragdelta then exit mouseDoubleUp
+   
    try
       put word 2 of the clickLine into tLine
       put "Double-Click:" into tProperty

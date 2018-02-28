@@ -21,7 +21,7 @@ on prepareItems tLine
       put "(No Selection" into me
       exit prepareItems
    else if the number of items of tLine > 1 then 
-      put "Edit Script" & cr & "Convert to Behaviors" & cr & "Restore from Behaviors" into me
+      put "Edit Script" & cr & "Convert to Behaviors..." & cr & "Restore from Behaviors..." into me
       exit prepareItems
    end if
    put the shiftkey is not "down" into sortHandlers
@@ -68,7 +68,7 @@ on prepareItems tLine
    put splice(cr,sendMenuItems,objectSendMenuItems) into sendMenuItems
    if char -2 to -1 of sendMenuItems is cr & tab then delete char -2 to -1 of sendMenuItems   
    
-   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors\nRestore from Behaviors\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
+   put format("Copy Script\nPaste Script\nPut Handler List\nEdit Script\nConvert to Behaviors...\nRestore from Behaviors...\nSend:\n%s\n(-\n%s",sendMenuItems,editMenuItems) into menuContent
    put menuContent into me
    --put menuContent
 end prepareItems
@@ -93,10 +93,10 @@ on menuPick pWhich
       put putMenuItems
    else if pWhich is "Edit Script" then
       editObjectScripts
-   else if pWhich is "Convert to Behaviors" then
+   else if pWhich is "Convert to Behaviors..." then
       showScriptConversion getList(false) 
       --convertToScriptOnlyStackBehaviors  idList
-   else if pWhich is "Restore from Behaviors" then
+   else if pWhich is "Restore from Behaviors..." then
       showRestoreBehaviors getList(false)
    else if the menuhistory of me is 7 then
       set the itemdelimiter to "|"
