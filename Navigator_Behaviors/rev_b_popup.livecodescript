@@ -330,6 +330,7 @@ on menuPick pWhich
       case "Remove"
          removeBookmarks; break
       case "Open in New Navigator"
+         break
          put the hilitedLines of fld "list" into tLines
          repeat for each item tItem in tLines
             put getID(tItem) into tID
@@ -613,14 +614,9 @@ on prepareItems
    then put "Paste Objects" & cr before tItems
    --/maybe?
    set the wholeMatches to true
-   if tContainer then put "Open in New Navigator" & cr before line lineOffset("-",tItems) of tItems
-   --    put lineOffset("Browse Controls",tItems) into tLine
-   --    if tLine > 0 then 
-   --       put cr & "Open in New Navigator" after line tLine of tItems
-   --    else if tContainer then 
-   --       put lineOffset("-",tItems) into tLine
-   --       put "Open in New Navigator" & cr before tItems 
-   --    end if
+   
+  -- if tContainer then put "Open in New Navigator" & cr before line lineOffset("-",tItems) of tItems
+
    
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me
