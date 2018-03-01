@@ -1900,9 +1900,9 @@ function newNavigator targetContainerList,navNameList
          put iff(the optionKey is "up","rev","") & "Navigator" && navIndex into navName
          add 1 to navIndex
       end if
-      clone this stack
+      clone stack "revNavigator"
       set the name of it to navName
-      put navName,targetContainer & cr & there is a stack navName & cr & ticks() into fld 1 of stack "behavior demo"
+      --put navName,targetContainer & cr & there is a stack navName & cr & ticks() into fld 1 of stack "behavior demo"
       
       if item 1 of navLoc < item 3 of the screenRect then add 20 to item 1 of navLoc
       if item 2 of navLoc < item 4 of the screenRect then add 20 to item 2 of navLoc
