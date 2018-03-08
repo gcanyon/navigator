@@ -383,25 +383,30 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          put the name of stack tStack into tStackName
          
          if (not gSBShowAllStacks) and (filterStacksList(tStack) is empty) then next repeat
-         if tFilter is not empty and tFilter is not in tStack then next repeat
+         put true into includeStack
+         if tFilter is not empty and tFilter is not in tStackName then put false into includeStack
          if the filterString of stack tThisStack is not empty then
             put the filterString of stack tThisStack into tFilterString
             replace "tID" with tStackName in tFilterString
             try
-               if not value(tFilterString) then next repeat
+               if not value(tFilterString) then put false into includeStack
             catch someErr
-               next repeat
+               put false into includeStack
             end try
          end if
          
-         
-         add 1 to tCurrentLine
-         if tCurrentLine > tObjectLimit then exit repeat
-         if tCheckScripts and (the password of tStackName is empty) \
-               then put tColor[whichColor(tStackName)] & tStackName after tControlList \
-               else put tColor[1] & tStackName after tControlList
-         put tCurrentLine into newIDArray[tStackName]
-         put tStackName into newLineArray[tCurrentLine]
+         if includeStack then
+            add 1 to tCurrentLine
+            if tCurrentLine > tObjectLimit then exit repeat
+            if tCheckScripts and (the password of tStackName is empty) \
+                  then put tColor[whichColor(tStackName)] & tStackName after tControlList \
+                  else put tColor[1] & tStackName after tControlList
+            put tCurrentLine into newIDArray[tStackName]
+            put tStackName into newLineArray[tCurrentLine]
+            put tIndentString into tStackIndentString
+         else
+            put empty into tStackIndentString
+         end if
          put the substacks of stack tStack into tSubstackList
          
          repeat for each line tSubstack in tSubstackList
@@ -410,8 +415,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
             if tCurrentLine > tObjectLimit then exit repeat
             put the name of stack tSubStack into tSubstackName
             if tCheckScripts and (the password of tSubstackName is empty) \
-                  then put tColor[whichColor(tSubstackName)] & tSubstackName after tControlList \
-                  else put tColor[1] & tSubstackName after tControlList
+                  then put tColor[whichColor(tSubstackName)] & tStackIndentString & tSubstackName after tControlList \
+                  else put tColor[1] & tStackIndentString & tSubstackName after tControlList
             put tCurrentLine into newIDArray[tSubstackName]
             put tSubstackName into newLineArray[tCurrentLine]
          end repeat
