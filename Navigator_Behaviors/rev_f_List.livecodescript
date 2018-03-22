@@ -768,20 +768,14 @@ function newGraphic P
    reset the templateGraphic
    split P using "|" and "="
    repeat for each key K in P
-      --put "made it to oz" & cr & K & cr & ticks()
       set the K of the templateGraphic to P[K]
    end repeat
-   --put "made it to oz" & cr & "create" & cr & ticks()
    try
       create graphic
    catch error someErr
       put someErr
-   end try
-   --put "made it to oz" & cr & "long id" & cr & ticks()
-   
-   put the long id of it into R
-   --put "made it to oz" & cr & "reset" & cr & ticks()
-   
+   end try   
+   put the long id of it into R   
    reset the templateGraphic
    return R
 end newGraphic

@@ -5,6 +5,7 @@ local sLoc -- the starting loc of the mouse
 on mouseDown
   put true into sResizing
   put the mouseLoc into sLoc
+  send "cleanUp" to fld "list"
 end mouseDown
 
 on mouseUp
