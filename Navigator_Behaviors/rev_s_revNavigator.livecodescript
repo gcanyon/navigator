@@ -1174,6 +1174,15 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
    put empty into scriptForSoSBehaviors
    put empty into scriptForScriptDeletions
    
+   local tURLScheme
+   if the platform is "Win32" then
+      -- Windows users expect CRLF endings
+      put "file:/" into tURLScheme
+   else
+      -- Everyone else can deal with LF endings
+      put "binfile:/" into tURLScheme
+   end if
+   
    put 0 into skippedControlCount
    put 0 into soStackCreatedCount
    repeat for each key tID in soStackName
@@ -1188,7 +1197,7 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
       -- -- -- write everything to the file
       put targetFolder & "/" & soStackName[tID] & ".livecodescript" into sosFilePath
       if there is a file sosFilePath then return answerf("Something went wrong. There has been a file name duplication:" && soStackName[tID] & ".livecodescript" & cr & "Conversion is incomplete.","warning",,"Cancel")
-      if justDoIt then put sosScript into url ("file:/" & sosFilePath)
+      if justDoIt then put sosScript into url (tURLScheme & sosFilePath)
       put cr & "Wrote the script of:" & cr & "    " & tID & cr & "to script-only stack:" & cr & "    " & sosFilePath & cr after logData
       try
          if justDoIt then set the script of tID to empty
