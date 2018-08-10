@@ -563,13 +563,14 @@ on prepareItems
    put word 1 of tIDList into tObjectType
    put true into noCardStack
    put true into exportToBehaviors
+   
    repeat for each line tID in tIDList
       if tObjectType is not "mixed" and word 1 of tID is not tObjectType then put "mixed" into tObjectType
       if allBehaviors and the behavior of tID is empty then put false into allBehaviors
       if exportToBehaviors and the behavior of tID is not empty then put false into exportToBehaviors
       if tContainer and word 1 of tID is not among the items of "card,stack,group" then put false into tContainer
       if noCardStack and word 1 of tID is among the items of "card,stack" then put false into noCardStack
-      if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack  and  not exportToBehaviors then exit repeat
+      if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack and not exportToBehaviors then exit repeat
    end repeat
    if exportToBehaviors then
       put uniqueStacksFromIDs(tIDList) into parentStackList

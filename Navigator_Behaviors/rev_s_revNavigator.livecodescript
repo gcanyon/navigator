@@ -515,7 +515,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          put 2 into tCurrentIndentLine
       end if
       
-      
       put min(the pObjectLimit of this stack,tControlCount) into tControlCount
       if gSBWhichStack[tThisStack] is "the topStack" \
             and not (the ShowRevStacks of this stack) then
@@ -584,7 +583,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
                if isTis then replace "tIS" with Q(tIndent[tCurrentIndentLine]) in tThisDisplay
                replace "tID" with tID in tThisDisplay
                try
-                  put value(tThisDisplay) into tName
+                  put line 1 of value(tThisDisplay) into tName
                catch someErr
                   put " [" & the id of tID & "]" && someErr after tName
                end try
@@ -611,6 +610,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          and not (the ShowRevStacks of this stack) \
          and char 1 to 3 of the short name of the topStack is "rev" then
       delete line tStart + 1 to -1 of fld "list" of this stack
+      put "Nav:" into fld "Navigator Title"
+      
       put empty into navLastFieldUpdate
    else
       if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
@@ -1974,7 +1975,7 @@ function newNavigator targetContainerList,navNameList
       setNavigatorTarget navName,targetContainer
    end repeat
    cleangREVMessageDispatch
-   unloack screen
+   unlock screen
    return navName
 end newNavigator
 
