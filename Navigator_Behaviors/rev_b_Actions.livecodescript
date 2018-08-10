@@ -8,6 +8,10 @@ local addPropertiesForType
 
 on menuPick pWhich
    switch pWhich
+      case "Prefs..."
+         set the pNavigatorName of stack "revNavigatorPrefs" to the short name of this stack
+         go stack "revNavigatorPrefs"
+         break
       case "About Navigator..."
          --          repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
          --             do "put" && V & "[the short name of this stack] & cr after R"

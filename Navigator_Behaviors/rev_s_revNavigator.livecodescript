@@ -5,10 +5,12 @@ global gSBLeadSpaces
 global gSBShowAllStacks, gSBShowList, gSBshowTooltip
 global gSBWhichBackground, gSBWhichCard, gSBWhichStack
 
+
 //>LOCALS
 local sDisableCount, sDoUpdateDisplayCount, sHilitedIDList, sHilitedLineList, sLines
 local sSetupComplete, sStackFileVersion, sUpdatingRevSelection, sWindowLoc
 local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObjectCount,navLastFieldUpdate
+local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
    -- stack list
@@ -174,6 +176,9 @@ on doUpdateListSelection
    put lineListFromIDs(tObjects) into tLineList
    hiliteLines tLineList
    
+   -- if the uClickedLine of this card is not among the items of tLineList then 
+   set the uClickedLine of this card to item -1 of tLineList
+   
 end doUpdateListSelection
 
 
@@ -209,6 +214,16 @@ function dontUpdate
          ((gSBWhichCard[tStack] is "this card") \
          or (gSBWhichCard[tStack] is the currentcard of the topstack)))
 end dontUpdate
+
+on setFolded pID,F
+   --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
+   if F is empty then put not foldedIDArray[pID] into F
+   if F 
+   then put true into foldedIDArray[pID]
+   else delete variable foldedIDArray[pID]
+   doUpdateDisplay true,true
+end setFolded
+
 
 
 on updateRevSelectedObjects
@@ -459,7 +474,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       put the NamedObjectsOnly of this stack into tNamedObjectsOnly
       put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
       put the uDisplay of this stack into tDisplay
-      
+      put tDisplay contains "tIS" into isTis
       put the name of stack tStackName into tStackNameRef
       if tCheckScripts and (the password of tStackNameRef is empty) then 
          put whichColor(tStackNameRef) into tStackColor
@@ -515,7 +530,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       
       repeat with i = 1 to tControlCount
          add 1 to tCurrentIndentLine
-         
+         if foldB[tCurrentIndentLine] then next repeat
          if gSBShowList[tThisStack] then
             if gSBCardOrBackground[tThisStack] is "card" then
                put the long id of cd i into tID --of tStackID into tID  --defaultStack test
@@ -526,6 +541,21 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
             put the long id of control i of tCardOrBGid into tID
          end if
          put the name of tID into tName
+         if word 1 of tName is "group" and (not gSBShowList[tThisStack]) then
+            --put "-</a> " after tIndent[tCurrentIndentLine]
+            --put "- " after tIndent[tCurrentIndentLine]
+            --put "<a name=" & quote & "g" & quote & ">" before tIndent[tCurrentIndentLine]
+            if foldedIDArray[tID] then
+               repeat with tFoldCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + (the number of controls of tID))
+                  put true into foldB[tFoldCount]
+               end repeat
+            else
+               repeat with tWhichIndentCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + (the number of controls of tID))
+                  put tIndentString before tIndent[tWhichIndentCount]
+               end repeat
+            end if
+         end if
+         
          if the filterString of stack tThisStack is not empty then
             put the filterString of stack tThisStack into tFilterString
             replace "tID" with tID in tFilterString
@@ -544,22 +574,31 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
                next repeat
          
          switch tDisplay
-            case "name"; break
-            case "id"; put the abbreviated id of tID into tName; break
-            case "Name and ID"; put " [" & the id of tID & "]" after tName; break
-            case "Long Name"; put the long name of tID into tName; break
-            case "Long ID"; put tID into tName; break
+            case "name"; put tIndent[tCurrentIndentLine] before tName;break
+            case "id"; put tIndent[tCurrentIndentLine] & the abbreviated id of tID into tName; break
+            case "Name and ID"; put tIndent[tCurrentIndentLine] & tName && "[" & the id of tID & "]" into tName; break
+            case "Long Name"; put tIndent[tCurrentIndentLine] & the long name of tID into tName; break
+            case "Long ID"; put tIndent[tCurrentIndentLine] & tID into tName; break
+            default 
+               put tDisplay into tThisDisplay
+               if isTis then replace "tIS" with Q(tIndent[tCurrentIndentLine]) in tThisDisplay
+               replace "tID" with tID in tThisDisplay
+               try
+                  put value(tThisDisplay) into tName
+               catch someErr
+                  put " [" & the id of tID & "]" && someErr after tName
+               end try
+               if not isTis then put tIndent[tCurrentIndentLine] before tName
+               break
          end switch
          if tFilter is not empty and tFilter is not in tName then next repeat
          add 1 to tCurrentLine
-         if word 1 of tName is "group" and (not gSBShowList[tThisStack]) then
-            repeat with tWhichIndentCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + (the number of controls of tID))
-               put tIndentString before tIndent[tWhichIndentCount]
-            end repeat
-         end if
-         put tIndent[tCurrentIndentLine] before tName
-         if tCheckScripts then put tColor[whichColor(tID)] & tName after tControlList \
-               else put tColor[1] & tName after tControlList
+         
+         if tCheckScripts 
+         then put tColor[whichColor(tID)] & tName after tControlList
+         else put tColor[1] & tName after tControlList
+         
+         --if tName contains "group" then put tColor[whichColor(tID)] & tName -- debug
          put tCurrentLine into newIDArray[tID]
          put tID into newLineArray[tCurrentLine]
       end repeat
@@ -579,7 +618,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       put cr & " " after fld "List" of this stack
       lock screen
       set the htmlText of line tStart + 1 to -1 of fld "list" of this stack to tControlList
-      
+      --put tControlList -- debug
       set the scroll of fld "list" to tScroll
       put tControlList into navLastFieldUpdate
       put newIDArray into navIDArray
@@ -880,6 +919,7 @@ end getList
 
 
 on objectInspectorN pWhichLine
+   --put pWhichLine after message
    local idList
    put getList(false,pWhichLine) into idList
    put the propertyPaletteLoc of fld "list" of this stack into sWindowLoc
@@ -959,6 +999,14 @@ end resizeObjects
 function iff B,T,F
    if B then return T else return F
 end iff
+
+function iffv B,T,F
+   try
+      if value(B) then return value(T) else return value(F)
+   catch someErr
+      return someErr
+   end try
+end iffv
 
 
 on navResizeStack tWidth,tHeight
@@ -1143,8 +1191,8 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
    put convertToUniqueLongIDs(idList) into idList
    
    
-   -- build a list of the stacks containing the controls
-   put uniqueStacksFromIDs(idList) into parentStackList
+   -- build a list of mainstacks containing the controls
+   put uniqueStacksFromIDs(idList,true) into parentStackList
    put "Creating script-only behavior stacks for objects in the following stacks:" & cr & parentStackList & cr & cr into logData
    
    -- get a list of the existing file names in that folder & other excluded stack names
@@ -1155,7 +1203,7 @@ function convertToScriptOnlyStackBehaviors idList,targetFolder,sosNameTemplate,s
    repeat for each line S in parentStackList
       set the itemDelimiter to "/"
       put item 1 to -2 of the filename of stack S into stackFolder
-      if stackFolder is empty and answerf("All stacks need to be saved to files to convert to script-only stack behaviors.","warning",,"Cancel") is "Cancel" then return S & cr & stackFolder & cr & cr & parentStackList
+      if stackFolder is empty and answerf("All stacks need to be saved to files to convert to script-only stack behaviors.","warning",,"Cancel") is "Cancel" then return logData & cr & cr & "Offending stack:" && S & cr & cr & "Mainstack List:" & cr & parentStackList
       set the itemDelimiter to comma
       put relativePath(stackFolder,targetFolder) into stackRelativePath[S]
       if stackRelativePath[S] is not empty then put "/" after stackRelativePath[S]
@@ -1300,15 +1348,16 @@ function scriptOnlyStackNamesFromFolderList targetFolder
    return char 1 to -2 of R
 end scriptOnlyStackNamesFromFolderList
 
-function uniqueStacksFromIDs idList
+
+function uniqueStacksFromIDs idList,onlyMainstacks
    repeat for each line tID in idList
-      add 1 to stackList[the short name of stackNameFromID(tID)]
+      add 1 to stackList[the short name of stackNameFromID(tID,onlyMainstacks)]
    end repeat
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function stackNameFromID tID
-   if word -5 of tID is "stack" then return word -5 to -4 of tID
+function stackNameFromID tID,onlyMainstacks
+   if word -5 of tID is "stack" and not onlyMainstacks then return word -5 to -4 of tID
    return the name of stack (word -2 to -1 of tID)
 end stackNameFromID
 
@@ -2213,3 +2262,13 @@ on setNavigatorStackName pStackname
   end repeat
 end setNavigatorStackName
 
+
+function titleSpace S
+   set the caseSensitive to true
+   put empty into R
+   repeat for each character C in S
+      if C is in "QWERTYUIOPASDFGHJKLZXCVBNM" and R is not empty then put space after R
+      put C after R
+   end repeat
+   return R
+end titleSpace

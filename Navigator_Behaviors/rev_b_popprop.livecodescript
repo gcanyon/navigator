@@ -33,8 +33,8 @@ on prepareItems
    put format("\tTrue\n!c\tFalse\n") into tItem["False"]
    
    repeat for each line tProp in "Property Editor..." & cr & \
-         "Object Inspector \(1\)" & cr & \
-         "Object Inspector \(N\)" & cr & \
+         "Single Object Inspector" & cr & \
+         "Individual Object Inspectors" & cr & \
          "-" & cr & OPA["propList"]
       put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
    end repeat
@@ -48,10 +48,10 @@ on menuPick pWhich
          if OPA["idList"] is empty then exit menuPick
          dispatch "setup" to group "editProps" with getClickedID(),OPA["idList"],OPA["propList"]
          exit menuPick
-      case "Object Inspector (1)"
+      case "Single Object Inspector"
          objectInspector1
          exit menuPick 
-      case "Object Inspector (N)"
+      case "Individual Object Inspectors"
          objectInspectorN
          exit menuPick
    end switch
@@ -63,6 +63,11 @@ on menuPick pWhich
       put getID(the uClickedLine of this card) into tClickedID
       if there is a tClickedID then
          put the sProp of tClickedID into tDefaultVal
+         if the commandKey is "down" then
+            resultMessage tDefaultVal
+            exit menuPick
+         end if
+         --put sProp & cr & tClickedID & cr & the sProp of tClickedID -- debug
       else
          put "PropertyValue" into tDefaultVal
       end if

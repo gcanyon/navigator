@@ -99,6 +99,10 @@ on menuPick pWhich
          if there is a tClickedID then 
             set the customPropertySet of tClickedID to sCustomPropertySet
             put the sProp of tClickedID into tDefaultVal 
+            if the commandKey is "down" then
+               resultMessage tDefaultVal
+               exit menuPick
+            end if
          else 
             put "PropertyValue" into tDefaultVal
          end if
@@ -109,8 +113,8 @@ on menuPick pWhich
    
 end menuPick
 
-on resultMessage
-   put fld "setContents" into tText
+on resultMessage pText
+   if pText is empty then put fld "setContents" into tText
    repeat for each line tID in tIDList
       --answer splice(cr,sCustomPropertySet,sProp,tID,tText) with "OK"
       set the customPropertySet of tID to sCustomPropertySet
