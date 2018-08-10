@@ -28,7 +28,8 @@ local tBaseStartHeight -- the start height without accounting for how the field 
 local tMaxScroll -- the maximum amount the list field can be scrolled
 local sRowsDown -- the row the drag will hit
 local tWhichLine -- the number of the line clicked
-
+local sHiliteList -- the hilited lines of the list (in on mouseUp and after mouseUp)
+local sDoubleHiliteList -- the hilited lines of the list -- delayed update for mouseDoubleUp
 
 ##########################
 # new locals for dragging
@@ -41,9 +42,32 @@ local sDropZone, sScrollUpZone, sScrollDownZone
 local sMaxScroll, sTextWithout, sLastLineNum
 local sOriginalHTMLText -- the htmlText of the field before dragging started
 local sUndoMessage -- a reference to the message that undoes the drag
-local sHilitedLines -- a list of the currently hilited lines
 local sMouseDragY -- the Y location of the mouse when the mouse went down
 ###################
+
+--------------------
+-- Drag Drop routines
+--------------------
+
+local tDragList             #THE LIST OF LINES TO DRAG
+local tDragIDList          #THE LIST OF IDs TO DRAG
+local tDragArray            #THE ARRAY OF LINES TO DRAG
+local dragStarted           #SET TO TRUE WHEN DRAGGING IS IN PROGRESS
+local noFlyRect             #IF THE MOUSE MOVES OUTSIDE THIS RECT, CANCEL DRAG DROP
+local targetLine            #THE LINE ABOVE WHICH THE DRAG WILL BE
+local myHTMLtext            #THE HTMLTEXT OF THE FIELD
+local myLineCount           #THE NUMBER OF LINES IN THE FIELD
+local fieldClickLine        #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE FIELD
+local tDragListClickLine    #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE HILITEDLINES
+local myTH                  #THE EFFECTIVE TEXT HEIGHT OF THE FIELD
+local thePointerID          #THE ID OF THE POINTER GRAPHIC
+local theDraggerID          #THE ID OF THE DRAGGER IMAGE
+local startDraggingCount
+local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
+local navigatorDragID        #SET TO THE ID WHEN A DRAG ENTERS ANOTHER NAV WINDOW
+local sNavWindowRectList   #A LIST OF OPEN NAVIGATOR WINDOWS THAT MIGHT BE DRAGGED TO
+local startedExternalDrag #A LIST OF NAVIGATORS THAT HAVE ALREADY STARTED THE CURRENT DRAG
+--local mouseMoveCounter
 
 
 
@@ -54,44 +78,75 @@ on popit
    if bName is not "popup" then set the menumode of btn bName to "pulldown"
 end popit
 
+on updatesDoubleHiliteList
+   put the hilitedLines of me into sDoubleHiliteList
+  -- put sDoubleHiliteList & cr after message
+end updatesDoubleHiliteList
+
 on mouseDoubleUp
    put the mouseLoc into XY
+   --put sDoubleHiliteList & cr after message
    
    if ticks() > sClickTicks + 60 and (the commandKey is "up" or the optionKey is "up") then exit mouseDoubleUp
    if abs(item 1 of XY - item 1 of the clickloc) >= the dragdelta or abs(item 2 of XY - item 2 of the clickloc) >= the dragdelta then exit mouseDoubleUp
-   
+   put empty into tErr
    try
       put word 2 of the clickLine into tLine
       put "Double-Click:" into tProperty
-      if the commandKey is "down" then put "Command-" before tProperty
+      if the commandKey is "down" then 
+         put "Command-" before tProperty
+         if word 2 of the clickLine is among the items of sDoubleHiliteList 
+         then put sDoubleHiliteList into sHiliteList
+         --             put "",(word 2 of the clickLine) after sHiliteList
+         else put (word 2 of the clickLine) into sHiliteList
+         set the hilitedlines of me to sHiliteList
+         storeHilites
+      end if
+      if the shiftKey is "down" then put "Shift-" before tProperty
       if the optionKey is "down" then put "Option-" before tProperty
       put the tProperty of this stack into tCommand
-      if tCommand is "EditScript" then
-         editObjectScripts tLine
+      --put tCommand after message
+      if tCommand is "<None>" then
+      else if tCommand is "EditScript" then
+         editObjectScripts sHiliteList -- tLine
       else if tCommand is "EditBehaviorScript" then
-         editObjectScripts tLine,true
-      else if tCommand is "ObjectInspector" then
-         objectInspectorN tLine
+         editObjectScripts sHiliteList,true --tLine,true
+      else if tCommand is "SingleObjectInspector" then
+         objectInspector1 sHiliteList -- tLine
+      else if tCommand is "IndividualObjectInspector" then
+         objectInspectorN sHiliteList -- tLine
       else if tCommand is "Bookmark-Remove" then
-         bookmarkRemove tLine
+         bookmarkRemove sHiliteList -- tLine
       else if tCommand is "PropertyEditor" then
-         dispatch "setup" to group "editProps" with getID(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card))
+         put objectsAndPropertiesToEdit() into OPA -- idList, propList
+         dispatch "setup" to group "editProps" with getID(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
       else if tCommand is "CopyID" then
-         set the clipboardData["text"] to getID(tLine)
+         set the clipboardData["text"] to getID(sHiliteList)
+      else
+         put getID(sHiliteList) into idList
+         repeat for each line cID in idList
+            put tCommand into tControlCommand
+            replace "tID" with cID in tControlCommand
+            try
+               do tControlCommand
+            catch someErr
+               put someErr into tErr
+            end try
+         end repeat
       end if
-      put the hilitedLines of the target into sHilitedLines
    catch tErr
-      put tErr
+      
    end try
+   if tErr is not empty then put tErr
 end mouseDoubleUp
 
 on mouseUp
    lock screen
    put the scroll of me into S   
-   put the hilitedLines of fld "list" into tHiliteList
-   if tWhichLine is among the items of tHiliteList then
+   put the hilitedLines of fld "list" into sHiliteList
+   if tWhichLine is among the items of sHiliteList then
       select line tWhichLine of fld "list"
-      set the hilitedlines of fld "list" to tHiliteList
+      set the hilitedlines of fld "list" to sHiliteList
    end if
    set the scroll of me to S
    unlock screen
@@ -102,6 +157,8 @@ on mouseDown pWhichButton
    put ticks() into sClickTicks
    put word 2 of the clickLine into tWhichLine
    set the uClickedLine of this card to tWhichLine
+   send "updatesDoubleHiliteList" to me in 30 ticks
+   
    if pWhichButton is not 3 then exit MouseDown
    dontDrag
    if not (tWhichLine is among the items of the hilitedLines of the target) \
@@ -323,29 +380,6 @@ end selectionChanged
 
 
 
---------------------
--- Drag Drop routines
---------------------
-
-local tDragList             #THE LIST OF LINES TO DRAG
-local tDragIDList          #THE LIST OF IDs TO DRAG
-local tDragArray            #THE ARRAY OF LINES TO DRAG
-local dragStarted           #SET TO TRUE WHEN DRAGGING IS IN PROGRESS
-local noFlyRect             #IF THE MOUSE MOVES OUTSIDE THIS RECT, CANCEL DRAG DROP
-local targetLine            #THE LINE ABOVE WHICH THE DRAG WILL BE
-local myHTMLtext            #THE HTMLTEXT OF THE FIELD
-local myLineCount           #THE NUMBER OF LINES IN THE FIELD
-local fieldClickLine        #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE FIELD
-local tDragListClickLine    #THE NUMBER OF THE LINE THAT WAS CLICKED, WITHIN THE HILITEDLINES
-local myTH                  #THE EFFECTIVE TEXT HEIGHT OF THE FIELD
-local thePointerID          #THE ID OF THE POINTER GRAPHIC
-local theDraggerID          #THE ID OF THE DRAGGER IMAGE
-local startDraggingCount
-local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
-local navigatorDragID        #SET TO THE ID WHEN A DRAG ENTERS ANOTHER NAV WINDOW
-local sNavWindowRectList   #A LIST OF OPEN NAVIGATOR WINDOWS THAT MIGHT BE DRAGGED TO
-local startedExternalDrag #A LIST OF NAVIGATORS THAT HAVE ALREADY STARTED THE CURRENT DRAG
---local mouseMoveCounter
 
 before mouseDown
    put 0 into startDraggingCount
@@ -461,9 +495,18 @@ after mouseUp
       set the hScrollbar of me to true 
       cleanUp 
       cleanUpExternalDrag  
-   else if tDragListClickLine > 0 then 
-      cleanUp fieldClickLine
+   else 
+      
+      if tDragListClickLine > 0 then cleanUp sHiliteList -- fieldClickLine
+      if not (sHiliteList contains comma) then
+         put getClickedID() into tID
+         if word 1 of tID is "group" then
+            put the mouseLoc
+            if item 1 of the mouseLoc < 30 then setFolded tID
+         end if
+      end if
    end if
+   
 end mouseUp
 
 after mouseRelease

@@ -276,9 +276,9 @@ on menuPick pWhich
          send "showMe" to group "resizer"; break
       case "Property Editor..."
          dispatch "setup" to group "editProps" with tClickedID; break
-      case "Object Inspector (1)"
+      case "Single Object Inspector"
          objectInspector1; break
-      case "Object Inspector (N)"
+      case "Individual Object Inspectors"
          objectInspectorN; break     
       case "Edit Colors..."
          put "setup" && quote & tClickedID & quote into tMSG
@@ -489,6 +489,21 @@ on menuPick pWhich
          set the itemDelimiter to "|"
          if item 1 of pWhich is among the items of "substacks|mainstack" then
             put item 2 of pWhich into tStackName
+            if tStackName is "New Substack..." then
+               repeat
+                  ask "New substack name:"
+                  if the result is cancel then exit repeat
+                  put it into newSubstackName
+                  try
+                     create stack newSubstackName
+                     set the mainstack of stack newSubstackName to (the short name of tClickedID)
+                     put newSubstackName into tStackName
+                     exit repeat
+                  catch someErr
+                     answer warning someErr with "OK"
+                  end try
+               end repeat
+            end if
             if there is a stack tStackName then
                put false into gSBShowList[the short name of this stack]
                put "card" into gSBCardOrBackground[the short name of this stack]
@@ -585,12 +600,11 @@ on prepareItems
    if tObjectType = "stack" then
       if the mainstack of tIDList is the short name of tIDList then
          put the substacks of tIDList into tSubstacks
-         if tSubstacks is empty then
-            put "(SubStacks (None)" & cr before tItems
-         else
+         if tSubstacks is not empty then
             replace cr with cr & tab in tSubstacks
-            put "SubStacks" & cr & tab & tSubstacks & cr before tItems
+            put tab & tSubstacks & cr before tItems
          end if
+         put "SubStacks" & cr & tab & "New Substack..." & cr before tItems
       else
          put "MainStack" & cr & tab & the mainstack of tIDList & cr before tItems
       end if
@@ -616,7 +630,7 @@ on prepareItems
    set the wholeMatches to true
    
    if tContainer then put "Open in New Navigator" & cr before line lineOffset("-",tItems) of tItems
-
+   
    
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me
