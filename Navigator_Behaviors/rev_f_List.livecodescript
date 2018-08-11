@@ -501,7 +501,7 @@ after mouseUp
       if not (sHiliteList contains comma) then
          put getClickedID() into tID
          if word 1 of tID is "group" then
-            put the mouseLoc
+            --put the mouseLoc
             if item 1 of the mouseLoc < 30 then setFolded tID
          end if
       end if
