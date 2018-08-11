@@ -1832,12 +1832,20 @@ end deDupe
 
 
 on setRecentProp typeList,P
-  set the customPropertySet of stack navStack() to "gSBRecentPropsProp"
-  repeat for each line aType in typeList
-    set the aType of stack navStack() to line 1 to 5 of deDupe(splice(cr,P,the aType of stack navStack()),cr)
-  end repeat
-  set the customPropertySet of stack navStack() to empty
+   put the customProperties["gSBRecentPropsProp"] of stack navStack() into U
+   repeat for each line aType in typeList
+      put line 1 to 5 of moveToFront(P,U[aType]) into U[aType]
+   end repeat
+   set the customProperties["gSBRecentPropsProp"] of stack navStack() to U
 end setRecentProp
+
+function moveToFront E,S
+   -- using lines, returns S with E at the start
+   set the wholeMatches to true
+   get lineOffset(E,S)
+   if it > 0 then delete line it of S
+   return E & cr & S
+end moveToFront
 
 
 function splice D

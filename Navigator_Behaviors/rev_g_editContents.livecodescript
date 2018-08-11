@@ -58,26 +58,26 @@ on hideMe
 end hideMe
 
 on setContents
-  closeDown
-  if sAsAskDialog then
-    send "resultMessage" to sCallingObjectID
-    exit setContents
-  end if
-  put fld "setContents" into tPlainText
-  replace cr with "\n" in tPlainText
-  replace quote with "\" & quote in tPlainText
-  if sIsField then
-    put the HTMLText of fld "setContents" into tHTMLText
-  end if
-  repeat for each line tID in sIDList
-    if sIsField and word 1 of tID is "field" then
-      set the HTMLText of tID to tHTMLText
-    else
-      put format("put format(\"%s\") into %s",tPlainText,tID) into tCMD
-      --put tCMD
-      do tCMD
-    end if
-  end repeat
+   closeDown
+   if sAsAskDialog then
+      send "resultMessage" to sCallingObjectID
+      exit setContents
+   end if
+   put fld "setContents" into tPlainText
+   replace cr with "\n" in tPlainText
+   replace quote with "\" & quote in tPlainText
+   if sIsField then
+      put the HTMLText of fld "setContents" into tHTMLText
+   end if
+   repeat for each line tID in sIDList
+      if sIsField and word 1 of tID is "field" then
+         set the HTMLText of tID to tHTMLText
+      else
+         put format("put format(\"%s\") into %s",tPlainText,tID) into tCMD
+         --put tCMD
+         do tCMD
+      end if
+   end repeat
 end setContents
 
 on setupHTMLText
