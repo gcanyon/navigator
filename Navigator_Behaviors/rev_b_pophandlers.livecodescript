@@ -32,6 +32,7 @@ on prepareItems tLine
    put empty into sendMenuItems
    put tID into xID
    repeat with i = 1 to 100000
+      if not exists(xID) then exit repeat
       put xID into objectIDArray[i]
       put scriptHandlers(the script of xID) into tHandlerList[i]
       put the keys of tHandlerList[i]["name"] into tHandlerList[i]["list"]

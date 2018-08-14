@@ -2,7 +2,7 @@
 global gSBControlSets
 global gSBshowTooltip -- if true, show tooltip
 global gSBshowListLines -- if true, show list lines in fld "list"
-global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList
+global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList,gSBLeadSpaces
 
 local addPropertiesForType
 
@@ -10,7 +10,7 @@ on menuPick pWhich
    switch pWhich
       case "Prefs..."
          set the pNavigatorName of stack "revNavigatorPrefs" to the short name of this stack
-         go stack "revNavigatorPrefs"
+         palette stack "revNavigatorPrefs"
          break
       case "About Navigator..."
          --          repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
@@ -21,54 +21,24 @@ on menuPick pWhich
          send "showMe" to group "about"
          break
       case "New Navigator"
-         clone this stack
-         --put "Navigator Clone" into fld "Navigator Title" of it
-         set the backgroundcolor of grc "navTitleBar" of it to "180,180,180"
-         if the optionKey is "down"
+         if false and the optionKey is "down"
          then put "Navigator" && ticks() into sName
          else put "revNavigator" && ticks() into sName
+         clone this stack
          set the name of it to sName
-         repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
-            do "put" && V & "[the short name of this stack] into" && V & "[sName]"
+         --put "Navigator Clone" into fld "Navigator Title" of it
+         set the backgroundcolor of grc "navTitleBar" of stack sName to "180,180,180"
+         repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList,gSBLeadSpaces"
+            do ("put" && V & "[" & quote & the short name of this stack & quote & "] into" && V & "[" & quote & sName & quote & "]")
          end repeat
          cleangREVMessageDispatch
+         dispatch "updateDisplay" to stack sName with true
          break
       case "Find in Scripts..."
-         put the separatorLine of fld "list" into tSeparator
-         put getLineIDList("all") into tList
-         ask "Find:" with "search string" titled "Find in Scripts"
-         if it is empty or the result is not empty then break
-         put it into tSearchString
-         put empty into tIDList
-         repeat for each line tLine in tList
-            put word 2 to -1 of tLine into tID
-            if tSearchString is not in the script of tID then next repeat
-            if word 1 of tLine <= tSeparator then bookmarkRemove (word 1 of tLine)
-            put tID & cr after tIDList
-         end repeat
-         if tIDList is not empty then setBookmarks ,tIDList
+         bookMarkFoundInScriptControls "Find in scripts for all displayed controls",getID("all")
          break
       case "Find by Test..."
-         put the separatorLine of fld "list" into tSeparator
-         put getLineIDList("all") into tList
-         ask "Test:" with "search string" titled "Find by Test"
-         if it is empty or the result is not empty then break
-         put it into tCondition
-         put empty into tIDList
-         repeat for each line tLine in tList
-            put tCondition into tTest
-            put word 2 to -1 of tLine into tID
-            replace "tID" with tID in tTest
-            try
-               if not value(tTest) then next repeat
-               if word 1 of tLine <= tSeparator then bookmarkRemove (word 1 of tLine)
-               put tID & cr after tIDList
-            catch tErr
-               answer "There was a problem evaluating:" & cr & tTest & cr & cr & "Error:" & cr & tErr
-               if it is "Cancel" then break
-            end try
-         end repeat
-         if tIDList is not empty then setBookmarks ,tIDList
+         bookmarkFoundByTestControls "Find by test for all displayed controls",getID("all")
          break
       case "Rename"
          renameObjects
@@ -92,7 +62,7 @@ on menuPick pWhich
          send "showMe" to group "commandGroup"
          break
       case "Update List Now"
-         send ("doUpdateDisplay") to me in 6 ticks
+         send ("doUpdateDisplay true") to me in 6 ticks
          break
       case "Bookmark|MouseControl..."
          if the optionKey is not "down" then

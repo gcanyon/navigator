@@ -82,7 +82,7 @@ on doSetup
    put the customProperties of me into gSBControlSets
    set the customPropertySet of me to empty
    buildCustomCommandList
-   setSeparatorLine
+   setSeparatorLine 0 -- may need to fix this
    put true into sSetupComplete
    updateDisplay true
    if not (the short name of this stack is "revNavigator" and the hilite of btn "I Paid") then exit doSetup
@@ -699,8 +699,8 @@ end testFunction
 on setBookmarks pWhichLine,pIDList
    local tAddList, tCheckScripts, tColor, tEndString, tKey
    local tList, tLowerLimit, tObjectName
-   --answer pWhichLine,pIDList,insertAt
    put the separatorLine of fld "list" into tLowerLimit
+   --put pWhichLine,pIDList,tLowerLimit after message
    if pIDList is empty then
       if pWhichLine is empty then put the hilitedLines of fld "list" into pWhichLine
       repeat for each item i in pWhichLine
@@ -739,7 +739,7 @@ on setBookmarks pWhichLine,pIDList
    if tAddList is empty then exit setBookmarks
    put cr before fld "list"
    set the htmlText of line 1 of fld "list" to tAddList
-   setSeparatorLine
+   setSeparatorLine (tLowerLimit + the number of lines of tAddList)
 end setBookmarks
 
 
@@ -777,7 +777,7 @@ on removeBookmarks pListOfLines
    set the htmlText of line 1 to tSeparatorLine of fld "list" to tNewHTML
    if tNewHTML is empty then delete line 1 of fld "list"
    set the hilitedLines of fld "list" to empty
-   setSeparatorLine
+   setSeparatorLine (the number of lines of tNewHTML)
 end removeBookmarks
 
 
@@ -1558,31 +1558,83 @@ on hideGroup pID
   enableList
 end hideGroup
 
+on bookmarkFoundInScriptControls dialogTitle,tIDList
+   if dialogTitle is empty then put ("Find in Scripts for" && (the number of lines of tIDList) && "controls") into dialogTitle
+   ask "Find:" with "search string" titled dialogTitle
+   if it is empty or the result is not empty then exit bookmarkFoundInScriptControls
+   put findInScripts(it,tIDList) into tFoundIDList
+   
+   --    if we were going to remove existing bookmarks:
+   --    put the separatorLine of fld "list" into tSeparator
+   --    if word 1 of tLine <= tSeparator then bookmarkRemove (word 1 of tLine)
+   
+   if tFoundIDList is not empty then setBookmarks ,tFoundIDList
+end bookmarkFoundInScriptControls
 
-function allUniqueIDsOf pControlList,separateFields
-  local tReturn, tWorking, X
-  
-  -- returns all the controls within
-  put format("group,1\ncard,2\nstack,3") into X
-  split X using cr and comma
-  put canonicalIDsOf(pControlList) into pControlList
-  sort lines of pControlList descending by X[word 1 of each]
-  --answer pControlList
-  repeat for each line cID in pControlList
-    --put the long id of cID into cID
-    if tReturn[cID] is not empty then next repeat
-    --put true into tReturn[cID]
-    put canonicalIDsOf(allControlIDsOf(cID),true,separateFields) into tWorking
-    --answer tWorking
-    --split tWorking by cr as set
-    union tReturn with tWorking
-  end repeat
-  --answer the number of lines of the keys of tReturn
-  return the keys of tReturn
+function findInScripts searchString,tIDList
+   repeat for each line tID in tIDList
+      if exists(tID) and searchString is in the script of tID then put tID & cr after R
+   end repeat
+   return R   
+end findInScripts
+
+on bookmarkFoundByTestControls dialogTitle,tIDList
+   if dialogTitle is empty then put ("Find by Test for" && (the number of lines of tIDList) && "controls") into dialogTitle
+   ask "Find:" with "test string" titled dialogTitle
+   if it is empty or the result is not empty then exit bookmarkFoundByTestControls
+   put findByTest(it,tIDList) into tFoundIDList
+   if tFoundIDList is not empty then setBookmarks ,tFoundIDList
+end bookmarkFoundByTestControls
+
+function findByTest tCondition,tIDList
+   put false into ignoreErrors
+   repeat for each line tID in tIDList
+      put tCondition into tTest
+      replace "tID" with tID in tTest
+      try
+         if value(tTest) then put tID & cr after R
+      catch tErr
+         if ignoreErrors then next repeat
+         answer "There was a problem evaluating:" & cr & tTest & cr & cr & "Error:" & cr & tErr with "Cancel" or "Ignore Errors" or "OK"
+         if it is "Cancel" then return empty
+         put (it is "Ignore Errors") into ignoreErrors 
+      end try
+   end repeat
+   return R
+end findByTest
+
+
+function allUniqueIDsOf pControlList,includeBehaviors
+   local tReturn, tWorking, X
+   
+   -- returns all the controls within
+   put format("group,1\ncard,2\nstack,3") into X
+   split X using cr and comma
+   put canonicalIDsOf(pControlList) into pControlList
+   sort lines of pControlList descending by X[word 1 of each]
+   --answer pControlList
+   repeat for each line cID in pControlList
+      --put the long id of cID into cID
+      if tReturn[cID] is not empty then next repeat
+      --put true into tReturn[cID]
+      if includeBehaviors then
+         put canonicalIDsOf(allControlIDsOf(cID),false) into tWorking
+         put addBehaviorChains(tWorking) into tBehaviors
+         if tBehaviors is not empty then put cr & tBehaviors after tWorking
+         split tWorking by cr as set
+      else
+         put canonicalIDsOf(allControlIDsOf(cID),true) into tWorking
+      end if
+      --answer tWorking
+      --split tWorking by cr as set
+      union tReturn with tWorking
+   end repeat
+   --answer the number of lines of the keys of tReturn
+   return the keys of tReturn
 end allUniqueIDsOf
 
 
-function canonicalIDsOf cIDList, returnArray, fieldException
+function canonicalIDsOf cIDList, returnArray
   local cID, cIDend, R
   
   repeat for each line cIDx in cIDList
@@ -1676,8 +1728,9 @@ end nonGroupChildControlIDsOf
 function addBehaviorChains tIDList
    repeat for each line tID in tIDList
       repeat
+         if not exists(tID) then exit repeat
          put tID & cr after R
-         if the behavior of tID is empty then exit repeat else put the behavior of tID into tID
+         put the behavior of tID into tID
       end repeat
    end repeat
    return R
@@ -1969,7 +2022,7 @@ function newNavigator targetContainerList,navNameList
       put line i of targetContainerList into targetContainer
       put line i of navNameList into navName
       if navName is empty then 
-         put iff(the optionKey is "up","rev","") & "Navigator" && navIndex into navName
+         put iff(true and the optionKey is "up","rev","") & "Navigator" && navIndex into navName
          add 1 to navIndex
       end if
       clone stack "revNavigator"

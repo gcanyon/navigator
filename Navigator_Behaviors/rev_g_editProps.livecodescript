@@ -13,9 +13,11 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    -- pCustomProperties (optional): if true, editing custom properties
    -- pCustomPropertySet (optional): the customPropertySet that the properties are in
    --put pID && pIDList && pPropList && pCustomProperties,pCustomPropertySet after message; exit to top
-   if pIDList is empty then exit setup
-   set the cIDList of fld "editProps" to pIDList
+   --if pIDList is empty then exit setup
+   if pIDList is empty then put pID into pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
+   if not exists(pID) then exit setup
+   set the cIDList of fld "editProps" to pIDList
    set the cSourceID of fld "editProps" to pID
    set the cCustomProperties of fld "editProps" to pCustomProperties is true
    set the cCustomPropertySet of fld "editProps" to pCustomPropertySet
