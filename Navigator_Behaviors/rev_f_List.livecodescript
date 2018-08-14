@@ -105,7 +105,7 @@ on mouseDoubleUp
       if the shiftKey is "down" then put "Shift-" before tProperty
       if the optionKey is "down" then put "Option-" before tProperty
       put the tProperty of this stack into tCommand
-      --put tCommand after message
+      --put sHiliteList after message
       if tCommand is "<None>" then
       else if tCommand is "EditScript" then
          editObjectScripts sHiliteList -- tLine
