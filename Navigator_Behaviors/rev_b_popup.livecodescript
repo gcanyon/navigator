@@ -182,41 +182,35 @@ on menuPick pWhich
          updateDisplay true
          break
       case "Find|In Scripts..."
-         put getID() into tIDList
+      case "Find|In Scripts and Behaviors..."
       case "Find|In Enclosed Scripts..."
-         if pWhich is "Find|In Enclosed Scripts..." then put allUniqueIDsOf(getID()) into tIDList
-         ask "Find:" with "search string" titled replaceF("...",":",replaceF("|",space,pWhich))
-         if it is empty or the result is not empty then break
-         repeat for each line tID in tIDList
-            if it is in the script of tID then put tID & cr after tFoundIDList
-         end repeat
-         if tFoundIDList is not empty then setBookmarks ,tFoundIDList
-         break
+      case "Find|In Enclosed Scripts and Behaviors..."
       case "Find|By Test..."
-         put getID() into tIDList
+      case "Find|By Test with Behaviors..."
       case "Find|In Enclosed By Test..."
-         ask "Test -- tID is the object reference:" with "search string" titled replaceF("...",":",replaceF("|",space,pWhich))
-         if it is empty or the result is not empty then break else put it into tCondition
-         if pWhich is "Find|In Enclosed By Test..." then 
-            --            answer "Treat a field on multiple cards separately?" with "As One Field" or "Separately"
-            --            put allUniqueIDsOf(getID(),(it is "Separately")) into tIDList
-            put allUniqueIDsOf(getID()) into tIDList
+      case "Find|In Enclosed with Behaviors By Test..."
+      case "Scripts|Count"
+      case "Scripts|Count with Behaviors"
+      case "Scripts|Count Enclosed"
+      case "Scripts|Count Enclosed with Behaviors"
+      case "Scripts|Copy"
+      case "Scripts|Copy with Behaviors"
+      case "Scripts|Copy Enclosed"
+      case "Scripts|Copy Enclosed with Behaviors"
+         put getID() into tIDList
+         if pWhich contains "Enclosed" then put allUniqueIDsOf(tIDList) into tIDList
+         if pWhich contains "Behaviors" then put addBehaviorChains(tIDList) into tIDList
+         
+         if char 1 to 4 of pWhich is "Find" then
+            if pWhich contains "By Test"
+            then bookmarkFoundByTestControls ,tIDList
+            else bookMarkFoundInScriptControls ,tIDList
+         else      
+            if pWhich contains "Count"
+            then reportScripts tIDList
+            else copyScripts tIDList
          end if
-         put false into ignoreErrors
-         repeat for each line tID in tIDList
-            put tCondition into tTest
-            replace "tID" with tID in tTest
-            try
-               if value(tTest) then put tID & cr after tIDMatchList
-            catch tErr
-               if ignoreErrors then next repeat
-               answer "There was a problem evaluating:" & cr & tTest & cr & cr & "Error:" & cr & tErr with "Cancel" or "Ignore Errors" or "OK"
-               if it is "Cancel" then break
-               put (it is "Ignore Errors") into ignoreErrors 
-            end try
-         end repeat
-         if tIDMatchList is not empty then setBookmarks ,tIDMatchList
-         break
+         break    
       case "Set Copied Img as WindowShape"
          put word 3 of gSBLastCopiedObjectList into tShortID
          repeat for each line tID in theHilitedIDs()
@@ -275,7 +269,8 @@ on menuPick pWhich
       case "Resize..."
          send "showMe" to group "resizer"; break
       case "Property Editor..."
-         dispatch "setup" to group "editProps" with tClickedID; break
+         put objectsAndPropertiesToEdit() into P
+         dispatch "setup" to group "editProps" with tClickedID,P["idList"],P["propList"]; break
       case "Single Object Inspector"
          objectInspector1; break
       case "Individual Object Inspectors"
@@ -289,44 +284,9 @@ on menuPick pWhich
          send "InspectorSectionChanged" && quote & "Align Controls" & quote to stack (line 1 of the openstacks)
          break
       case "Edit Scripts"
-         editObjectScripts; break
-      case "Scripts|Count"
-         put getID() into tIDList
-      case "Scripts|Count Enclosed"
-         if pWhich is "Scripts|Count Enclosed" then put allUniqueIDsOf(getID()) into tIDList
-         repeat for each line cID in tIDList
-            add 1 to tObjectCount
-            get length(the script of cID)
-            if it = 0 then next repeat
-            add it to tCharSize
-            add the number of lines of the script of cID to tLineCount
-            add 1 to tScriptCount
-         end repeat
-         reportScripts tCharSize,tLineCount,tScriptCount,tObjectCount
-         break
-      case "Scripts|Copy"
-         put getID() into tIDList
-      case "Scripts|Copy Enclosed"
-         if pWhich is "Scripts|Copy Enclosed" then put allUniqueIDsOf(getID()) into tIDList
-         repeat for each line cID in tIDList
-            add 1 to tObjectCount
-            get length(the script of cID)
-            if it = 0 then next repeat
-            add 1 to tScriptCount
-            put "------------------------------------------------------------" & \
-                  cr & "------------------------------------------------------------" & \
-                  cr & "--" && the long name of cID & \
-                  cr & "--" && cID & \
-                  cr & "------------------------------------------------------------" & \
-                  cr & "------------------------------------------------------------" & \
-                  cr & cr & the script of cID & cr & cr & cr & cr after scriptsToCopy
-         end repeat
-         set clipboardData["text"] to scriptsToCopy
-         answer "Copied" && tScriptCount && "scripts from" && tObjectCount && "objects." with "OK"
-         break
+         editObjectScripts; break      
       case "Bookmark"
-         setBookmarks
-         break
+         setBookmarks;break
       case "Remove"
          removeBookmarks; break
       case "Open in New Navigator"
@@ -539,11 +499,52 @@ on menuPick pWhich
    end switch
 end menuPick
 
-on reportScripts tCharSize,tLineCount,tScriptCount,tObjectCount
-   answer "The size of the scripts is:" & cr & tCharSize && "characters in" & cr & tLineCount && "lines in" & cr & tScriptCount && "scripts in" & cr & tObjectCount && "objects." with "Make Copyable" or "OK"
-   if it is "OK" then exit reportScripts
-   ask "The size of the scripts is:" with tCharSize && "characters in" && tLineCount && "lines in" && tScriptCount && "scripts in" && tObjectCount && "objects."
+on reportScripts tIDList
+   put 0 into tObjectCount
+   put 0 into tCharSize
+   put 0 into tLineCount
+   put 0 into tScriptCount
+   put cr into detailedScriptReport
+   repeat for each line cID in tIDList
+      if not exists(cID) then next repeat
+      add 1 to tObjectCount
+      put length(the script of cID) into scriptCharCount
+      if scriptCharCount = 0 then next repeat
+      add scriptCharCount to tCharSize
+      put the number of lines of the script of cID into scriptLineCount
+      add scriptLineCount to tLineCount
+      put cr & cr & (the long name of cID) & cr & cID & cr & "Script Line Count:" && scriptLineCount && "Script Length:" && scriptCharCount after detailedScriptReport 
+      add 1 to tScriptCount
+   end repeat
+   put "The size of the scripts is:" & cr & tCharSize && "characters in" & cr & tLineCount && "lines in" & cr & tScriptCount && "scripts in" & cr & tObjectCount && "objects." into tScriptReport
+   if tScriptCount = 0
+   then answer "No scripts found." with "OK"
+   else answer tScriptReport with "Copy Detailed Script Report" or "OK"
+   if it is "Copy Detailed Script Report" then 
+      set clipboardData["text"] to tScriptReport & detailedScriptReport
+      answer "Detailed script report copied." with "OK"
+   end if
+   
 end reportScripts
+
+on copyScripts tIDList
+   repeat for each line cID in tIDList
+      if not exists(cID) then next repeat
+      add 1 to tObjectCount
+      get length(the script of cID)
+      if it = 0 then next repeat
+      add 1 to tScriptCount
+      put "------------------------------------------------------------" & \
+            cr & "------------------------------------------------------------" & \
+            cr & "--" && the long name of cID & \
+            cr & "--" && cID & \
+            cr & "------------------------------------------------------------" & \
+            cr & "------------------------------------------------------------" & \
+            cr & cr & the script of cID & cr & cr & cr & cr after scriptsToCopy
+   end repeat
+   set clipboardData["text"] to scriptsToCopy
+   answer "Copied" && tScriptCount && "scripts from" && tObjectCount && "objects." with "OK"
+end copyScripts
 
 
 on prepareItems

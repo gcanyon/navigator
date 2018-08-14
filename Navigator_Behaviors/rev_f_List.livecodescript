@@ -113,7 +113,7 @@ on mouseDoubleUp
          editObjectScripts sHiliteList,true --tLine,true
       else if tCommand is "SingleObjectInspector" then
          objectInspector1 sHiliteList -- tLine
-      else if tCommand is "IndividualObjectInspector" then
+      else if tCommand is "IndividualObjectInspectors" then
          objectInspectorN sHiliteList -- tLine
       else if tCommand is "Bookmark-Remove" then
          bookmarkRemove sHiliteList -- tLine
@@ -391,7 +391,7 @@ before mouseDown
 end mouseDown
 
 on tattle T
-   put T & cr after message
+   --put T & cr after message
 end tattle
 
 on dontDrag

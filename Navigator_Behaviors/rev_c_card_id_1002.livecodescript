@@ -101,7 +101,7 @@ on setPrefs
       repeat for each line uID in the childcontrolids of group "list action buttons"
          put the short name of control id uID into U
          put the label of control id uID into tCMD
-         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Object Inspector" then replace space with empty in tCMD
+         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove" then replace space with empty in tCMD
          set the U of navID to tCMD
       end repeat
       
