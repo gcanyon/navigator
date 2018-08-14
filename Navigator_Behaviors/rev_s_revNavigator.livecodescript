@@ -923,6 +923,7 @@ on objectInspectorN pWhichLine
    --put pWhichLine after message
    local idList
    put getList(false,pWhichLine) into idList
+   --put idList after message
    put the propertyPaletteLoc of fld "list" of this stack into sWindowLoc
    put the number of lines of idList into tLineCount
    if tLineCount > 10 and \
@@ -931,9 +932,10 @@ on objectInspectorN pWhichLine
    lock screen
    repeat for each line tID in idList
       revIDEInspectObjects tID
+      set the cLocked of stack (line 1 of the windows) to true
       positionWindow
    end repeat
-   if tLIneCount = 1 then set the cLocked of stack (line 1 of the windows) to true
+   --if tLIneCount = 1 then set the cLocked of stack (line 1 of the windows) to true
    unlock screen
 end objectInspectorN
 
