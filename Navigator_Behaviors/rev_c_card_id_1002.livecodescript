@@ -20,6 +20,8 @@ on getPrefs
    replace "(" with " (" in FN
    sort lines of FN
    put FN into btn "List Font"
+   set the label of btn "Default Fold" to the pDefaultFold of navID 
+   
    set the label of btn "List Font" to the textFont of fld "list" of navID
    set the label of btn "List Font Size" to the textSize of fld "list" of navID
    set the label of btn "List Object Limit" to the pObjectLimit of navID
@@ -81,7 +83,7 @@ on setPrefs
          set the P of navID to the highlight of btn P
       end repeat
       set the hGrid of fld "list" of navID to the highlight of btn "showListLines"
-      set the pIndentString of navID to fld "Indent String"
+      set the pDefaultFold of navID to the label of btn "Default Fold"
       put the label of btn "List Font" into FN
       if char 1 of FN is space then delete char 1 of FN
       set the textFont of fld "list" of navID to FN

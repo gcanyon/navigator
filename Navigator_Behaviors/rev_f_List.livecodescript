@@ -502,7 +502,10 @@ after mouseUp
          put getClickedID() into tID
          if word 1 of tID is "group" then
             --put the mouseLoc
-            if item 1 of the mouseLoc < 30 then setFolded tID
+            if item 1 of the mouseLoc < 30 then 
+               setFolded tID
+               doUpdateDisplay true,true
+            end if
          end if
       end if
    end if

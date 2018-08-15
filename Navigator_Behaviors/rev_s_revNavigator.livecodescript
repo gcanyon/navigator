@@ -13,13 +13,14 @@ local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObj
 local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
-   -- stack list
-   -- this card of the topstack
-   -- this card of stack "<stack name>"
-   -- <card long id>
-   -- <group long id>
-   -- card list of stack "<stack name>"
-   -- background list of stack "<stack name>"
+-- stack list
+-- this card of the topstack
+-- this card of stack "<stack name>"
+-- <card long id>
+-- <group long id>
+-- card list of stack "<stack name>"
+-- background list of stack "<stack name>"
+local tLastCardOrBGid -- the last thing displayed, to check for default fold
 
 
 
@@ -215,13 +216,31 @@ function dontUpdate
          or (gSBWhichCard[tStack] is the currentcard of the topstack)))
 end dontUpdate
 
+on setFoldDepth tContainer,tDepth
+   -- sets the folded for the groups within a card/group to 
+   -- false if they are higher than tDepth
+   -- true if they are at tDepth
+   -- ignores if they are below tDepth
+   put the long id of tContainer into tContainerID
+   if not (word 1 of tContainerID is among the items of "group,card") then exit setFoldDepth
+   if word 1 of tContainerID is "group" then setFolded tContainerID,(tDepth = 0)
+   repeat with i = 1 to the number of controls of tContainerID
+      put the long id of control i of tContainerID into tID
+      if word 1 of tID is not "group" then next repeat
+      put tID into tDepthCount
+      replace tContainerID with empty in tDepthCount
+      put (the number of words of tDepthCount) div 4 into tDepthCount
+      if tDepthCount < tDepth then setFolded tID,false
+      else if tDepthCount = tDepth then setFolded tID,true
+   end repeat
+end setFoldDepth
+
 on setFolded pID,F
    --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
    if F is empty then put not foldedIDArray[pID] into F
    if F 
    then put true into foldedIDArray[pID]
    else delete variable foldedIDArray[pID]
-   doUpdateDisplay true,true
 end setFolded
 
 
@@ -505,6 +524,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          else put tColor[1] & "<b>" & the name of tCardOrBGid & "</b>"after tControlList
          
          put tCardOrBGid into newLineArray[2]
+         if tCardOrBGid is not tLastCardOrBGid and the pDefaultFold of stack tThisStack is not "Show All" then
+            setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
+         end if
+         put tCardOrBGid into tLastCardOrBGid
+         
          put the number of controls of tCardOrBGid into tControlCount
          
          if word -5 of tCardOrBGid is "stack" \
@@ -1445,6 +1469,7 @@ function allNavigators
   
   put the openStacks into R
   filter R with "revNavigator*"
+  filter R without "revNavigatorPrefs"
   if there is a stack "Navigator" then return R & cr & "Navigator" else return R
 end allNavigators
 
