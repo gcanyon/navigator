@@ -447,7 +447,12 @@ on menuPick pWhich
          send "showMe" to group "commandGroup"; break
       default
          set the itemDelimiter to "|"
-         if item 1 of pWhich is among the items of "substacks|mainstack" then
+         if item 1 of pWhich is "Fold Depth" then
+            put getID(tClickedLine) into tID
+            if item 2 of pWhich is "Show All" then put 999999 into tFoldDepth else put item 2 of pWhich into tFoldDepth
+            setFoldDepth tID,tFoldDepth
+            doUpdateDisplay true,true
+         else if item 1 of pWhich is among the items of "substacks|mainstack" then
             put item 2 of pWhich into tStackName
             if tStackName is "New Substack..." then
                repeat
