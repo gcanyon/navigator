@@ -5,11 +5,11 @@ global gSBCardOrBackground, gSBShowAllStacks, gSBShowList, gSBWhichCard, gSBWhic
 
 on mouseDown
    local tList, tMainList, tMenuLimit, tSubstacks
-   
+
    put the pMenuLimit of this stack into tMenuLimit
-   
+
    put the mainStacks into tMainList
-   put the optionKey is "up" into filterList
+   put the optionKey is "up" and the controlKey is "up" into filterList
    if filterList then put filterStacksList(tMainList) into tMainList
    --sort lines of tMainlist by the scriptonly of stack each
    put empty into tList
@@ -53,13 +53,13 @@ on menuPick pWhich
       answer "Please hold down the Option/Alt key and click OK." & cr & "Then place the pointer over the stack you want and release the Option/Alt key." with "OK"
       if the optionKey is not "down" then break
     case pWhich is among the items of "the topStack,the mouseStack" and the optionKey is "down"
-      
+
       set the cursor to hand
       set the lockCursor to true
       waitForKeys ,,"up",,"setTargetStackToMouseStack",(the long id of me)
       break
       --         -- wait until the optionKey is not "down"
-      
+
       --         set the lockCursor to false
       --         put the mouseStack into tStack
       --         beep
