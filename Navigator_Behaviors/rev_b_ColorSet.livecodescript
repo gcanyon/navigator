@@ -27,6 +27,7 @@ on menuPick pItemName
       end if
    else
       put "u" before pItemName
+      --put the pItemName of the owner of me after message
       repeat for each line CS in the pItemName of the owner of me
          set the backgroundColor of grc (item 1 of CS) to item 2 to -1 of CS
       end repeat

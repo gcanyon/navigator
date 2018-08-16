@@ -1057,6 +1057,7 @@ on navResizeStack tWidth,tHeight
    set the rect of fld "Navigator Title" to tRect
    
    set the rect of fld "list" to -2,35,(tWidth+1),(tHeight+1)
+   set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
    
    repeat for each item G in "about,commandGroup,editContents,editProps"
       if the vis of group G then dispatch "setSize" to group G
@@ -1865,7 +1866,14 @@ on setColor pProp,pColor
       set the hiliteColor of fld "filter" to pColor
    end if
    if pProp is "pColorListLines" then set the borderColor of fld "list" to pColor
-   if pProp is "pColorBackground" then set the backgroundColor of this cd to pColor
+   if pProp is "pColorBackground" then 
+      set the backgroundColor of this cd to pColor
+      put pColor into pFoldColor
+      repeat with i = 1 to 3
+         if item i of pFoldColor > 128 then subtract 15 from item i of pFoldColor else add 20 to item i of pFoldColor
+      end repeat
+      set the backgroundColor of grc "groupFoldBar" to pFoldColor
+   end if
    set the pProp of this stack to pColor
 end setColor
 
@@ -1914,7 +1922,7 @@ end deDupe
 on setRecentProp typeList,P
    put the customProperties["gSBRecentPropsProp"] of stack navStack() into U
    repeat for each line aType in typeList
-      put line 1 to 5 of moveToFront(P,U[aType]) into U[aType]
+      put line 1 to 12 of moveToFront(P,U[aType]) into U[aType]
    end repeat
    set the customProperties["gSBRecentPropsProp"] of stack navStack() to U
 end setRecentProp

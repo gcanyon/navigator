@@ -185,8 +185,15 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       end if
    end repeat
    
-   put beforeLine - (the separatorLine of the target) - 2 into tBeforeLayer
-   put afterLine - (the separatorLine of the target) - 2 into tAfterLayer
+   --put beforeLine - (the separatorLine of the target) - 2 into tBeforeLayer
+   put the layer of getID(beforeLine) into tBeforeLayer
+   --put afterLine - (the separatorLine of the target) - 2 into tAfterLayer
+   put getID(afterLine) into tAfterID
+   if exists(tAfterID)
+   then put the layer of tAfterID into tAfterLayer
+   else put 1 + the layer of getID(afterLine - 1) into tAfterLayer
+   
+   
    
    if (line 1 of beforeList is not empty) or (line 1 of afterList is not empty) then 
       if line 1 of beforeList is not empty then put line 1 of beforeList into sID else put line 1 of afterList into sID
@@ -199,7 +206,7 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       put the short name of the topstack into tStackName
       put the id of this cd of stack sName into tCardID
       if tCardID is cardID then put empty into returnMSG 
-         else put format("go card id %s of stack \"%s\"\N",tCardID,sName) into returnMSG
+      else put format("go card id %s of stack \"%s\"\N",tCardID,sName) into returnMSG
       
       if sName is not tStackName then put format("go stack \"%s\"",tStackName) after returnMSG
       if returnMSG is not empty then go cd id cardID of stack sName
@@ -504,7 +511,7 @@ after mouseUp
             --put the mouseLoc
             if item 1 of the mouseLoc < 30 then 
                setFolded tID
-               doUpdateDisplay true,true
+               doUpdateDisplay true
             end if
          end if
       end if
