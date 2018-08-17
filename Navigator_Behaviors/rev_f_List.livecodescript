@@ -6,6 +6,8 @@ global gSBShowList -- if true, show a list of cards/backgrounds
 global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 global gSBDragStartNav -- the short name of the Navigator originating a drag
+global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
+
 local tOriginalScroll,tClickLine
 local tStartDragMessage
 local sDropLines -- the items that actually need to be rearranged on dropping.
@@ -168,6 +170,62 @@ end mouseDown
 
 
 on relayerControlList pTargetLine,pLinesToRelayerList
+   --put pTargetLine & cr & cr & pLinesToRelayerList into message
+   --put gSBWhichCard[the short name of this stack] into message;exit relayerControlList
+   put the short name of this stack into navID
+   --put gSBContainerID[navID] into message; exit relayerControlList
+   put pLinesToRelayerList into pLinesToRelayerSet
+   split pLinesToRelayerSet with comma as set
+   put pLinesToRelayerList into pLinesToRelayerArray
+   split pLinesToRelayerArray with comma
+   --    put getID(pLinesToRelayerList) into tDragIDList
+   --    put tDragIDList into tDragIDSet
+   --    split tDragIDList with cr
+   --    split tDragIDSet with cr as set
+   
+   
+   
+   lock messages
+   lock screen   
+   
+   if not gSBContainerID[navID] is the long id of this cd of the owner of gSBContainerID[navID]
+   then put "go" && (the long id of this cd of the owner of gSBContainerID[navID]) & cr into returnMSG
+   if not the name of the topstack is the owner of gSBContainerID[navID]
+   then put "go" && the name of the topstack after returnMSG
+   
+   if returnMSG is not empty then go gSBContainerID[navID]
+   
+   set the relayergroupedcontrols to the optionkey is "up"
+   
+   
+   
+   put the number of lines of fld "list" into tLineCount
+   put pTargetLine into tAfterLine
+   repeat until pLinesToRelayerSet[tAfterLine] is empty
+      add 1 to tAfterLine
+   end repeat
+   if tAfterLine < tLineCount then
+      put the layer of getIDFirst(tAfterLine) into tAfterLayer
+      repeat with i = item 2 of the extents of pLinesToRelayerArray down to 1
+         put getID(i) into tIDList
+         repeat with j = the number of lines of tIDList down to 1
+            put line j of tIDList into jID
+             set the layer of jID to tAfterLayer
+         end repeat
+      end repeat
+   end if
+   
+   put pTargetLine - the separatorLine of fld "list" into tStackTargetLine
+   if tStackTargetLine = 2 then put 1 into tTargetLayer
+   else if pTargetLine > the number of lines of fld "list" then put the number of controls of gSBContainerID[navID] into tTargetLayer
+   else put the layer of getIDFirst(pTargetLine) into tTargetLayer
+   
+   
+   
+   exit relayerControlList
+   
+   
+   
    put pLinesToRelayerList into pLinesToRelayerListA
    split pLinesToRelayerListA with comma as set
    repeat with beforeLine = pTargetLine - 1 down to 0
@@ -185,15 +243,9 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       end if
    end repeat
    
-   --put beforeLine - (the separatorLine of the target) - 2 into tBeforeLayer
-   put the layer of getID(beforeLine) into tBeforeLayer
-   --put afterLine - (the separatorLine of the target) - 2 into tAfterLayer
-   put getID(afterLine) into tAfterID
-   if exists(tAfterID)
-   then put the layer of tAfterID into tAfterLayer
-   else put 1 + the layer of getID(afterLine - 1) into tAfterLayer
-   
-   
+   put getLayer(pTargetLine,"before") into tBeforeLayer
+   put getLayer(pTargetLine) into tAfterLayer
+   --put tBeforeLayer & cr & tAfterLayer & cr & cr & "beforeList" & cr & beforeList & cr & cr & "afterList" & cr & afterList into message
    
    if (line 1 of beforeList is not empty) or (line 1 of afterList is not empty) then 
       if line 1 of beforeList is not empty then put line 1 of beforeList into sID else put line 1 of afterList into sID
@@ -503,7 +555,6 @@ after mouseUp
       cleanUp 
       cleanUpExternalDrag  
    else 
-      
       if tDragListClickLine > 0 then cleanUp sHiliteList -- fieldClickLine
       if not (sHiliteList contains comma) then
          put getClickedID() into tID
