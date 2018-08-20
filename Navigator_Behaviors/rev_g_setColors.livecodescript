@@ -3,7 +3,7 @@ local sIDList -- list of ids of objects to set
 local sClickedID -- id of the object that was clicked to display
 
 on setup pID
-editColors pID,getID()
+   editColors pID,getID()
 end setup
 
 on editColors pID,pIDList

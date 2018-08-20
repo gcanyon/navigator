@@ -20,12 +20,14 @@ on prepareItems tLine
    if tLine is empty then 
       put "(No Selection" into me
       exit prepareItems
-   else if the number of items of tLine > 1 then 
-      put "Edit Script" & cr & "Convert to Behaviors..." & cr & "Restore from Behaviors..." into me
-      exit prepareItems
+   else 
+      put getID(tLine) into tID
+      if the number of lines of tID > 1 then 
+         put "Edit Script" & cr & "Convert to Behaviors..." & cr & "Restore from Behaviors..." into me
+         exit prepareItems
+      end if
    end if
    put the shiftkey is not "down" into sortHandlers
-   put getID(tLine) into tID
    put "function,0 before,1 on,2 after,3 getprop,4 setprop,5" into sortOrder
    split sortOrder by space and comma
    put empty into behaviorMenuItems

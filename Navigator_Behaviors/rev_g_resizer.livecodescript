@@ -12,7 +12,7 @@ local sW,sH -- the width and height to resize from for proportional
 
 on showMe
   put getID() into tempList
-  put getID(the uClickedLine of this card) into sID
+  put getIDFirst(the uClickedLine of this card) into sID
   put empty into sIDList
   repeat for each line L in tempList
     if L is sID then next repeat

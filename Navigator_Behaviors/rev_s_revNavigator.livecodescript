@@ -4,6 +4,7 @@ global gREVMessageDispatch, gSBCardOrBackground, gSBControlSets, gSBCustomComman
 global gSBLeadSpaces
 global gSBShowAllStacks, gSBShowList, gSBshowTooltip
 global gSBWhichBackground, gSBWhichCard, gSBWhichStack
+global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
 
 //>LOCALS
@@ -256,10 +257,11 @@ on updateRevSelectedObjects
    repeat for each item tItem in tLineNumbers
       if tItem < (tSeparatorLine + 3) then next repeat
       put tItem - tSeparatorLine into tKey
-      put navLineArray[tKey] && "and " after tLinesToSelect
+      put navLineArray[tKey] & cr after tLinesToSelect
    end repeat
    if tLinesToSelect is not "select " then
-      delete word -1 of tLinesToSelect
+      delete char -1 of tLinesToSelect
+      replace cr with " and " in tLinesToSelect
    else
       put "empty" after tLinesToSelect
    end if
@@ -369,7 +371,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    --put true into pRetainHilites
    --put "doUpdateDisplay" && pForceUpdate && pRetainHilites && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
    --put the short name of this stack && ticks() & cr &  the executionContexts & cr & cr & cr before fld 1 of stack "untitled 3"
-   
+
    local tBookmarkLineList, tCardOrBGid, tCheckScripts, tColor, tControlCount
    local tControlList, tCurrentIndentLine, tCurrentLine, tDisplay, tFilter
    local tFilterString, tHilitedIDList, tID, tIDLineList, tIndent
@@ -397,6 +399,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    put the pIndentString of this stack into tIndentString
    
    
+   put empty into gSBContainerID[tThisStack]
    
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
@@ -460,6 +463,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       
       
    else
+
       enable btn "whichCard" of this stack
       
       if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
@@ -528,6 +532,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
             setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
          end if
          put tCardOrBGid into tLastCardOrBGid
+         put tCardOrBGid into gSBContainerID[tThisStack]
          
          put the number of controls of tCardOrBGid into tControlCount
          
@@ -569,7 +574,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
             --put "- " after tIndent[tCurrentIndentLine]
             --put "<a name=" & quote & "g" & quote & ">" before tIndent[tCurrentIndentLine]
             if foldedIDArray[tID] then
-               repeat with tFoldCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + (the number of controls of tID))
+               put the number of controls of tID into foldedControlCount
+               put tIndentString & tIndent[tCurrentIndentLine] & foldedControlCount && "folded controls" into tFoldNote
+               repeat with tFoldCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + foldedControlCount)
                   put true into foldB[tFoldCount]
                end repeat
             else
@@ -624,12 +631,20 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          --if tName contains "group" then put tColor[whichColor(tID)] & tName -- debug
          put tCurrentLine into newIDArray[tID]
          put tID into newLineArray[tCurrentLine]
+         if foldedIDArray[tID] and foldedControlCount > 0 then
+            put tColor[1] & tFoldNote after tControlList
+            add 1 to tCurrentLine
+            put empty into newLineArray[tCurrentLine]
+            repeat with j = 1 to the number of controls of tID
+               put (the long id of control J of tID) & cr after newLineArray[tCurrentLine]
+            end repeat
+            delete char -1 of newLineArray[tCurrentLine]
+         end if
       end repeat
       
       set the defaultStack to tPrevDefaultStack
    end if
    put "</font></p>" after tControlList
-   
    if gSBWhichStack[tThisStack] is "the topStack" \
          and not (the ShowRevStacks of this stack) \
          and char 1 to 3 of the short name of the topStack is "rev" then
@@ -894,9 +909,35 @@ function getID pWhichLines
    return getList(false,pWhichLines)
 end getID
 
+function getIDFirst pWhichLines
+   return line 1 of getList(false,item 1 of pWhichLines)
+end getIDFirst
+
+function layerOfLine pWhichLine
+   repeat for each line tID in getID(pWhichLine)
+      if exists(tID) then return the layer of tID
+   end repeat
+   return 99999 -- this is an error, but returning a valid value so things don't die
+end layerOfLine
+
+function getIDLast pWhichLines
+   return line -1 of getList(false,item -1 of pWhichLines)
+end getIDLast
+
+function getLayer lineNumber,beforeAfter
+   if beforeAfter is "before" 
+   then put getIDLast(lineNumber) into tID
+   else put getIDFirst(lineNumber) into tID
+   if exists(tID)
+   then return the layer of tID
+   else return the layer of getIDLast(lineNumber - 1)
+end getLayer
+
 
 function getClickedID
-   return getList(false,the uClickedLine of this card)
+   put getList(false,the uClickedLine of this card) into rID
+   if rID contains cr then return line 1 of rID
+   if rID is empty then return getList(false,-1 + the uClickedLine of this card)
 end getClickedID
 
 
@@ -925,19 +966,22 @@ function getList pIncludeLines,pWhichLines
    if pWhichLines is "all" then put listFrom(1,the number of lines of fld "list") into pWhichLines
    repeat for each item tLine in pWhichLines
       if tLine <= tSeparator then
-         put the linkText of line tLine of fList into tID
-         replace numtochar(1) with quote in tID
+         put the linkText of line tLine of fList into tIDList
+         replace numtochar(1) with quote in tIDList
       else
-         put navLineArray[(tLine - tSeparator)] into tID
+         put navLineArray[(tLine - tSeparator)] into tIDList
       end if
       --put the short name of this stack,(tLine - tSeparator)
-      if (there is a tID) then
-         if pIncludeLines then put tLine & " " before tID
-         if tReturnArray[tID] is empty then put tID & cr after R
-         add 1 to tReturnArray[tID]
-      else
-         set the textColor of line tLine of fList to tColorObjectMissing
-      end if
+      repeat for each line tID in tIDList
+         if (there is a tID) then
+            if tReturnArray[tID] is not empty then next repeat
+            add 1 to tReturnArray[tID]
+            if pIncludeLines then put tLine & " " before tID
+            put tID & cr after R
+         else
+            set the textColor of line tLine of fList to tColorObjectMissing
+         end if
+      end repeat
    end repeat
    return char 1 to -2 of R
 end getList

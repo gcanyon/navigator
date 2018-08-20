@@ -60,7 +60,7 @@ on menuPick pWhich
    put item 1 of pWhich into sProp
    put item 2 of pWhich into tVal
    if tVal is empty then
-      put getID(the uClickedLine of this card) into tClickedID
+      put getIDFirst(the uClickedLine of this card) into tClickedID
       if there is a tClickedID then
          put the sProp of tClickedID into tDefaultVal
          if the commandKey is "down" then
