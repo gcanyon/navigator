@@ -371,7 +371,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    --put true into pRetainHilites
    --put "doUpdateDisplay" && pForceUpdate && pRetainHilites && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
    --put the short name of this stack && ticks() & cr &  the executionContexts & cr & cr & cr before fld 1 of stack "untitled 3"
-   
+
    local tBookmarkLineList, tCardOrBGid, tCheckScripts, tColor, tControlCount
    local tControlList, tCurrentIndentLine, tCurrentLine, tDisplay, tFilter
    local tFilterString, tHilitedIDList, tID, tIDLineList, tIndent
@@ -463,7 +463,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       
       
    else
-      
+
       enable btn "whichCard" of this stack
       
       if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
@@ -631,7 +631,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          --if tName contains "group" then put tColor[whichColor(tID)] & tName -- debug
          put tCurrentLine into newIDArray[tID]
          put tID into newLineArray[tCurrentLine]
-         if foldedIDArray[tID] then
+         if foldedIDArray[tID] and foldedControlCount > 0 then
             put tColor[1] & tFoldNote after tControlList
             add 1 to tCurrentLine
             put empty into newLineArray[tCurrentLine]
@@ -645,7 +645,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       set the defaultStack to tPrevDefaultStack
    end if
    put "</font></p>" after tControlList
-   
    if gSBWhichStack[tThisStack] is "the topStack" \
          and not (the ShowRevStacks of this stack) \
          and char 1 to 3 of the short name of the topStack is "rev" then
@@ -913,6 +912,13 @@ end getID
 function getIDFirst pWhichLines
    return line 1 of getList(false,item 1 of pWhichLines)
 end getIDFirst
+
+function layerOfLine pWhichLine
+   repeat for each line tID in getID(pWhichLine)
+      if exists(tID) then return the layer of tID
+   end repeat
+   return 99999 -- this is an error, but returning a valid value so things don't die
+end layerOfLine
 
 function getIDLast pWhichLines
    return line -1 of getList(false,item -1 of pWhichLines)

@@ -121,7 +121,7 @@ on mouseDoubleUp
          bookmarkRemove sHiliteList -- tLine
       else if tCommand is "PropertyEditor" then
          put objectsAndPropertiesToEdit() into OPA -- idList, propList
-         dispatch "setup" to group "editProps" with getID(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
+         dispatch "setup" to group "editProps" with getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
       else if tCommand is "CopyID" then
          set the clipboardData["text"] to getID(sHiliteList)
       else
@@ -170,58 +170,80 @@ end mouseDown
 
 
 on relayerControlList pTargetLine,pLinesToRelayerList
-   --put pTargetLine & cr & cr & pLinesToRelayerList into message
+   --put pTargetLine & cr & cr & pLinesToRelayerList into message;exit relayerControlList
    --put gSBWhichCard[the short name of this stack] into message;exit relayerControlList
    put the short name of this stack into navID
    --put gSBContainerID[navID] into message; exit relayerControlList
-   put pLinesToRelayerList into pLinesToRelayerSet
-   split pLinesToRelayerSet with comma as set
-   put pLinesToRelayerList into pLinesToRelayerArray
-   split pLinesToRelayerArray with comma
-   --    put getID(pLinesToRelayerList) into tDragIDList
-   --    put tDragIDList into tDragIDSet
-   --    split tDragIDList with cr
-   --    split tDragIDSet with cr as set
+   put 1 into i
+   repeat for each line tID in getID(pLinesToRelayerList)
+      put tID into dragArray[i]
+      put i into indexFromIDArray[tID]
+      put the layer of tID into layerFromIDArray[tID]
+      put tID into idFromLayerArray[layerFromIDArray[tID]]
+      add 1 to i
+   end repeat
+   put the number of lines of fld "list" into tLineCount
+   put the number of controls of gSBContainerID[navID] into tLayerCount
    
+   --put gSBContainerID[navID] into message
+   -- lock messages
+   -- lock screen   
+   if not (gSBContainerID[navID] is (the long id of this card of the owner of gSBContainerID[navID]))
+   then put "go" && (the long id of this card of the owner of gSBContainerID[navID]) & cr into returnMSG
    
-   
-   lock messages
-   lock screen   
-   
-   if not gSBContainerID[navID] is the long id of this cd of the owner of gSBContainerID[navID]
-   then put "go" && (the long id of this cd of the owner of gSBContainerID[navID]) & cr into returnMSG
-   if not the name of the topstack is the owner of gSBContainerID[navID]
+   if not (the name of the topstack is the owner of gSBContainerID[navID]) 
    then put "go" && the name of the topstack after returnMSG
    
    if returnMSG is not empty then go gSBContainerID[navID]
    
-   set the relayergroupedcontrols to the optionkey is "up"
+   set the relayergroupedcontrols to the optionkey is "up"   
    
-   
-   
-   put the number of lines of fld "list" into tLineCount
-   put pTargetLine into tAfterLine
-   repeat until pLinesToRelayerSet[tAfterLine] is empty
-      add 1 to tAfterLine
-   end repeat
-   if tAfterLine < tLineCount then
-      put the layer of getIDFirst(tAfterLine) into tAfterLayer
-      repeat with i = item 2 of the extents of pLinesToRelayerArray down to 1
-         put getID(i) into tIDList
-         repeat with j = the number of lines of tIDList down to 1
-            put line j of tIDList into jID
-             set the layer of jID to tAfterLayer
-         end repeat
-      end repeat
-   end if
-   
-   put pTargetLine - the separatorLine of fld "list" into tStackTargetLine
-   if tStackTargetLine = 2 then put 1 into tTargetLayer
-   else if pTargetLine > the number of lines of fld "list" then put the number of controls of gSBContainerID[navID] into tTargetLayer
+   if pTargetLine > tLineCount 
+   then put 1 + tLayerCount into tTargetLayer
    else put the layer of getIDFirst(pTargetLine) into tTargetLayer
    
+   put empty into tAfterLayer
+   repeat with tAfterIndexLayer = tTargetLayer to tLayerCount + 1
+      if idFromLayerArray[tAfterIndexLayer] is empty and tAfterLayer is empty then put tAfterIndexLayer into tAfterLayer
+      if tAfterLayer is not empty and idFromLayerArray[tAfterIndexLayer] is not empty then exit repeat
+   end repeat
+   --put ticks() && tAfterLayer && tAfterIndexLayer into message
+   
+   if tAfterIndexLayer <= tLayerCount then
+      repeat with i = item 2 of the extents of dragArray down to indexFromIDArray[idFromLayerArray[tAfterIndexLayer]]
+         --put cr & i && dragArray[i] after message
+         set the layer of dragArray[i] to tAfterLayer
+      end repeat
+   end if
+   --put ticks() into message
    
    
+   put empty into tBeforeLayer
+   repeat with tBeforeIndexLayer = tTargetLayer - 1 down to 0
+      if idFromLayerArray[tBeforeIndexLayer] is empty and tBeforeLayer is empty then put tBeforeIndexLayer into tBeforeLayer
+      if tBeforeLayer is not empty and idFromLayerArray[tBeforeIndexLayer] is not empty then exit repeat
+   end repeat
+   
+   if tAfterIndexLayer > 0 then
+      --       repeat with i = 1 to indexFromIDArray[idFromLayerArray[tBeforeIndexLayer]]
+      --          set the layer of dragArray[i] to tBeforeLayer
+      --       end repeat
+      repeat with i = indexFromIDArray[idFromLayerArray[tBeforeIndexLayer]] down to 1
+         if word 1 of dragArray[i] is "group" then subtract the number of controls of dragArray[i] from tBeforeLayer
+         if tBeforeLayer > the layer of dragArray[i]
+         then set the layer of dragArray[i] to tBeforeLayer
+         else put the layer of dragArray[i] into tBeforeLayer
+         --set the layer of dragArray[i] to tBeforeLayer
+         subtract 1 from tBeforeLayer
+      end repeat
+      
+   end if
+   
+   if returnMSG is not empty then do returnMSG
+   -- unlock messages
+   -- unlock screen
+   
+   send "doUpdateDisplay true" to stack navID in 10 ticks
    exit relayerControlList
    
    
@@ -304,14 +326,14 @@ end relayerBookmarkList
 on addBookmarkedControls pLineList,pTargetLine
    put getID(pLineList) into tLineIDList
    put the separatorLine of the target into tSeparatorLine
-   put pTargetLine - (tSeparatorLine + 2) into tTargetLayer
-   put getID(tSeparatorLine+1) into tStackRef
+   put layerOfLine(pTargetLine) into tTargetLayer
+   put getIDFirst(tSeparatorLine+1) into tStackRef
    put the value of word -1 of tStackRef into tStackName
    put the long id of tStackRef into tStackID
    if gSBShowList[the short name of this stack] then
-      put getID(pTargetLine) into tCardBGRef
+      put getIDFirst(pTargetLine) into tCardBGRef
    else
-      put getID(tSeparatorLine+2) into tCardBGRef
+      put getIDFirst(tSeparatorLine+2) into tCardBGRef
    end if
    repeat for each line tID in tLineIDList
       put word 1 of tID into tType
@@ -376,7 +398,7 @@ on addBookmarkedControls pLineList,pTargetLine
 end addBookmarkedControls
 
 on placeGroupOntoCards pWhichLine,tObjectList
-   put getID(pWhichLine) into tID
+   put getIDFirst(pWhichLine) into tID
    if word 1 of tID is not "group" then exit placeGroupOntoCards
    put "background id" && word 3 of tID && word -3 to -1 of tID into tBackgroundID
    put getID(tObjectList) into tCardList
@@ -414,7 +436,7 @@ on dragLines pDragList,pTargetLine
          if gSBShowList[SN] then 
             if gSBCardOrBackground[SN] is not "card" then 
                put empty into dragA[2] -- we don't rearrange stacks or groups
-            else if word 1 of getID(tWhichLine) is "group" then
+            else if word 1 of getIDFirst(tWhichLine) is "group" then
                placeGroupOntoCards tWhichLine,dragA[2]
                put empty into dragA[1]
                put empty into dragA[2]

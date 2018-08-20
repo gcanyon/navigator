@@ -46,7 +46,7 @@ end prepareItems
 on menuPick pWhich
    switch
       case the menuhistory of me = 1 
-         put getID(the uClickedLine of this card) into tClickedID
+         put getIDFirst(the uClickedLine of this card) into tClickedID
          if not (there is a tClickedID) then put line 1 of tIDList into tClickedID
          if not there is a tClickedID then break
          --on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
@@ -94,7 +94,7 @@ on menuPick pWhich
             put empty into sProp
             exit menuPick
          end if
-         put getID(the uClickedLine of this card) into tClickedID
+         put getIDFirst(the uClickedLine of this card) into tClickedID
          if not (there is a tClickedID) then put line 1 of tIDList into tClickedID
          if there is a tClickedID then 
             set the customPropertySet of tClickedID to sCustomPropertySet

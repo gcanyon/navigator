@@ -38,7 +38,7 @@ on showMe pAsAskDialog
    else
       put empty into sCallingObjectID
       put getID() into sIDList
-      put getID(the uClickedLine of this card) into sClickedID
+      put getIDFirst(the uClickedLine of this card) into sClickedID
       set the textFont of fld "setContents" to the effective textFont of sClickedID
       if sIsField then
          set the htmlText of fld "setContents" to the htmlText of sClickedID

@@ -33,7 +33,7 @@ on menuPick pWhich
    put false into tOpenInNewNavigator
    put word 2 of the clickLine into tClickedLine
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
-   put getID(tClickedLine) into tClickedID
+   put getIDFirst(tClickedLine) into tClickedID
    switch pWhich
       case "Export to Behaviors"
          get convertToScriptOnlyStackBehaviorsAutomatic(sHighlightedList)
@@ -226,13 +226,13 @@ on menuPick pWhich
          end repeat
          break
       case "Set As WindowShape"
-         put getID(tClickedLine) into tID
+         put getIDFirst(tClickedLine) into tID
          put word -2 to -1 of tID into tStack
          put the short name of tStack into tStack
          set the windowShape of stack tStack to (word 3 of tID)
          break
       case "Export As..."
-         put getID(tClickedLine) into tID
+         put getIDFirst(tClickedLine) into tID
          ask file "Export As:"
          if it is empty then break
          put it into FP
@@ -258,7 +258,7 @@ on menuPick pWhich
          end switch
          break
       case "Set Image As Icon"
-         put word 3 of getID(tClickedLine) into tIconID
+         put word 3 of getIDFirst(tClickedLine) into tIconID
          repeat for each line tID in getID()
             if word 1 of tID is not "button" then next repeat
             set the icon of tID to tIconID
@@ -290,10 +290,7 @@ on menuPick pWhich
       case "Remove"
          removeBookmarks; break
       case "Open in New Navigator"
-         --break
-         put the hilitedLines of fld "list" into tLines
-         repeat for each item tItem in tLines
-            put getID(tItem) into tID
+         repeat for each line tID in getID()
             if not (word 1 of tID is among the items of "group,card,stack") then next repeat
             if word 1 of tID is "stack" then put "this card of " after newNavContainerList
             put tID & cr after newNavContainerList
@@ -319,10 +316,8 @@ on menuPick pWhich
       case "Go|TopLevel"
          put true into tTopLevel
       case "Go|Show"
-         put the hilitedLines of fld "list" into tLines
          put empty into reloadConfirmed
-         repeat for each item tItem in tLines
-            put getID(tItem) into tID
+         repeat for each line tID in getID()
             if not (word 1 of tID is among the items of "group,card,stack") then next repeat
             try
                if tBrowseControls then
@@ -398,8 +393,7 @@ on menuPick pWhich
          break
       case "Purge Stack..."
          put the hilitedLines of fld "list" into tLines
-         repeat for each item tLine in tLines
-            put getID(tLine) into tID
+         repeat for each line tID in getID()
             if word 1 of tID is not "stack" then next repeat
             put the effective fileName of tID into tStackPath
             if tStackPath is empty then put the mainStack of tID into tStackpath
@@ -448,7 +442,7 @@ on menuPick pWhich
       default
          set the itemDelimiter to "|"
          if item 1 of pWhich is "Fold Depth" then
-            put getID(tClickedLine) into tID
+            put getIDFirst(tClickedLine) into tID
             if item 2 of pWhich is "Show All" then put 999999 into tFoldDepth else put item 2 of pWhich into tFoldDepth
             setFoldDepth tID,tFoldDepth
             doUpdateDisplay true,true
@@ -490,14 +484,8 @@ on menuPick pWhich
             put ("file:" & tPath) into tURL
             put url tURL into tCommand
             set the commandCode of button "do" of group "commandcontrols" to tCommand
-            put the hilitedLines of fld "list" into tList
-            if tList is empty then break
-            put empty into tIDList
-            set the itemDelimiter to ","
-            repeat for each item tLine in tList
-               put getID(tLine) into tID
-               put tID & cr after tIDList
-            end repeat
+            put getID() into tIDList
+            if tIDList is empty then break
             set the pWorkingLines of group "commandGroup" to tIDList
             send "doCode" to button "do" of group "commandcontrols"
          end if
@@ -553,8 +541,8 @@ end copyScripts
 
 
 on prepareItems
-   put the hilitedLines of fld "list" into tLines
-   put getID(tLines) into tIDList
+   put the hilitedlines of field "list" into tLines
+   put getID() into tIDList
    put tIDList into sHighlightedList -- local to store universally within this script the ids highlighted when click occurred
    put word 2 of the clickLine into tClickedLine
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
