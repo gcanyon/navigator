@@ -701,7 +701,8 @@ on startDragging X,Y
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
    put the number of lines of myHTMLtext into myLineCount
-   put the effective textHeight of me + 1 into myTH
+   --put the effective textHeight of me + 1 into myTH
+   put trunc(the textheightsum of me)/(the number of lines of me) into myTH
    lock screen
    -- put "made it! 1" && startDraggingCount && ticks()
    put newPointer() into thePointerID
