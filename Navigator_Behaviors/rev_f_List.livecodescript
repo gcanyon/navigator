@@ -186,8 +186,8 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    put the number of controls of gSBContainerID[navID] into tLayerCount
    
    --put gSBContainerID[navID] into message
-   -- lock messages
-   -- lock screen   
+   lock messages
+   lock screen   
    if not (gSBContainerID[navID] is (the long id of this card of the owner of gSBContainerID[navID]))
    then put "go" && (the long id of this card of the owner of gSBContainerID[navID]) & cr into returnMSG
    
@@ -240,8 +240,8 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    end if
    
    if returnMSG is not empty then do returnMSG
-   -- unlock messages
-   -- unlock screen
+   unlock messages
+   unlock screen
    
    send "doUpdateDisplay true" to stack navID in 10 ticks
    exit relayerControlList

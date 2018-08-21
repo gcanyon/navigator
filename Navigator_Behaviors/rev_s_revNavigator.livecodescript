@@ -1056,9 +1056,31 @@ on cloneObjects pWhichLine
    
    put getList(false,pWhichLine) into idList
    repeat for each line tID in idList
+      if word 1 of tID is not "card" then
+         clone tID
+         next repeat
+      end if
+      lock messages
+      lock screen  
+      put empty into returnMSG
+      put the long id of this card of the owner of tID into tIDOwnerCurrentCard
+      put the name of the topstack into TS
+      if not (tID is tIDOwnerCurrentCard)
+      then put "go" && tIDOwnerCurrentCard & cr into returnMSG
+      
+      if not (the name of the topstack is the owner of tID) 
+      then put "go" && the name of the topstack after returnMSG
+      
+      lock messages
+      lock screen
+      
+      go tID
       clone tID
+      do returnMSG
+      unlock messages
+      unlock screen      
    end repeat
-   send ("doUpdateDisplay") to me in 6 ticks
+   send ("doUpdateDisplay") to me in 10 ticks
 end cloneObjects
 
 
