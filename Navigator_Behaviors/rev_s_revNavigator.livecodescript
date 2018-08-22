@@ -1570,16 +1570,15 @@ on setVisNavigator pVis,doAll
       put the short name of this stack into thisNav
       put the working screenRects into screenList
       if the number of lines of screenList is 1 then
-         put allNavigators() & cr into navList
+         put allNavigators() & cr & "revMenubar" into navList
       else
          put inWhichRect((the loc of this stack),screenList) into screenList
-         repeat for each line aNav in allNavigators()
+         repeat for each line aNav in allNavigators() & cr & "revMenubar"
             if the loc of stack aNav is within thisNavScreen then put aNav & cr after navList
          end repeat
       end if
       put item 2 of screenList into tTopTarget
-      --put navList & cr & "revMenubar" into message
-      repeat for each line S in navList & "revMenubar"
+      repeat for each line S in navList
          if (S <> thisNav) and \
                (the height of stack S is 15 or S is "revMenubar") and \
                item 1 of tRect < the right of stack S and \
