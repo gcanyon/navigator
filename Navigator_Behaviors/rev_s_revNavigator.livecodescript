@@ -1567,9 +1567,21 @@ on setVisNavigator pVis,doAll
    else
       put the rect of this stack into tRect
       set the cPreviousRect of this stack to tRect
-      put iff(the platform is "MacOS",22,1) into tTopTarget
-      repeat for each line S in allNavigators() & cr & "revMenubar"
-         if (the height of stack S is 15 or S is "revMenubar") and \
+      put the short name of this stack into thisNav
+      put the working screenRects into screenList
+      if the number of lines of screenList is 1 then
+         put allNavigators() & cr into navList
+      else
+         put inWhichRect((the loc of this stack),screenList) into screenList
+         repeat for each line aNav in allNavigators()
+            if the loc of stack aNav is within thisNavScreen then put aNav & cr after navList
+         end repeat
+      end if
+      put item 2 of screenList into tTopTarget
+      --put navList & cr & "revMenubar" into message
+      repeat for each line S in navList & "revMenubar"
+         if (S <> thisNav) and \
+               (the height of stack S is 15 or S is "revMenubar") and \
                item 1 of tRect < the right of stack S and \
                item 3 of tRect > the left of stack S then \
                put max(tTopTarget,the bottom of stack S) into tTopTarget
@@ -1581,6 +1593,13 @@ on setVisNavigator pVis,doAll
    set the icon of button "CloseNav" to iff(the cIAmHidden of this stack,2619,2621)
    set the icon of button "CloseNavAll" to iff(the cIAmHidden of this stack,2625,2624)
 end setVisNavigator
+
+function inWhichRect P,rList
+   repeat for each line r in rList
+      if P is within r then return r
+   end repeat
+   return empty
+end inWhichRect
 
 
 on moveNavigator pTopTarget,pBottomTarget
