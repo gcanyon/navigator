@@ -56,76 +56,91 @@ on stopResizing
   cancel sMessage
 end stopResizing
 
-on doResize
-  put the rect of sID into tPatternRect
-  if tPatternRect is sRect then 
-    send "doResize" to me in 1 tick
-    put the result into sMessage
-    exit doResize
-  end if
-  lock screen
-  switch sResizeMode
-  case 1 -- align
-    repeat with i = 1 to 4
-      put (item i of tPatternRect <> item i of sRect) into tSet[i]
-      put item i of tPatternRect into tPatternRectArray[i]
-    end repeat
-    repeat for each line tID in sIDList
-      put the rect of tID into tRect
-      repeat with i = 1 to 4
-        if tSet[i] then put tPatternRectArray[i] into item i of tRect
-      end repeat
-      set the rect of tID to tRect
-    end repeat
-    break
-  case 2 -- match
-    repeat with i = 1 to 4
-      put (item i of tPatternRect <> item i of sRect) into tSet[i]
-      put (item i of tPatternRect - item (((i+1) mod 4) + 1) of tPatternRect) into tDiff[i]
-    end repeat
-    repeat for each line tID in sIDList
-      put the rect of tID into tRect
-      repeat with i = 1 to 4
-        if tSet[i] then put item (((i+1) mod 4) + 1) of tRect + tDiff[i] into item i of tRect
-      end repeat
-      set the rect of tID to tRect
-    end repeat
-    break
-  case 3 -- proportional
-    repeat with i = 1 to 4
-      put (item i of tPatternRect - item i of sStartRect)/sDim[i] into tDiff[i]
-    end repeat
-    put 0 into t
-    repeat for each line tID in sIDList
-      add 1 to t
-      if the rect of tID is not sNRa[t] then
-        put the rect of tID into sSRa[t]
-        put the width of tID into sw[t]
-        put the height of tID into sh[t]
-        --put sw[t] && sh[t] && sSRa[t] && sNRa[t] && ticks() & cr after fld 1 of stack "bob"
-      end if
-      put trunc(tDiff[1] * sw[t] + item 1 of sSRa[t]),\
-          trunc(tDiff[2] * sh[t] + item 2 of sSRa[t]),\
-          trunc(tDiff[3] * sw[t] + item 3 of sSRa[t]),\
-          trunc(tDiff[4] * sh[t] + item 4 of sSRa[t]) into sNRa[t]
-      set the rect of tID to sNRa[t]
-    end repeat
-    break
-  case 4 -- scale
-    repeat with i = 1 to 4
-      put item i of tPatternRect - item i of sRect into tDiff[i]
-    end repeat
-    repeat for each line tID in sIDList
-      put the rect of tID into tRect
-      repeat with x = 1 to 4
-        add tDiff[x] to item x of tRect
-      end repeat
-      set the rect of tID to tRect
-    end repeat
-    break
-  end switch
-  put tPatternRect into sRect
-  unlock screen
-  send "doResize" to me in 1 tick
-  put the result into sMessage
+on modifySIDrect deltaR
+   put the rect of sID into R
+   repeat with i = 1 to 4
+      add item i of deltaR to R
+   end repeat
+   cancel sMessage
+   doResize R 
+end modifySIDrect
+
+on doResize newRect
+   if newRect is empty then
+      put the rect of sID into tPatternRect
+   else 
+      put newRect into tPatternRect
+      set the rect of sID to tPatternRect
+   end if
+   
+   if tPatternRect is sRect then 
+      send "doResize" to me in 1 tick
+      put the result into sMessage
+      exit doResize
+   end if
+   lock screen
+   switch sResizeMode
+      case 1 -- align
+         repeat with i = 1 to 4
+            put (item i of tPatternRect <> item i of sRect) into tSet[i]
+            put item i of tPatternRect into tPatternRectArray[i]
+         end repeat
+         repeat for each line tID in sIDList
+            put the rect of tID into tRect
+            repeat with i = 1 to 4
+               if tSet[i] then put tPatternRectArray[i] into item i of tRect
+            end repeat
+            set the rect of tID to tRect
+         end repeat
+         break
+      case 2 -- match
+         repeat with i = 1 to 4
+            put (item i of tPatternRect <> item i of sRect) into tSet[i]
+            put (item i of tPatternRect - item (((i+1) mod 4) + 1) of tPatternRect) into tDiff[i]
+         end repeat
+         repeat for each line tID in sIDList
+            put the rect of tID into tRect
+            repeat with i = 1 to 4
+               if tSet[i] then put item (((i+1) mod 4) + 1) of tRect + tDiff[i] into item i of tRect
+            end repeat
+            set the rect of tID to tRect
+         end repeat
+         break
+      case 3 -- proportional
+         repeat with i = 1 to 4
+            put (item i of tPatternRect - item i of sStartRect)/sDim[i] into tDiff[i]
+         end repeat
+         put 0 into t
+         repeat for each line tID in sIDList
+            add 1 to t
+            if the rect of tID is not sNRa[t] then
+               put the rect of tID into sSRa[t]
+               put the width of tID into sw[t]
+               put the height of tID into sh[t]
+               --put sw[t] && sh[t] && sSRa[t] && sNRa[t] && ticks() & cr after fld 1 of stack "bob"
+            end if
+            put trunc(tDiff[1] * sw[t] + item 1 of sSRa[t]),\
+            trunc(tDiff[2] * sh[t] + item 2 of sSRa[t]),\
+            trunc(tDiff[3] * sw[t] + item 3 of sSRa[t]),\
+            trunc(tDiff[4] * sh[t] + item 4 of sSRa[t]) into sNRa[t]
+            set the rect of tID to sNRa[t]
+         end repeat
+         break
+      case 4 -- scale
+         repeat with i = 1 to 4
+            put item i of tPatternRect - item i of sRect into tDiff[i]
+         end repeat
+         repeat for each line tID in sIDList
+            put the rect of tID into tRect
+            repeat with x = 1 to 4
+               add tDiff[x] to item x of tRect
+            end repeat
+            set the rect of tID to tRect
+         end repeat
+         break
+   end switch
+   put tPatternRect into sRect
+   unlock screen
+   send "doResize" to me in 1 tick
+   put the result into sMessage
 end doResize

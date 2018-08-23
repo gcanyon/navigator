@@ -1574,7 +1574,7 @@ on setVisNavigator pVis,doAll
       else
          put inWhichRect((the loc of this stack),screenList) into screenList
          repeat for each line aNav in allNavigators() & cr & "revMenubar"
-            if the loc of stack aNav is within thisNavScreen then put aNav & cr after navList
+            if the loc of stack aNav is within screenList then put aNav & cr after navList
          end repeat
       end if
       put item 2 of screenList into tTopTarget
