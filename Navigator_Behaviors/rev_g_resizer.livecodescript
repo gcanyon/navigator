@@ -57,58 +57,77 @@ on stopResizing
 end stopResizing
 
 on modifySIDrect deltaR
-   put the rect of sID into R
-   repeat with i = 1 to 4
-      add item i of deltaR to R
-   end repeat
+   if the number of items of deltaR is 2 then
+      put (item 1 of the loc of sID + item 1 of deltaR),(item 2 of the loc of sID + item 2 of deltaR) into R
+   else
+      put the rect of sID into R
+      repeat with i = 1 to 4
+         add item i of deltaR to R
+      end repeat
+   end if
    cancel sMessage
-   doResize R 
+   if the number of items of deltaR is 2 then doResize ,R else doResize R 
 end modifySIDrect
 
-on doResize newRect
-   if newRect is empty then
-      put the rect of sID into tPatternRect
-   else 
-      put newRect into tPatternRect
-      set the rect of sID to tPatternRect
-   end if
-   
-   if tPatternRect is sRect then 
+on doResize newRect,newLoc
+   if (newLoc is empty or newLoc is the loc of sID) and (newRect is empty or newRect is sRect) and (the rect of sID is sRect) then
       send "doResize" to me in 1 tick
       put the result into sMessage
       exit doResize
    end if
+   put the loc of sID into oldVal
+   if newLoc is not empty then
+      set the loc of sID to newLoc
+   else if newRect is not empty then
+      put the width of sID into w
+      put the height of sID into h
+      set the rect of sID to newRect
+      if the width of sID is w and the height of sID is h
+      then put the loc of sID into newLoc
+      else put empty into newLoc
+   else  
+      put the rect of sID into newRect
+   end if
+   
    lock screen
-   switch sResizeMode
-      case 1 -- align
-         repeat with i = 1 to 4
-            put (item i of tPatternRect <> item i of sRect) into tSet[i]
-            put item i of tPatternRect into tPatternRectArray[i]
+   if newLoc is empty then 
+      put newRect into newVal 
+      put sRect into oldVal
+   else 
+      put newLoc into newVal
+   end if
+   split newVal using comma
+   split oldVal using comma
+   put item 2 of the extents of newVal into pCount
+   switch 
+      case sResizeMode = 1 -- align -- new values for the ltrb or xy will be identical to the template
+         repeat with i = 1 to pCount
+            put (newVal[i] <> oldVal[i]) into tSet[i]
          end repeat
          repeat for each line tID in sIDList
-            put the rect of tID into tRect
-            repeat with i = 1 to 4
-               if tSet[i] then put tPatternRectArray[i] into item i of tRect
+            if pCount = 4 then put the rect of tID into tUpdate else put the loc of tID into tUpdate
+            repeat with i = 1 to pCount
+               if tSet[i] then put newVal[i] into item i of tUpdate
             end repeat
-            set the rect of tID to tRect
+            if pCount = 4 then set the rect of tID to tUpdate else set the loc of tID to tUpdate
          end repeat
          break
-      case 2 -- match
-         repeat with i = 1 to 4
-            put (item i of tPatternRect <> item i of sRect) into tSet[i]
-            put (item i of tPatternRect - item (((i+1) mod 4) + 1) of tPatternRect) into tDiff[i]
+      case sResizeMode = 2 and pCount = 4 -- match -- new values for width or height will be matched to the template
+         repeat with i = 1 to pCount
+            put (newVal[i] <> oldVal[i]) into tSet[i]
+            put newVal[i] - newVal[((i+1) mod 4) + 1] into tDiff[i]
          end repeat
          repeat for each line tID in sIDList
             put the rect of tID into tRect
-            repeat with i = 1 to 4
+            repeat with i = 1 to pCount
                if tSet[i] then put item (((i+1) mod 4) + 1) of tRect + tDiff[i] into item i of tRect
             end repeat
             set the rect of tID to tRect
          end repeat
          break
-      case 3 -- proportional
+      case sResizeMode = 3 -- proportional -- new values for ltrb or xy will be adjusted by the an amount proportional to the relative size of the object to the template
          repeat with i = 1 to 4
-            put (item i of tPatternRect - item i of sStartRect)/sDim[i] into tDiff[i]
+            put (newVal[i] - item i of sStartRect)/sDim[i] into tDiff[i]
          end repeat
          put 0 into t
          repeat for each line tID in sIDList
@@ -117,7 +136,6 @@ on doResize newRect
                put the rect of tID into sSRa[t]
                put the width of tID into sw[t]
                put the height of tID into sh[t]
-               --put sw[t] && sh[t] && sSRa[t] && sNRa[t] && ticks() & cr after fld 1 of stack "bob"
             end if
             put trunc(tDiff[1] * sw[t] + item 1 of sSRa[t]),\
             trunc(tDiff[2] * sh[t] + item 2 of sSRa[t]),\
@@ -126,20 +144,22 @@ on doResize newRect
             set the rect of tID to sNRa[t]
          end repeat
          break
-      case 4 -- scale
-         repeat with i = 1 to 4
-            put item i of tPatternRect - item i of sRect into tDiff[i]
+      case sResizeMode = 4 or (sResizeMode = 2 and pCount = 2) -- scale -- new values for ltrb or xy will be adjusted by the same amount as the template
+         repeat with i = 1 to pCount
+            put newVal[i] - oldVal[i] into tDiff[i]
          end repeat
          repeat for each line tID in sIDList
-            put the rect of tID into tRect
-            repeat with x = 1 to 4
-               add tDiff[x] to item x of tRect
+            if pCount = 4 then put the rect of tID into tUpdate else put the loc of tID into tUpdate
+            repeat with x = 1 to pCount
+               add tDiff[x] to item x of tUpdate
             end repeat
-            set the rect of tID to tRect
+            if pCount = 4 then set the rect of tID to tUpdate else set the loc of tID to tUpdate
          end repeat
          break
+      case 5 -- proportional group -- resize the whole group of controls as a unit -- tbd
+         break
    end switch
-   put tPatternRect into sRect
+   put the rect of sID into sRect
    unlock screen
    send "doResize" to me in 1 tick
    put the result into sMessage

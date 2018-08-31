@@ -39,8 +39,8 @@ on showMe
 end showMe
 
 on hideMe
-  hide me with visual effect reveal left very fast
-  enableList
+   hide me with visual effect reveal left very fast
+   enableList
 end hideMe
 
 

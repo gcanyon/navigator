@@ -1179,7 +1179,7 @@ end theHilitedIDs
 
 function answerF M,I,T
    put "answer" into C
-   if the optionkey is "down" then put C
+   --if the optionkey is "down" then put C
    if I is not empty then put " " & I after C
    put " " & replaceF(cr,Q("&cr&"),Q(M)) after C
    if paramCount() > 3 then put " with" && Q(param(4)) after C
