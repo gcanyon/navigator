@@ -64,6 +64,17 @@ function subtractList SL,TL
    return char 1 to -2 of R
 end subtractList
 
+function multiplyList SL,TL
+   put 1 into i
+   put the number of items of SL into C
+   repeat for each item n in TL
+      put (n * item i of SL) & comma after R
+      add 1 to i
+      if i > C then put 1 into i
+   end repeat
+   return char 1 to -2 of R
+end multiplyList
+
 on doSetup
    if the short name of this stack is "revNavigator" then 
       setVisNavigator true
@@ -106,6 +117,151 @@ on closeStack
    dispatch "setVisNavigator" to this stack with true
    save me
 end closeStack
+
+
+
+on prefsSave
+   put the filename of stack "revNavigator" into P
+   set the itemdelimiter to "/"
+   put "navigatorPrefs.txt" into item -1 of P
+   put prefsText() into url ("file:" & P)
+end prefsSave
+
+function prefsLine U,pID,V
+   put the long name of pID into pID
+   if word -5 of pID is "stack"
+   then delete word -3 to -1 of pID
+   else put the name of (word -2 to -1 of pID) into word -2 to -1 of pID 
+   return U & numtochar(255) & pID & numtochar(255) & urlEncode(V) & cr
+end prefsLine
+
+on prefsReadText pText
+   local CP
+   set the itemDelimiter to numtochar(255)
+   repeat for each line P in pText
+      put item 1 of P into pProp
+      put item 2 of P into pTarget
+      put urldecode(item 3 to -1 of P) into pValue
+      if not (char 1 to 16 of pProp is "customProperties") then 
+         put "set the" && pProp && "of" && pTarget && "to" && pValue & cr & cr after R
+      else
+         delete variable CP
+         repeat for each line T in pValue
+            put urldecode(item 2 to -1 of T) into CP[item 1 of T]
+         end repeat
+         breakpoint
+      end if
+   end repeat
+end prefsReadText
+
+function prefsText
+   put the long id of stack navStack() into navID
+   set the customPropertySet of navID to empty
+   
+   repeat for each line CS in the customKeys of group "colors" of stack "revNavigatorPrefs"
+      put prefsLine(CS,(the long id of group "colors" of stack "revNavigatorPrefs"),the CS of group "colors" of stack "revNavigatorPrefs") after R
+   end repeat
+   
+   -- Display Options
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
+      put prefsLine(P,navID,the P of navID) after R
+   end repeat
+   put prefsLine("pDefaultFold",navID,the pDefaultFold of navID) after R
+   put prefsLine("pObjectLimit",navID,the pObjectLimit of navID) after R
+   put prefsLine("pMenuLimit",navID,the pMenuLimit of navID) after R
+   put prefsLine("textFont",the long id of fld "list" of navID,the textFont of fld "list" of navID) after R
+   put prefsLine("textSize",the long id of fld "list" of navID,the textSize of fld "list" of navID) after R
+   
+   -- Object Properties
+   put the customProperties["gSBAddPropsProp"] of navID into addPropArray
+   repeat for each key K in addPropArray
+      put K & numtochar(255) & urlencode(addPropArray[K]) & cr after addPropList
+   end repeat   
+   put prefsLine("customProperties[" & Q("gSBAddPropsProp") & "]",navID,addPropList) after R
+   
+   -- List Colors
+   repeat for each item C in "Default,ScriptedObject,BehaviorScripted,ScriptandBehavior,ObjectMissing,FilterText,HighLight,ListLines,Background"
+      put "pColor" & C into U
+      put prefsLine(U,navID,the U of navID) after R
+   end repeat
+   
+   -- List Actions
+   
+   repeat for each item U in "Double-Click:,Option-Double-Click:,Shift-Double-Click:,Command-Double-Click:,Option-Shift-Double-Click:,Option-Command-Double-Click:,Shift-Command-Double-Click:,Option-Shift-Command-Double-Click"
+      put prefsLine(U,navID,the U of navID) after R
+   end repeat
+   
+   -- List Display Strings
+   put prefsLine("pIndentString",navID,the pIndentString of navID) after R
+   put prefsLine("text",(the long id of button "List Display String" of stack "revNavigatorPrefs"),the text of button "List Display String" of stack "revNavigatorPrefs") after R
+   
+   
+   -- Other
+   put prefsLine("navigatorStackFileVersion",navID,the navigatorStackFileVersion of navID) after R
+   
+   return R   
+end prefsText
+
+on openPrefs prefData -- the text of the prefs file
+   split prefData using cr and comma
+   
+   put the long id of stack navStack() into mainNavID
+   
+   repeat for each line S in the openStacks
+      if word 1 of S is "revNavigator" then put (the long id of stack S) & cr after navIDList
+   end repeat
+   
+   
+   repeat for each line navID in navIDList
+      
+      -- Display Options
+      repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
+         set the P of navID to prefData[P]
+      end repeat
+      set the hGrid of fld "list" of navID to prefData["showListLines"]
+      set the pDefaultFold of navID to prefData["Default Fold"]
+      put the label of btn "List Font" into FN
+      if char 1 of FN is space then delete char 1 of FN
+      set the textFont of fld "list" of navID to prefData["ListTextFont"]
+      set the textSize of fld "list" of navID to prefData["ListFontSize"]
+      set the pObjectLimit of navID to prefData["ListObjectLimit"]
+      set the pMenuLimit of navID to prefData["MenuLimit"]
+      
+      
+      -- List Colors
+      repeat for each item C in "Default,ScriptedObject,BehaviorScripted,ScriptandBehavior,ObjectMissing,FilterText,HighLight,ListLines,Background"
+         put "pColor" & C into U
+         dispatch "setColor" to navID with U,(the backgroundColor of graphic C)
+      end repeat
+      
+      -- List Actions
+      
+      repeat for each line uID in the childcontrolids of group "list action buttons"
+         put the short name of control id uID into U
+         put the label of control id uID into tCMD
+         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove,Size/Location Editor,Color Editor" then replace space with empty in tCMD
+         set the U of navID to tCMD
+      end repeat
+      
+      -- List Display Strings
+      set the pIndentString of navID to fld "Indent String"
+      set the uDisplay of navID to the label of btn "List Display String"
+      
+      send "updateDisplay true,true" to navID in 6 ticks
+      
+   end repeat
+   
+   -- Object Properties
+   put the customProperties of fld "AddPropertiesSelect" into addPropArray
+   set the customProperties["gSBAddPropsProp"] of stack mainNavID to addPropArray
+   
+   
+   -- Other
+   set the navigatorStackFileVersion of stack mainNavID to the label of btn "stackFileVersion"
+   
+   
+   
+end openPrefs
 
 
 on saveStackRequest
@@ -371,7 +527,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    --put true into pRetainHilites
    --put "doUpdateDisplay" && pForceUpdate && pRetainHilites && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
    --put the short name of this stack && ticks() & cr &  the executionContexts & cr & cr & cr before fld 1 of stack "untitled 3"
-
+   
    local tBookmarkLineList, tCardOrBGid, tCheckScripts, tColor, tControlCount
    local tControlList, tCurrentIndentLine, tCurrentLine, tDisplay, tFilter
    local tFilterString, tHilitedIDList, tID, tIDLineList, tIndent
@@ -401,6 +557,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    
    put empty into gSBContainerID[tThisStack]
    
+   put the byTest of group "filter toggle" into tFilterByTest
+   
+   if tFilterByTest and fld "filter" is not empty 
+   then put fld "filter" into tFilterString
+   else put the filterString of stack tThisStack into tFilterString
+   
+   if tFilterByTest
+   then put empty into tMatchString 
+   else put fld "filter" into tMatchString
+   
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
       disable btn "whichCard" of this stack
@@ -414,56 +580,45 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       put the pObjectLimit of this stack into tObjectLimit
       put empty into tControlList
       put 0 into tCurrentLine
-      put fld "filter" into tFilter
+      
       
       repeat for each line tStack in tStackList
-         put the name of stack tStack into tStackName
-         
          if (not gSBShowAllStacks) and (filterStacksList(tStack) is empty) then next repeat
-         put true into includeStack
-         if tFilter is not empty and tFilter is not in tStackName then put false into includeStack
-         if the filterString of stack tThisStack is not empty then
-            put the filterString of stack tThisStack into tFilterString
-            replace "tID" with tStackName in tFilterString
+         put tStack & cr & the substacks of stack tStack after newStackList
+         if char -1 of newStackList is not cr then put cr after newStackList
+      end repeat
+      
+      repeat for each line tStack in newStackList
+         put the name of stack tStack into tStackName
+         if tMatchString is not empty and tMatchString is not in tStackName then next repeat
+         if tFilterString is not empty then
+            put tFilterString into tTempFilterString
+            replace "tID" with tStackName in tTempFilterString
             try
-               if not value(tFilterString) then put false into includeStack
+               if not value(tTempFilterString) then next repeat
             catch someErr
-               put false into includeStack
+               next repeat
             end try
          end if
+         if the mainstack of tStackName is tStack
+         then put empty into tStackIndentString
+         else put tIndentString into tStackIndentString
          
-         if includeStack then
-            add 1 to tCurrentLine
-            if tCurrentLine > tObjectLimit then exit repeat
-            if tCheckScripts and (the password of tStackName is empty) \
-                  then put tColor[whichColor(tStackName)] & tStackName after tControlList \
-                  else put tColor[1] & tStackName after tControlList
-            put tCurrentLine into newIDArray[tStackName]
-            put tStackName into newLineArray[tCurrentLine]
-            put tIndentString into tStackIndentString
-         else
-            put empty into tStackIndentString
-         end if
-         put the substacks of stack tStack into tSubstackList
          
-         repeat for each line tSubstack in tSubstackList
-            if tFilter is not empty and tFilter is not in tSubstack then next repeat
-            add 1 to tCurrentLine
-            if tCurrentLine > tObjectLimit then exit repeat
-            put the name of stack tSubStack into tSubstackName
-            if tCheckScripts and (the password of tSubstackName is empty) \
-                  then put tColor[whichColor(tSubstackName)] & tStackIndentString & tSubstackName after tControlList \
-                  else put tColor[1] & tStackIndentString & tSubstackName after tControlList
-            put tCurrentLine into newIDArray[tSubstackName]
-            put tSubstackName into newLineArray[tCurrentLine]
-         end repeat
+         add 1 to tCurrentLine
+         if tCurrentLine > tObjectLimit then exit repeat
+         if tCheckScripts and (the password of tStackName is empty) 
+         then put tColor[whichColor(tStackName)] & tStackIndentString & tStackName after tControlList 
+         else put tColor[1] & tStackIndentString & tStackName after tControlList
+         put tCurrentLine into newIDArray[tStackName]
+         put tStackName into newLineArray[tCurrentLine]
       end repeat
-      delete line 1 of tControlList -- deletes the initial stack reference that is in all other displays
-      --put ticks() && "doUpdateDisplay" && tControlList & cr after message box  -- debug
+      --put tControlList into message
+      delete line 1 of tControlList -- deletes the "</font></p>" at the start
       
       
    else
-
+      
       enable btn "whichCard" of this stack
       
       if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
@@ -486,10 +641,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          if tCardOrBGid is empty then exit doUpdateDisplay
       end if -- not gSBShowList[the short name of this stack]
       
-      --  get the number of controls of the topstack
-      --  exit doUpdateDisplay
-      --answer the separatorLine of fld "list" of this stack
-      put fld "filter" into tFilter
+
       put "button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id" into tRejectList
       replace comma with cr in tRejectList
       set the itemDelimiter to quote
@@ -586,19 +738,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
             end if
          end if
          
-         if the filterString of stack tThisStack is not empty then
-            put the filterString of stack tThisStack into tFilterString
-            replace "tID" with tID in tFilterString
+         if tFilterString is not empty then
+            put tFilterString into tTempFilterString
+            replace "tID" with tID in tTempFilterString
             try
-               if not value(tFilterString) then next repeat
+               if not value(tTempFilterString) then next repeat
             catch someErr
                next repeat
             end try
          end if
-         --          if (tNamedObjectsOnly and (quote is not in tName or item 2 of tName is among the lines of tRejectList))  \
-               --                or (tScriptedObjectsOnly and (the script of tID is empty)) \
-               --                or (tFilter is not empty and tFilter is not in tName) then \
-               --                next repeat
+
          if (tNamedObjectsOnly and (quote is not in tName or item 2 of tName is among the lines of tRejectList))  \
                or (tScriptedObjectsOnly and (the script of tID is empty)) then \
                next repeat
@@ -621,7 +770,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
                if not isTis then put tIndent[tCurrentIndentLine] before tName
                break
          end switch
-         if tFilter is not empty and tFilter is not in tName then next repeat
+         if tMatchString is not empty and tMatchString is not in tName then next repeat
          add 1 to tCurrentLine
          
          if tCheckScripts 
@@ -935,9 +1084,9 @@ end getLayer
 
 
 function getClickedID
-   put getList(false,the uClickedLine of this card) into rID
-   if rID contains cr then return line 1 of rID
-   if rID is empty then return getList(false,-1 + the uClickedLine of this card)
+   put getIDFirst(the uClickedLine of this card) into rID
+   if rID is not empty then return rID
+   return getIDFirst(-1 + the uClickedLine of this card) -- in case the user clicks in white space below the list
 end getClickedID
 
 
@@ -1144,35 +1293,6 @@ end setNavRect
 on mouseLeave
 end mouseLeave
 
-
--- on mouseMove
---    if externalDrag then 
---       if the mouse is "down" then 
---          dispatch "trackMovement" to this cd of stack "revDragRep"
---       else
---          dispatch "cleanUpExternalDrag" to fld "List"
---          stackCleanUpExternalDrag
---       end if
---    end if
--- end mouseMove
-
--- on mouseRelease
---    --put "mouseRelease stack" && ticks() && the mouse
---    if the mouse is "down" then exit mouseRelease
---    dispatch "cleanUpExternalDrag" to fld "List"
---    stackCleanUpExternalDrag
--- end mouseRelease
-
--- on stackCleanUpExternalDrag
---    put false into externalDrag
--- end stackCleanUpExternalDrag
-
--- on stackStartExternalDrag
---    put true into externalDrag
--- end stackStartExternalDrag
-
-
-
 function theHilitedIDs
    return getID(the hilitedLines of fld "list")
 end theHilitedIDs
@@ -1187,7 +1307,7 @@ function answerF M,I,T
       put " or" && Q(param(x)) after C
    end repeat
    if T is not empty then put " titled" && Q(T) after C
-   if the optionkey is "down" then put C
+   --if the optionkey is "down" then put C into message
    do C
    return it
 end answerF
@@ -1943,6 +2063,11 @@ function splitList S,tList
   return R
 end splitList
 
+setProp uSetColor pValue
+   setColor item 1 of pValue,item 2 to -1 of pValue
+end uSetColor
+
+
 on setColor pProp,pColor
    if pProp is "pColorFilterText" then set the textColor of fld "filter" to pColor
    if pProp is "pColorHighlight" then 
@@ -2448,8 +2573,13 @@ function titleSpace S
    set the caseSensitive to true
    put empty into R
    repeat for each character C in S
-      if C is in "QWERTYUIOPASDFGHJKLZXCVBNM" and R is not empty then put space after R
+      if C is in "QWERTYUIOPASDFGHJKLZXCVBNM" and char -1 of R is in "qwertyuiopasdfghjklzxcvbnm" then put space after R
       put C after R
    end repeat
    return R
 end titleSpace
+
+
+
+
+

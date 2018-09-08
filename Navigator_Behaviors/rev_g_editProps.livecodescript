@@ -1,9 +1,11 @@
 ﻿script "rev_g_editProps"
 on setSize
-  set the rect of field "Prop Title" to 0,17,(the width of this stack + 2),31
-  set the rect of fld "editProps" to -2,32,(the width of this stack + 2),(the height of this stack - 15)
-  set the loc of btn "closeProps" to 30,(the height of this stack - 9)
-  set the loc of button "propListPopup" to -230,30
+   --put max(0,the width of this stack - 200) into zeroPoint
+   put 0 into zeroPoint
+   set the rect of field "Prop Title" to zeroPoint,17,(the width of this stack + 2),31
+   set the rect of fld "editProps" to (zeroPoint-2),32,(the width of this stack + 2),(the height of this stack - 15)
+   set the loc of btn "closeProps" to (zeroPoint + 30),(the height of this stack - 9)
+   set the loc of button "propListPopup" to -230,30
 end setSize
 
 on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
@@ -80,12 +82,12 @@ end setup
 on showMe
    setSize
    
-   disableList
+   --disableList
    
-   show me with visual effect scroll right very fast
+   show me with visual effect scroll left very fast
 end showMe
 
 on hideMe
-  hide me with visual effect reveal left very fast
-  enableList
+  hide me with visual effect reveal right very fast
+  --enableList
 end hideMe

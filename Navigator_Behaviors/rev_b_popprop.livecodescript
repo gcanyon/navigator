@@ -51,6 +51,12 @@ on menuPick pWhich
          --put ticks() && getClickedID(),OPA["idList"],OPA["propList"] into message
          dispatch "setup" to group "editProps" with getClickedID(),OPA["idList"],OPA["propList"]
          exit menuPick
+      case "Size/Location Editor..."
+         dispatch "showMe" to group "resizer"
+         exit menuPick
+      case "Color Editor..."
+         dispatch "editCurrentHighlights" to group "setColors"
+         exit menuPick
       case "Single Object Inspector"
          objectInspector1
          exit menuPick 
@@ -66,6 +72,7 @@ on menuPick pWhich
       put getIDFirst(the uClickedLine of this card) into tClickedID
       if there is a tClickedID then
          put the sProp of tClickedID into tDefaultVal
+         --put tDefaultVal into message
          if the commandKey is "down" then
             resultMessage tDefaultVal
             exit menuPick

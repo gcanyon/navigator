@@ -124,6 +124,10 @@ on mouseDoubleUp
          dispatch "setup" to group "editProps" with getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
       else if tCommand is "CopyID" then
          set the clipboardData["text"] to getID(sHiliteList)
+      else if tCommand is "Size/LocationEditor" then
+         dispatch "showMe" to group "resizer"
+      else if tCommand is "ColorEditor" then
+         dispatch "editCurrentHighlights" to group "setColors"
       else
          put getID(sHiliteList) into idList
          repeat for each line cID in idList
@@ -779,7 +783,7 @@ on finishReorderExternal idList
    else if gSBShowList[SN] is false then -- drag into live display,  
       put getCardOrBGid() into tTargetContainer
       set the relayergroupedcontrols to the optionkey is "up"
-      put targetLine - tSeparatorLine - 2 into targetLayer
+      put getLayer(targetLine) into targetLayer
       -- answer targetLayer
       repeat for each line tID in idList
          copy tID to tTargetContainer

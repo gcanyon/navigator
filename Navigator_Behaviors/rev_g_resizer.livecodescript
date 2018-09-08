@@ -2,31 +2,41 @@
 local sID -- the long id of the template object for resizing
 local sIDList -- the list of long ids of objects to resize
 local sResizeMode -- how we are resizing: 
-local sMessage -- the resize message id
 local sRect -- the rect to resize from for all but proportional
 local sStartRect -- the rect of the template object to resize from for proportional
+local sStartLoc -- the loc of the template object to resize from for proportional
 local sDim -- the array of the height and width to resize from: 1,width; 2,height; 3,width; 4,height
 local sSRa -- the array of rects to resize from for proportional
 local sNRa -- the array of new rects for the controls
 local sW,sH -- the width and height to resize from for proportional
+local sUndoArray -- a list of the original rects to undo
 
 on showMe
-  put getID() into tempList
-  put getIDFirst(the uClickedLine of this card) into sID
-  put empty into sIDList
-  repeat for each line L in tempList
-    if L is sID then next repeat
-    put L & cr after sIDList
-  end repeat
-  setResizeMode
-  showGroup the long id of me
-  startResizing
+   delete variable sUndoArray
+   put getClickedID() into sID
+   put the rect of sID into sUndoArray[sID]
+   put empty into sIDList
+   repeat for each line L in getID()
+      if L is sID then next repeat
+      put the rect of L into sUndoArray[L]
+      put L & cr after sIDList
+   end repeat
+   setResizeMode
+   showGroup the long id of me
+   put the rect of sID into sRect
 end showMe
 
+on resetRects
+   repeat for each key tID in sUndoArray
+      set the rect of tID to sUndoArray[tID]
+   end repeat
+end resetRects
+
 on setResizeMode
-  put the hilitedButton of group "resizeStyle" into sResizeMode
+  put the label of of btn "resize style" into sResizeMode
   if sResizeMode <> 3 then exit setResizeMode
   put the rect of sID into sStartRect
+  put the loc of sID into sStartLoc
   put the width of sID into tW
   put the height of sID into tH
   put tW into sDim[1]
@@ -43,38 +53,17 @@ on setResizeMode
 end setResizeMode
 
 on hideMe
-  stopResizing
   hideGroup the long id of me
 end hideMe
 
-on startResizing
-  put the rect of sID into sRect
-  doResize
-end startResizing
-
-on stopResizing
-  cancel sMessage
-end stopResizing
 
 on modifySIDrect deltaR
-   if the number of items of deltaR is 2 then
-      put (item 1 of the loc of sID + item 1 of deltaR),(item 2 of the loc of sID + item 2 of deltaR) into R
-   else
-      put the rect of sID into R
-      repeat with i = 1 to 4
-         add item i of deltaR to R
-      end repeat
-   end if
-   cancel sMessage
-   if the number of items of deltaR is 2 then doResize ,R else doResize R 
+   if the number of items of deltaR is 2 
+   then doResize "",addList(deltaR,the loc of sID)
+   else doResize addList(deltaR,the rect of sID)
 end modifySIDrect
 
 on doResize newRect,newLoc
-   if (newLoc is empty or newLoc is the loc of sID) and (newRect is empty or newRect is sRect) and (the rect of sID is sRect) then
-      send "doResize" to me in 1 tick
-      put the result into sMessage
-      exit doResize
-   end if
    put the loc of sID into oldVal
    if newLoc is not empty then
       set the loc of sID to newLoc
@@ -100,7 +89,7 @@ on doResize newRect,newLoc
    split oldVal using comma
    put item 2 of the extents of newVal into pCount
    switch 
-      case sResizeMode = 1 -- align -- new values for the ltrb or xy will be identical to the template
+      case sResizeMode = "align" -- new values for the ltrb or xy will be identical to the template
          repeat with i = 1 to pCount
             put (newVal[i] <> oldVal[i]) into tSet[i]
          end repeat
@@ -112,7 +101,7 @@ on doResize newRect,newLoc
             if pCount = 4 then set the rect of tID to tUpdate else set the loc of tID to tUpdate
          end repeat
          break
-      case sResizeMode = 2 and pCount = 4 -- match -- new values for width or height will be matched to the template
+      case sResizeMode = "match" and pCount = 4 -- new values for width or height will be matched to the template
          repeat with i = 1 to pCount
             put (newVal[i] <> oldVal[i]) into tSet[i]
             put newVal[i] - newVal[((i+1) mod 4) + 1] into tDiff[i]
@@ -125,7 +114,7 @@ on doResize newRect,newLoc
             set the rect of tID to tRect
          end repeat
          break
-      case sResizeMode = 3 -- proportional -- new values for ltrb or xy will be adjusted by the an amount proportional to the relative size of the object to the template
+      case sResizeMode = "proportional" and pCount = 4 -- new values for ltrb will be adjusted by an amount proportional to the relative size of the object to the template
          repeat with i = 1 to 4
             put (newVal[i] - item i of sStartRect)/sDim[i] into tDiff[i]
          end repeat
@@ -144,7 +133,7 @@ on doResize newRect,newLoc
             set the rect of tID to sNRa[t]
          end repeat
          break
-      case sResizeMode = 4 or (sResizeMode = 2 and pCount = 2) -- scale -- new values for ltrb or xy will be adjusted by the same amount as the template
+      case sResizeMode = "scale" or (pCount = 2 and (sResizeMode = "match" or sResizeMode = "proportional")) -- new values for ltrb or xy will be adjusted by the same amount as the template
          repeat with i = 1 to pCount
             put newVal[i] - oldVal[i] into tDiff[i]
          end repeat
@@ -161,6 +150,4 @@ on doResize newRect,newLoc
    end switch
    put the rect of sID into sRect
    unlock screen
-   send "doResize" to me in 1 tick
-   put the result into sMessage
 end doResize
