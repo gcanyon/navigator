@@ -83,7 +83,7 @@ on doSetup
       end if
       dispatch "showMe" to group "about" with true
       set the autoUpdateList of this stack to true
-      prefsLoad
+      -- prefsLoad
       set the custompropertyset of this stack to empty
    end if
    show this stack
