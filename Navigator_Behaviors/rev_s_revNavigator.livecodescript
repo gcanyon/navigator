@@ -77,9 +77,14 @@ end multiplyList
 
 on doSetup
    if the short name of this stack is "revNavigator" then 
-      setVisNavigator true
+      if the height of this stack is 15 then
+         set the cIAmHidden of this stack to true
+         setVisNavigator
+      end if
       dispatch "showMe" to group "about" with true
       set the autoUpdateList of this stack to true
+      prefsLoad
+      set the custompropertyset of this stack to empty
    end if
    show this stack
    set the minHeight of this stack to 120
@@ -118,7 +123,13 @@ on closeStack
    save me
 end closeStack
 
-
+on prefsLoad
+   put the filename of stack "revNavigator" into P
+   set the itemdelimiter to "/"
+   put "navigatorPrefs.txt" into item -1 of P
+   put url ("file:" & P) into pText
+   prefsLoadFromText pText
+end prefsLoad
 
 on prefsSave
    put the filename of stack "revNavigator" into P
@@ -135,24 +146,46 @@ function prefsLine U,pID,V
    return U & numtochar(255) & pID & numtochar(255) & urlEncode(V) & cr
 end prefsLine
 
-on prefsReadText pText
+on prefsLoadFromText pText
    local CP
    set the itemDelimiter to numtochar(255)
    repeat for each line P in pText
       put item 1 of P into pProp
       put item 2 of P into pTarget
+      put "test2" into sName
+      switch word 1 of pTarget
+         case "stack"
+            put the name of stack sName into pTarget
+            break
+         case "card"
+            put the long name of card 1 of stack sName into pTarget
+            break
+         case "field"
+            put the long name of field 1 of stack sName into pTarget
+            break
+         case "group"
+            put the long name of group 1 of stack sName into pTarget
+            break
+         case "button"
+            answer pProp & cr & urldecode(item 3 to -1 of P)
+            put the long name of button 1 of stack sName into pTarget
+            break
+         default
+            answer pTarget
+            exit to top
+      end switch
       put urldecode(item 3 to -1 of P) into pValue
       if not (char 1 to 16 of pProp is "customProperties") then 
-         put "set the" && pProp && "of" && pTarget && "to" && pValue & cr & cr after R
+         set the pProp of pTarget to pValue
       else
          delete variable CP
          repeat for each line T in pValue
             put urldecode(item 2 to -1 of T) into CP[item 1 of T]
          end repeat
-         breakpoint
+         set the pProp of pTarget to CP
       end if
    end repeat
-end prefsReadText
+end prefsLoadFromText
 
 function prefsText
    put the long id of stack navStack() into navID
@@ -2578,8 +2611,3 @@ function titleSpace S
    end repeat
    return R
 end titleSpace
-
-
-
-
-
