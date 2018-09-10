@@ -43,7 +43,7 @@ on clearColorCheckboxes
 end clearColorCheckboxes
 
 on changeSettings pColorName
-   put sClickedID into message
+   --put sClickedID into message
    put the effective pColorName of sClickedID into tColor
    lock messages
    repeat with i = 1 to 3
@@ -84,17 +84,18 @@ on scrollbarDrag x
 end scrollbarDrag
 
 on setColors pClear
-  if pClear then
-    put empty into tColorValue
-  else
-    put trunc(255 - the thumbPosition of scrollbar "red"),trunc(255 - the thumbPosition of scrollbar "green"),trunc(255 - the thumbPosition of scrollbar "blue") into tColorValue
-  end if
-  repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
-    if not the hilite of btn tColor of group "colorChoice" then next repeat
-    put tColor & "color" into tColorName
-    
-    repeat for each line tID in sIDList
-      set the tColorName of tID to tColorValue
-    end repeat
-  end repeat
+   if pClear then
+      put empty into tColorValue
+   else
+      put trunc(255 - the thumbPosition of scrollbar "red"),trunc(255 - the thumbPosition of scrollbar "green"),trunc(255 - the thumbPosition of scrollbar "blue") into tColorValue
+      set the backgroundcolor of fld "color swatch" to tColorValue
+   end if
+   repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
+      if not the hilite of btn tColor of group "colorChoice" then next repeat
+      put tColor & "color" into tColorName
+      
+      repeat for each line tID in sIDList
+         set the tColorName of tID to tColorValue
+      end repeat
+   end repeat
 end setColors

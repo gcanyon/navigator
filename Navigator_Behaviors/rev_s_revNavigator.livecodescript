@@ -83,7 +83,8 @@ on doSetup
       end if
       dispatch "showMe" to group "about" with true
       set the autoUpdateList of this stack to true
-      -- prefsLoad
+      prefsLoad
+      --put ticks() into message
       set the custompropertyset of this stack to empty
    end if
    show this stack
@@ -102,6 +103,7 @@ on doSetup
    buildCustomCommandList
    setSeparatorLine 0 -- may need to fix this
    put true into sSetupComplete
+   cleangREVMessageDispatch
    updateDisplay true
    if not (the short name of this stack is "revNavigator" and the hilite of btn "I Paid") then exit doSetup
    wait 1 second
@@ -119,7 +121,7 @@ on closeStack
    put empty into fld "list"
    put empty into fld "filter"
    put empty into fld "command"
-   dispatch "setVisNavigator" to this stack with true
+   prefsSave
    save me
 end closeStack
 
@@ -152,37 +154,15 @@ on prefsLoadFromText pText
    repeat for each line P in pText
       put item 1 of P into pProp
       put item 2 of P into pTarget
-      put "test2" into sName
-      switch word 1 of pTarget
-         case "stack"
-            put the name of stack sName into pTarget
-            break
-         case "card"
-            put the long name of card 1 of stack sName into pTarget
-            break
-         case "field"
-            put the long name of field 1 of stack sName into pTarget
-            break
-         case "group"
-            put the long name of group 1 of stack sName into pTarget
-            break
-         case "button"
-            answer pProp & cr & urldecode(item 3 to -1 of P)
-            put the long name of button 1 of stack sName into pTarget
-            break
-         default
-            answer pTarget
-            exit to top
-      end switch
       put urldecode(item 3 to -1 of P) into pValue
-      if not (char 1 to 16 of pProp is "customProperties") then 
-         set the pProp of pTarget to pValue
-      else
+      if token 1 of pProp is "customProperties" then 
          delete variable CP
          repeat for each line T in pValue
             put urldecode(item 2 to -1 of T) into CP[item 1 of T]
          end repeat
          set the pProp of pTarget to CP
+      else
+         set the pProp of pTarget to pValue
       end if
    end repeat
 end prefsLoadFromText
