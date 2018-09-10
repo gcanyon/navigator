@@ -1,4 +1,4 @@
-script "rev_g_Filter_Toggle"
+﻿script "rev_g_Filter_Toggle"
 on mouseUp
    set the byTest of me to not the byTest of me
    set the loc of grc "indicator" of me to (item 1 of the loc of me),(item 2 of the loc of me + iff(the byTest of me,3,-3))
