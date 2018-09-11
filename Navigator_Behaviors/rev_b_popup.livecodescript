@@ -276,8 +276,9 @@ on menuPick pWhich
       case "Individual Object Inspectors"
          objectInspectorN; break     
       case "Edit Colors..."
-         put "setup" && quote & tClickedID & quote into tMSG
-         send tMSG to group "setColors"
+         dispatch "editColors" to group "setColors" with tClickedID,theHilitedIDs()
+         --put "setup" && quote & tClickedID & quote into tMSG
+         --send tMSG to group "setColors"
          break
       case "Align Objects..."
          revIDEInspectObjects

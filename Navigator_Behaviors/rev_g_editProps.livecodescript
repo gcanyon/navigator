@@ -1,9 +1,11 @@
 ﻿script "rev_g_editProps"
 on setSize
-  set the rect of field "Prop Title" to 0,17,(the width of this stack + 2),31
-  set the rect of fld "editProps" to -2,32,(the width of this stack + 2),(the height of this stack - 15)
-  set the loc of btn "closeProps" to 30,(the height of this stack - 9)
-  set the loc of button "propListPopup" to -230,30
+   --put max(0,the width of this stack - 200) into zeroPoint
+   put 0 into zeroPoint
+   set the rect of field "Prop Title" to zeroPoint,17,(the width of this stack + 2),31
+   set the rect of fld "editProps" to (zeroPoint-2),32,(the width of this stack + 2),(the height of this stack - 15)
+   set the loc of btn "closeProps" to (zeroPoint + 30),(the height of this stack - 9)
+   set the loc of button "propListPopup" to -230,30
 end setSize
 
 on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
@@ -14,11 +16,13 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    -- pCustomPropertySet (optional): the customPropertySet that the properties are in
    --put pID && pIDList && pPropList && pCustomProperties,pCustomPropertySet after message; exit to top
    --if pIDList is empty then exit setup
+   --put ticks() into message
    if pIDList is empty then put pID into pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
    if not exists(pID) then exit setup
    set the cIDList of fld "editProps" to pIDList
    set the cSourceID of fld "editProps" to pID
+   --put word 1 of the long -- ???
    set the cCustomProperties of fld "editProps" to pCustomProperties is true
    set the cCustomPropertySet of fld "editProps" to pCustomPropertySet
    put the name of pID && "[" & the short id of pID & "]" into propTitle
@@ -78,12 +82,12 @@ end setup
 on showMe
    setSize
    
-   disableList
+   --disableList
    
-   show me with visual effect scroll right very fast
+   show me with visual effect scroll left very fast
 end showMe
 
 on hideMe
-  hide me with visual effect reveal left very fast
-  enableList
+  hide me with visual effect reveal right very fast
+  --enableList
 end hideMe

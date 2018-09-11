@@ -72,7 +72,7 @@ on mouseUp
    put item 2 of tLineData into tVal
    if the cCustomProperties of me is not true then
       if tProp is "colors" then
-         send "editColors" && quote & the cSourceID of me & quote & comma & the cIDList of me to group "setColors"
+         dispatch "editColors" to group "setColors" with (the cSourceID of me),(the cIDList of me)
       else if char -5 to -1 of tProp is "color" then
          answer color with item 2 of tLineData
          if the result is empty then

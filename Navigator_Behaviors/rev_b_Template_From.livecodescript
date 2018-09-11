@@ -4,11 +4,13 @@ on prepItems
       try
          put the customProperties["navSoStackSettings"] of stack S into U
          if the keys of U is not empty 
-         then put S & cr after menuStackList
+         then put 1 into menuStackArray[S]
       catch E
       end try
    end repeat    
-   put char 1 to -2 of menuStackList into me
+   put the keys of menuStackArray into menuStackList 
+   sort lines of menuStackList
+   put menuStackList into me
 end prepItems
 
 on mouseDown

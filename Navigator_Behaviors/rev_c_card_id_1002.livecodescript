@@ -103,7 +103,7 @@ on setPrefs
       repeat for each line uID in the childcontrolids of group "list action buttons"
          put the short name of control id uID into U
          put the label of control id uID into tCMD
-         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove" then replace space with empty in tCMD
+         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove,Size/Location Editor,Color Editor" then replace space with empty in tCMD
          set the U of navID to tCMD
       end repeat
       
@@ -132,3 +132,67 @@ on updateAddProperties cProp,cValue
    set the cProp of field "AddPropertiesSelect" to cValue
   -- put cProp & cr & cr & cValue
 end updateAddProperties
+
+function prefsToText
+   put the long id of stack (the pNavigatorName of this stack) into navID
+   put the long id of stack navStack() into mainNavID
+   set the customPropertySet of navID to empty
+   repeat for each line CS in the customKeys of group "colors"
+      put "set the" && Q(CS) && "of group" && Q("colors") && "to urldecode(" & Q(urlencode(the CS of group "colors")) & ")" & cr after R
+      --put "colors",CS,urlencode(the CS of group "colors") & cr after R
+   end repeat
+   
+   -- Display Options
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
+      put "set the highlight of btn" && Q(P) && "to" && the P of navID & cr after R
+   end repeat
+   put "set the label of btn" && Q("Default Fold") && "to" && Q(the pDefaultFold of navID) & cr after R
+   put "set the label of btn" && Q("List Font") && "to" && Q(the textFont of fld "list" of navID) & cr after R
+   put "set the label of btn" && Q("List Font Size") && "to" && the textSize of fld "list" of navID & cr after R
+   put "set the label of btn" && Q("List Object Limit") && "to" && the pObjectLimit of navID & cr after R
+   put "set the label of btn" && Q("Menu Limit") && "to" && the pMenuLimit of navID & cr after R
+   
+   
+   -- Object Properties
+   put the customProperties["gSBAddPropsProp"] of mainNavID into addPropArray
+   repeat for each key K in addPropArray
+      put "put urldecode(" & Q(urlencode(addPropArray[K])) & ") into addPropArray[" & Q(K) & "]" & cr after R
+   end repeat
+   put "set the customProperties of fld" && Q(AddPropertiesSelect) && "to addPropArray" & cr after R
+   put "put the keys of addPropArray into addPropArrayK" & cr after R
+   put "sort lines of addPropArrayK" & cr after R
+   put "filter lines of addPropArrayK without empty" & cr after R
+   put "put addPropArrayK into fld" && Q("AddPropertiesSelect") & cr after R
+   put "send" && Q("clearLastSelection") && "to fld" && Q("AddPropertiesSelect") & cr after R
+   put "send" && Q("selectionChanged") && "to fld" && Q("AddPropertiesSelect") & cr after R
+   
+   return R
+   
+   
+   send "selectionChanged" to fld "AddPropertiesSelect" in 5 ticks
+   
+   
+   -- List Colors
+   repeat for each item C in "Default,ScriptedObject,BehaviorScripted,ScriptandBehavior,ObjectMissing,FilterText,HighLight,ListLines,Background"
+      put "pColor" & C into U
+      set the backgroundColor of graphic C to the U of navID
+   end repeat
+   
+   -- List Actions
+   
+   repeat for each line uID in the childcontrolids of group "list action buttons"
+      put the short name of control id uID into U
+      set the label of control id uID to titleSpace(the U of navID)
+   end repeat
+   --answer "test"
+   
+   -- List Display Strings
+   put the pIndentString of navID into fld "Indent String"
+   --answer "set the label of btn 'List Display String' to" && the uDisplay of navID
+   set the label of btn "List Display String" to the uDisplay of navID
+   
+   
+   -- Other
+   set the label of btn "stackFileVersion" to the navigatorStackFileVersion of mainNavID
+   
+end prefsToText
