@@ -524,6 +524,10 @@ after mouseMove X,Y
       trackReorder X,Y  
    else if tDragListClickLine > 0 then 
       startDragging X,Y
+   else if within (grc "groupFoldBar",(X,Y)) then
+      set the tooltip of me to the tooltip of grc "groupFoldBar"
+   else
+      set the tooltip of me to empty
    end if
 end mouseMove
 
@@ -586,7 +590,7 @@ after mouseUp
          put getClickedID() into tID
          if word 1 of tID is "group" then
             --put the mouseLoc
-            if item 1 of the mouseLoc < 30 then 
+            if within (grc "groupFoldBar",the mouseLoc) then 
                setFolded tID
                doUpdateDisplay true
             end if
