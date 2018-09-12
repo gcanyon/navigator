@@ -34,7 +34,7 @@ end resetRects
 
 on setResizeMode
   put the label of of btn "resize style" into sResizeMode
-  if sResizeMode <> 3 then exit setResizeMode
+  if sResizeMode <> "proportional" then exit setResizeMode
   put the rect of sID into sStartRect
   put the loc of sID into sStartLoc
   put the width of sID into tW
