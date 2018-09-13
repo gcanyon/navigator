@@ -83,8 +83,10 @@ on doSetup
       end if
       dispatch "showMe" to group "about" with true
       set the autoUpdateList of this stack to true
-      prefsLoad
-      --put ticks() into message
+      try
+         prefsLoad
+      catch someErr
+      end try
       set the custompropertyset of this stack to empty
    end if
    show this stack
@@ -145,10 +147,41 @@ function prefsLine U,pID,V
    if word -5 of pID is "stack"
    then delete word -3 to -1 of pID
    else put the name of (word -2 to -1 of pID) into word -2 to -1 of pID 
-   return U & numtochar(255) & pID & numtochar(255) & urlEncode(V) & cr
+   return U & tab & pID & tab & navEncode(V,cr & tab) & cr
 end prefsLine
 
+function prefsLineOld U,pID,V
+   put the long name of pID into pID
+   if word -5 of pID is "stack"
+   then delete word -3 to -1 of pID
+   else put the name of (word -2 to -1 of pID) into word -2 to -1 of pID 
+   return U & numtochar(255) & pID & numtochar(255) & urlEncode(V) & cr
+end prefsLineOld
+
 on prefsLoadFromText pText
+   local CP
+   set the itemDelimiter to tab
+   if item 1 of pText is not "uPrefsFormat" then 
+      prefsLoadFromTextOld pText
+      exit prefsLoadFromText
+   end if
+   repeat for each line P in pText
+      put item 1 of P into pProp
+      put item 2 of P into pTarget
+      put navDecode(item 3 to -1 of P,cr & tab) into pValue
+      if token 1 of pProp is "customProperties" then 
+         delete variable CP
+         repeat for each line T in pValue
+            put navDecode(item 2 to -1 of T,cr & tab) into CP[item 1 of T]
+         end repeat
+         set the pProp of pTarget to CP
+      else
+         set the pProp of pTarget to pValue
+      end if
+   end repeat
+end prefsLoadFromText
+
+on prefsLoadFromTextOld pText
    local CP
    set the itemDelimiter to numtochar(255)
    repeat for each line P in pText
@@ -165,12 +198,13 @@ on prefsLoadFromText pText
          set the pProp of pTarget to pValue
       end if
    end repeat
-end prefsLoadFromText
+end prefsLoadFromTextOld
+
 
 function prefsText
    put the long id of stack navStack() into navID
    set the customPropertySet of navID to empty
-   
+   put prefsLine("uPrefsFormat",navID,"2.0") into R
    repeat for each line CS in the customKeys of group "colors" of stack "revNavigatorPrefs"
       put prefsLine(CS,(the long id of group "colors" of stack "revNavigatorPrefs"),the CS of group "colors" of stack "revNavigatorPrefs") after R
    end repeat
@@ -188,7 +222,8 @@ function prefsText
    -- Object Properties
    put the customProperties["gSBAddPropsProp"] of navID into addPropArray
    repeat for each key K in addPropArray
-      put K & numtochar(255) & urlencode(addPropArray[K]) & cr after addPropList
+      --put K & numtochar(255) & urlencode(addPropArray[K]) & cr after addPropList
+      put K & tab & navEncode(addPropArray[K],cr & tab) & cr after addPropList
    end repeat   
    put prefsLine("customProperties[" & Q("gSBAddPropsProp") & "]",navID,addPropList) after R
    
@@ -214,67 +249,6 @@ function prefsText
    
    return R   
 end prefsText
-
-on openPrefs prefData -- the text of the prefs file
-   split prefData using cr and comma
-   
-   put the long id of stack navStack() into mainNavID
-   
-   repeat for each line S in the openStacks
-      if word 1 of S is "revNavigator" then put (the long id of stack S) & cr after navIDList
-   end repeat
-   
-   
-   repeat for each line navID in navIDList
-      
-      -- Display Options
-      repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
-         set the P of navID to prefData[P]
-      end repeat
-      set the hGrid of fld "list" of navID to prefData["showListLines"]
-      set the pDefaultFold of navID to prefData["Default Fold"]
-      put the label of btn "List Font" into FN
-      if char 1 of FN is space then delete char 1 of FN
-      set the textFont of fld "list" of navID to prefData["ListTextFont"]
-      set the textSize of fld "list" of navID to prefData["ListFontSize"]
-      set the pObjectLimit of navID to prefData["ListObjectLimit"]
-      set the pMenuLimit of navID to prefData["MenuLimit"]
-      
-      
-      -- List Colors
-      repeat for each item C in "Default,ScriptedObject,BehaviorScripted,ScriptandBehavior,ObjectMissing,FilterText,HighLight,ListLines,Background"
-         put "pColor" & C into U
-         dispatch "setColor" to navID with U,(the backgroundColor of graphic C)
-      end repeat
-      
-      -- List Actions
-      
-      repeat for each line uID in the childcontrolids of group "list action buttons"
-         put the short name of control id uID into U
-         put the label of control id uID into tCMD
-         if tCMD is among the items of "Copy ID,Edit Script,Edit Behavior Script,Property Editor,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove,Size/Location Editor,Color Editor" then replace space with empty in tCMD
-         set the U of navID to tCMD
-      end repeat
-      
-      -- List Display Strings
-      set the pIndentString of navID to fld "Indent String"
-      set the uDisplay of navID to the label of btn "List Display String"
-      
-      send "updateDisplay true,true" to navID in 6 ticks
-      
-   end repeat
-   
-   -- Object Properties
-   put the customProperties of fld "AddPropertiesSelect" into addPropArray
-   set the customProperties["gSBAddPropsProp"] of stack mainNavID to addPropArray
-   
-   
-   -- Other
-   set the navigatorStackFileVersion of stack mainNavID to the label of btn "stackFileVersion"
-   
-   
-   
-end openPrefs
 
 
 on saveStackRequest
@@ -2591,3 +2565,19 @@ function titleSpace S
    end repeat
    return R
 end titleSpace
+
+function navEncode T,encodeList
+   replace "\" with "\" & "a" in T
+   repeat with i = 1 to length(encodeList)
+      replace char i of encodeList with "\" & numtochar(97 + i) in T 
+   end repeat
+   return T  
+end navEncode
+
+function navDecode T,decodeList
+   repeat with i = length(decodeList) down to 1
+      replace "\" & numtochar(97 + i) with char i of decodeList in T 
+   end repeat
+   replace "\" & "a" with "\" in T
+   return T
+end navDecode
