@@ -33,6 +33,7 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    if objectCount > 1 then put " and" && objectCount - 1 && "others" after propTitle
    if pCustomProperties is true then put " |" && iff(pCustomPropertySet is empty,"<empty>",pCustomPropertySet) after propTitle
    put propTitle into fld "Prop Title"
+   
    put "<p>" into tag[1]
    put tab & "<font color=" & quote & "#AAAAAA" & quote & ">" into tag[2][true][true]
    put tab into tag[2][false][true]

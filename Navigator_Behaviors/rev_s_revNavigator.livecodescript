@@ -2229,20 +2229,29 @@ end customPropertiesOfAll
 
 
 function propertiesInCommon tIDList
-  local R
-  
-  -- returns an array:
-  -- "typeList" is a list of the types of objects
-  -- "propList" is a list of the properties that apply to all of the objects
-  put the properties of (line 1 of tIDList) into R["propList"]
-  repeat for each line tID in tIDList
-    if R["typeList"][word 1 of tID] = 1 or there is not a tID then next repeat
-    put 1 into R["typeList"][word 1 of tID]
-    intersect R["propList"] with (the properties of tID)
-  end repeat
-  put the keys of R["typeList"] into R["typeList"]
-  put the keys of R["propList"] into R["propList"]
-  return R
+   local R
+   
+   -- returns an array:
+   -- "typeList" is a list of the types of objects
+   -- "propList" is a list of the properties that apply to all of the objects
+   put the properties of (line 1 of tIDList) into R["propList"]
+   repeat for each line tID in tIDList
+      if R["typeList"][word 1 of tID] = 1 or there is not a tID then next repeat
+      put 1 into R["typeList"][word 1 of tID]
+      intersect R["propList"] with (the properties of tID)
+   end repeat
+   put the keys of R["typeList"] into R["typeList"]
+   put the keys of R["propList"] into R["propList"]
+   put lineOffset("fillGradient",R["propList"]) into fillGradientLine
+   if fillGradientLine > 0 then
+      put line 1 of tIDList into tID
+      put the fillGradient of tID into FG
+      repeat for each key K in FG
+         put "fillGradient[" & Q(K) & "]" & cr after FGpropList
+      end repeat
+      put char 1 to -2 of FGpropList into line fillGradientLine of R["propList"]
+   end if
+   return R
 end propertiesInCommon
 
 function newNavigator targetContainerList,navNameList
