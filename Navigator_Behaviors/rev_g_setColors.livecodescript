@@ -66,6 +66,7 @@ on mouseDown
    repeat for each item C in "red,green,blue"
       set the startScroll of scrollbar C to the thumbposition of scrollbar C
    end repeat
+   set the lastScroll of the target to the thumbposition of the target
 end mouseDown
 
 
