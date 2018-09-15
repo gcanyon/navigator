@@ -10,6 +10,7 @@ on mouseUp
   if the result is not empty then exit mouseUp
   put it into tCommand
   put "/" & tCommand after tPath
+  answer tPath
   put fld "command" into url ("file:" & tPath)
   buildCustomCommandList
 end mouseUp

@@ -1007,6 +1007,8 @@ on buildCustomCommandList
    set the directory to tHoldDirectory
    --answer tFiles
    if line 1 of tFiles is ".DS_Store" then delete line 1 of tFiles
+   replace ".txt" & cr with cr in tFiles
+   if char -4 to -1 of tFiles is ".txt" then delete char -4 to -1 of tFiles
    replace cr with cr & tab in tFiles
    put cr & "Command" & cr & tab & tFiles into gSBCustomCommands
    --answer gSBCustomCommands
@@ -2243,14 +2245,7 @@ function propertiesInCommon tIDList
    put the keys of R["typeList"] into R["typeList"]
    put the keys of R["propList"] into R["propList"]
    put lineOffset("fillGradient",R["propList"]) into fillGradientLine
-   if fillGradientLine > 0 then
-      put line 1 of tIDList into tID
-      put the fillGradient of tID into FG
-      repeat for each key K in FG
-         put "fillGradient[" & Q(K) & "]" & cr after FGpropList
-      end repeat
-      put char 1 to -2 of FGpropList into line fillGradientLine of R["propList"]
-   end if
+   if fillGradientLine > 0 then put the fillGradientPropList of me into line fillGradientLine of R["propList"]
    return R
 end propertiesInCommon
 

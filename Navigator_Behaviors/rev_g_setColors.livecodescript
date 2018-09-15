@@ -47,7 +47,7 @@ on changeSettings pColorName
    put the effective pColorName of sClickedID into tColor
    lock messages
    repeat with i = 1 to 3
-      set the thumbPosition of scrollbar (item i of "red,green,blue") to 255 - (item i of tColor)
+      set the thumbPosition of scrollbar (item i of "red,green,blue") to (item i of tColor)
    end repeat
 end changeSettings
 
@@ -61,41 +61,56 @@ on hideMe
    enableList
 end hideMe
 
+on mouseDown
+   if not (word 1 of the name of the target is "scrollbar") then exit mouseDown
+   repeat for each item C in "red,green,blue"
+      set the startScroll of scrollbar C to the thumbposition of scrollbar C
+   end repeat
+   set the lastScroll of the target to the thumbposition of the target
+end mouseDown
+
 
 on scrollbarDrag x
-  --put "sbd" && ticks()
-  put the short name of the target into tName
-  if the optionKey is "down" then
-    lock messages
-    repeat for each item I in "red,green,blue"
-      if I is tName then next repeat
-      set the thumbposition of scrollbar I to x
-    end repeat
-  else if the shiftKey is down then
-    put x - the lastScroll of the target into dx
-    lock messages
-    repeat for each item I in "red,green,blue"
-      if I is tName then next repeat
-      set the thumbPosition of scrollbar I to max(min(((the thumbposition of scrollbar I) + dx),255),0)
-    end repeat
-  end if
-  set the lastScroll of the target to x
-  setColors
+   put the short name of the target into tName
+   put x - the lastScroll of the target into dx
+   lock messages
+   repeat for each item C in "red,green,blue"
+      if C is not tName then
+         if the optionKey is "down" or the colorMethod of group "color method" is "identical" then
+            set the thumbposition of scrollbar C to x
+         else if the shiftKey is down or the colorMethod of group "color method" is "synchronous" then
+            set the thumbPosition of scrollbar C to max(min(((the thumbposition of scrollbar C) + dx),255),0)
+         else if the colorMethod of group "color method" is "proportional" then
+            set the thumbPosition of scrollbar C to round(x * (the startScroll of scrollbar C) / (the startScroll of scrollbar tName))
+         else
+            --put the colorOption of btn "color options"
+         end if
+      end if
+      put the thumbposition of scrollbar C into fld (C && "number")
+   end repeat
+   unlock messages
+   set the lastScroll of the target to x
+   setColors
 end scrollbarDrag
 
-on setColors pClear
-   if pClear then
-      put empty into tColorValue
+on setColors pColor
+   lock screen
+   if pColor is empty then
+      put trunc(the thumbPosition of scrollbar "red"),trunc(the thumbPosition of scrollbar "green"),trunc(the thumbPosition of scrollbar "blue") into pColor
+   else if pColor is true then
+      put empty into pColor
    else
-      put trunc(255 - the thumbPosition of scrollbar "red"),trunc(255 - the thumbPosition of scrollbar "green"),trunc(255 - the thumbPosition of scrollbar "blue") into tColorValue
-      set the backgroundcolor of fld "color swatch" to tColorValue
+      repeat with i = 1 to 3
+         set the thumbposition of scrollbar (item i of "red,green,blue") to (item i of pColor)
+      end repeat
    end if
+   if pColor is not empty then set the backgroundcolor of fld "color swatch" to pColor
    repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
       if not the hilite of btn tColor of group "colorChoice" then next repeat
       put tColor & "color" into tColorName
-      
       repeat for each line tID in sIDList
-         set the tColorName of tID to tColorValue
+         set the tColorName of tID to pColor
       end repeat
    end repeat
+   unlock screen
 end setColors
