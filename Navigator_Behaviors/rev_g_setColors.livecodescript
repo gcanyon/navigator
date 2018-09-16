@@ -6,6 +6,8 @@ local sUndoArray -- a list of the original colors to undo
 
 on setup pID
    editColors pID,getID()
+   clearColorCheckboxes
+   showMe
 end setup
 
 on editCurrentHighlights
@@ -13,7 +15,6 @@ on editCurrentHighlights
 end editCurrentHighlights
 
 on editColors pID,pIDList
-   if char 1 of pClickedID is quote then put char 2 to -2 of pClickedID into pClickedID
    put pIDList into sIDList
    delete variable sUndoArray
    repeat for each line tID in sIDList
@@ -24,8 +25,6 @@ on editColors pID,pIDList
    if pID is empty 
    then put line 1 of sIDList into sClickedID
    else put pID into sClickedID
-   clearColorCheckboxes
-   showMe
 end editColors
 
 on resetColors

@@ -12,19 +12,23 @@ local sW,sH -- the width and height to resize from for proportional
 local sUndoArray -- a list of the original rects to undo
 
 on showMe
+   editSizes getClickedID(),getID()
+   showGroup the long id of me
+end showMe
+
+on editSizes pID,pIDList
+   put pID into sID
    delete variable sUndoArray
-   put getClickedID() into sID
    put the rect of sID into sUndoArray[sID]
    put empty into sIDList
-   repeat for each line L in getID()
+   repeat for each line L in pIDList
       if L is sID then next repeat
       put the rect of L into sUndoArray[L]
       put L & cr after sIDList
    end repeat
    setResizeMode
-   showGroup the long id of me
    put the rect of sID into sRect
-end showMe
+end editSizes
 
 on resetRects
    repeat for each key tID in sUndoArray

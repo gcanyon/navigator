@@ -460,6 +460,8 @@ local storeHilitedLines,storeClickLine,mouseXY
 
 
 on selectionChanged 
+   if the mode of stack "revNavigatorp Color Editor" is 4 then dispatch "editColors" to group "setColors" of stack "revNavigatorp Color Editor" with  getClickedID(),theHilitedIDs()
+   if the mode of stack "revNavigatorp Resizer" is 4 then dispatch "editSizes" to group "resizer" of stack "revNavigatorp Resizer" with  getClickedID(),theHilitedIDs()
    updateRevSelectedObjects
 end selectionChanged
 
