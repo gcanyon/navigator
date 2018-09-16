@@ -460,9 +460,19 @@ on hiliteLines pLineList -- takes a list of lines and hilites them
    updatePalettes
 end hiliteLines
 
-on updatePalettes
-   if the mode of stack "revNavigatorp Color Editor" is 4 then dispatch "editColors" to group "setColors" of stack "revNavigatorp Color Editor" with  getClickedID(),theHilitedIDs()
-   if the mode of stack "revNavigatorp Resizer" is 4 then dispatch "editSizes" to group "resizer" of stack "revNavigatorp Resizer" with  getClickedID(),theHilitedIDs()
+on updatePalettes whichPalette,openPalette
+   put getClickedID() into cID
+   put theHilitedIDs() into hIDlist
+   repeat with i = 1 to 2
+      put item i of "color editor,resizer" into pName
+      put "revNavigatorp" && pName into sName
+      put item i of "editColors,editSizes" into mName
+      put item i of "setColors,resizer" into gName
+      if (whichPalette is empty or whichPalette is pName) then
+         if openPalette is true then go stack sName
+         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist
+      end if
+   end repeat
 end updatePalettes
 
 function hilitedBookmarkList -- returns a comma list of the hilited bookmark lines

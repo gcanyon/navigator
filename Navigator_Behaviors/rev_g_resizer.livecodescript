@@ -26,6 +26,9 @@ on editSizes pID,pIDList
       put the rect of L into sUndoArray[L]
       put L & cr after sIDList
    end repeat
+   put (the name of sID) && "[" & the id of sID & "]" into tTitle
+   if sIDList is not empty then put cr & "and" && (the number of lines of sIDList) && "others" after tTitle
+   put tTitle into fld "resize title"
    setResizeMode
    put the rect of sID into sRect
 end editSizes
@@ -57,7 +60,9 @@ on setResizeMode
 end setResizeMode
 
 on hideMe
-  hideGroup the long id of me
+   if word 1 of the short name of this stack is "revNavigatorp"
+   then close this stack
+   else hideGroup the long id of me
 end hideMe
 
 
