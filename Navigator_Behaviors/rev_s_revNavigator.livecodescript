@@ -13,6 +13,8 @@ local sSetupComplete, sStackFileVersion, sUpdatingRevSelection, sWindowLoc
 local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObjectCount,navLastFieldUpdate
 local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
+local showAllStacks
+local showSoStacks
 local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
 -- stack list
 -- this card of the topstack
@@ -499,18 +501,18 @@ end whichColor
 
 
 
-on updateDisplay pForceUpdate,pRetainHilites
+on updateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    cancel navUpdateDisplayMessage
    --   add 1 to sDoUpdateDisplayCount
    --   put sDoUpdateDisplayCount
    --put ticks() && "updateDisplay" & cr after message box  -- debug
-   send ("doUpdateDisplay" && pForceUpdate & "," & pRetainHilites) to me in 30 ticks
+   send ("doUpdateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks) to me in 30 ticks
    put the result into navUpdateDisplayMessage
 end updateDisplay
 
 
 
-on doUpdateDisplay pForceUpdate,pRetainHilites
+on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    --put true into pRetainHilites
    --put "doUpdateDisplay" && pForceUpdate && pRetainHilites && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
    --put the short name of this stack && ticks() & cr &  the executionContexts & cr & cr & cr before fld 1 of stack "untitled 3"
@@ -522,7 +524,10 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStackNameRef, tStart, tSubstackList
    local tSubstackName, tThisStack, whichColor
+   --put ticks(),pForceUpdate,pRetainHilites,allStacks,soStacks into message
    put the short name of this stack into tThisStack
+   if allStacks is not empty then put allStacks into showAllStacks
+   if soStacks is not empty then put soStacks into showSoStacks
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
    if pRetainHilites then
       put hilitedBookmarkList() into tBookmarkLineList
@@ -561,16 +566,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          put "</font></p>" & cr before tColor[i]
       end repeat
       
-      --gSBShowAllStacks
       put the mainStacks into tStackList
       sort lines of tStackList
       put the pObjectLimit of this stack into tObjectLimit
       put empty into tControlList
       put 0 into tCurrentLine
       
-      
+      --put cr & ticks(),showAllStacks,showSoStacks after message
       repeat for each line tStack in tStackList
-         if (not gSBShowAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+         if (not showAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+         if (not showSoStacks) and the scriptonly of stack tStack then next repeat
          put tStack & cr & the substacks of stack tStack after newStackList
          if char -1 of newStackList is not cr then put cr after newStackList
       end repeat
@@ -628,7 +633,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
          if tCardOrBGid is empty then exit doUpdateDisplay
       end if -- not gSBShowList[the short name of this stack]
       
-
+      
       put "button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id" into tRejectList
       replace comma with cr in tRejectList
       set the itemDelimiter to quote
@@ -684,8 +689,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
       end if
       
       put min(the pObjectLimit of this stack,tControlCount) into tControlCount
-      if gSBWhichStack[tThisStack] is "the topStack" \
-            and not (the ShowRevStacks of this stack) then
+      if gSBWhichStack[tThisStack] is "the topStack" then
          put the short name of the topStack into tStackName
          if filterStacksList(tStackName) is empty then
             put 0 into tControlCount
@@ -734,7 +738,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
                next repeat
             end try
          end if
-
+         
          if (tNamedObjectsOnly and (quote is not in tName or item 2 of tName is among the lines of tRejectList))  \
                or (tScriptedObjectsOnly and (the script of tID is empty)) then \
                next repeat
@@ -782,7 +786,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites
    end if
    put "</font></p>" after tControlList
    if gSBWhichStack[tThisStack] is "the topStack" \
-         and not (the ShowRevStacks of this stack) \
          and char 1 to 3 of the short name of the topStack is "rev" then
       delete line tStart + 1 to -1 of fld "list" of this stack
       put "Nav:" into fld "Navigator Title"
@@ -842,6 +845,7 @@ function getCardOrBGid tStackID
       put "the topStack" into gSBWhichStack[N]
       put the name of the topStack into tStackID
    end if
+   --put cr & gSBCardOrBackground[N] after message
    if gSBCardOrBackground[N] is "card" then
       if gSBWhichCard[N] is "this card" then
          put the long id of this cd of tStackID into tReturnID
@@ -865,6 +869,20 @@ function getCardOrBGid tStackID
       return tReturnID
    end if
 end getCardOrBGid
+
+function getStackName obeyLCSetting
+   put the short name of this stack into N
+   
+   if gSBWhichStack[N] is not "the topStack" and existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
+      put "the topStack" into gSBWhichStack[N]
+      put "this card" into gSBWhichCard[N]
+   end if
+   if gSBWhichStack[N] is "the topStack"
+   then put the short name of the topStack into tStackName
+   else put gSBWhichStack[N] into tStackName
+   if obeyLCSetting then return filterStacksList(tStackName)
+   return tStackName
+end getStackName
 
 function testFunction
    return "FML"
@@ -1016,7 +1034,10 @@ end buildCustomCommandList
 
 
 function filterStacksList pStacks
-   return revFilterStacksList(pStacks)
+   repeat for each line S in pStacks
+      if there is a stack S then put S & cr after stackList
+   end repeat
+   return revFilterStacksList(char 1 to -2 of stackList)
 end filterStacksList
 
 
