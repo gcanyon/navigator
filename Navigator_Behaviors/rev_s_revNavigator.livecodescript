@@ -457,8 +457,13 @@ on hiliteLines pLineList -- takes a list of lines and hilites them
    end if
    if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
    set the hilitedLines of fld "list" of this stack to pLineList
+   updatePalettes
 end hiliteLines
 
+on updatePalettes
+   if the mode of stack "revNavigatorp Color Editor" is 4 then dispatch "editColors" to group "setColors" of stack "revNavigatorp Color Editor" with  getClickedID(),theHilitedIDs()
+   if the mode of stack "revNavigatorp Resizer" is 4 then dispatch "editSizes" to group "resizer" of stack "revNavigatorp Resizer" with  getClickedID(),theHilitedIDs()
+end updatePalettes
 
 function hilitedBookmarkList -- returns a comma list of the hilited bookmark lines
    local tReturn, tSeparator
