@@ -12,7 +12,6 @@ on mouseDown
    put the optionKey is "up" and the controlKey is "up" and not the showIDEStacks of me into hideIDE
    if hideIDE then put filterStacksList(tMainList) into tMainList
    put the optionKey is "up" and the controlKey is "up" and not the showSOStacks of me into hideSOS
-   
    --sort lines of tMainlist by the scriptonly of stack each
    put empty into tList
    repeat for each line L in tMainList
