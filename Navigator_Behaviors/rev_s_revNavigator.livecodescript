@@ -463,11 +463,11 @@ end hiliteLines
 on updatePalettes whichPalette,openPalette
    put getClickedID() into cID
    put theHilitedIDs() into hIDlist
-   repeat with i = 1 to 2
-      put item i of "color editor,resizer" into pName
+   repeat with i = 1 to 3
+      put item i of "color editor,resizer,property editor" into pName
       put "revNavigatorp" && pName into sName
-      put item i of "editColors,editSizes" into mName
-      put item i of "setColors,resizer" into gName
+      put item i of "editColors,editSizes,showProps" into mName
+      put item i of "setColors,resizer,editProps" into gName
       if (whichPalette is empty or whichPalette is pName) then
          if openPalette is true then go stack sName
          if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist
@@ -2203,11 +2203,11 @@ function featuredPropertyArray pTypeList
 end featuredPropertyArray
 
 
-function objectsAndPropertiesToEdit
-   local addProps, R, tIDList
+function objectsAndPropertiesToEdit tIDList
+   local addProps, R
    
    -- returns an array of the valid selected ids and the properties that apply to them
-   put getList() into tIDList
+   if tIDList is empty then put getList() into tIDList
    put tIDList into tTypeSampleList
    split tTypeSampleList using cr and space
    combine tTypeSampleList using cr and space

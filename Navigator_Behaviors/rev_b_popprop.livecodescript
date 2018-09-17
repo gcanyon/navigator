@@ -55,7 +55,7 @@ on menuPick pWhich
          dispatch "showMe" to group "resizer"
          exit menuPick
       case "Color Editor..."
-         dispatch "editCurrentHighlights" to group "setColors"
+         dispatch "setup" to group "setColors"
          exit menuPick
       case "Single Object Inspector"
          objectInspector1
