@@ -12,19 +12,32 @@ local sW,sH -- the width and height to resize from for proportional
 local sUndoArray -- a list of the original rects to undo
 
 on showMe
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      editSizes getClickedID(),getID()
+      showGroup the long id of me
+   else
+      updatePalettes "resizer",true
+   end if
+end showMe
+
+
+
+on editSizes pID,pIDList
+   put pID into sID
    delete variable sUndoArray
-   put getClickedID() into sID
    put the rect of sID into sUndoArray[sID]
    put empty into sIDList
-   repeat for each line L in getID()
+   repeat for each line L in pIDList
       if L is sID then next repeat
       put the rect of L into sUndoArray[L]
       put L & cr after sIDList
    end repeat
+   put (the name of sID) && "[" & the id of sID & "]" into tTitle
+   if sIDList is not empty then put cr & "and" && (the number of lines of sIDList) && "others" after tTitle
+   put tTitle into fld "resize title"
    setResizeMode
-   showGroup the long id of me
    put the rect of sID into sRect
-end showMe
+end editSizes
 
 on resetRects
    repeat for each key tID in sUndoArray
@@ -53,7 +66,9 @@ on setResizeMode
 end setResizeMode
 
 on hideMe
-  hideGroup the long id of me
+   if word 1 of the short name of this stack is "revNavigatorp"
+   then close this stack
+   else hideGroup the long id of me
 end hideMe
 
 

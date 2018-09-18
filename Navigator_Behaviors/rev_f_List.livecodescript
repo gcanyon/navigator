@@ -460,6 +460,7 @@ local storeHilitedLines,storeClickLine,mouseXY
 
 
 on selectionChanged 
+   updatePalettes
    updateRevSelectedObjects
 end selectionChanged
 

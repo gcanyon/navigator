@@ -5,23 +5,39 @@ on setSize
    if H then set the rect of fld "commandHelp" to 0,T+30,the width of this stack,the height of this stack - 13
    set the vis of fld "commandHelp" to H
    set the rect of grp "commandControls" to 0,T,the width of this stack,T + 30
-   set the rect of fld "command" to 0,13,the width of this stack,T+2
+   set the rect of fld "command" to -1,27,the width of this stack + 1,T+2
+   set the rect of fld "command title" to 0,15,the width of this stack,29
    send "checkMyScroll" to fld "command"
 end setSize
 
-on showMe pForce
-   put the hilitedLines of fld "list" into tList
-   if not pForce then
-      if tList is empty then exit showMe
-      else set the pWorkingLines of group "commandGroup" to getID()
+on showMe
+   put getID() into tIDList
+   if tIDList is empty then exit showMe
+   setCommandIDList ,tIDList
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      setSize
+      showGroup (the long id of me)
+      select text of fld "command"
+   else
+      updatePalettes "command palette",true
+      select text of fld "command" of stack "revNavigatorp Command Palette"
    end if
-   setSize
-   disableList
-   show me with visual effect scroll down very fast
-   select text of fld "command"
 end showMe
 
+
+on setCommandIDList pID,pIDList
+   set the pWorkingLines of me to pIDList
+   put line 1 of pIDList into pID
+   if there is a pID then
+      put the number of lines of pIDList into objectCount   
+      if objectCount > 1 then put " and" && objectCount - 1 && "others" into commandTitle
+      put the name of pID && "[" & the short id of pID & "]" before commandTitle
+   else put "Object not found" into commandTitle
+   put commandTitle into fld "command title"
+end setCommandIDList
+
 on hideMe
-  hide me with visual effect reveal up very fast
-  enableList
+   if word 1 of the short name of this stack is "revNavigatorp"
+   then close this stack
+   else hideGroup the long id of me
 end hideMe

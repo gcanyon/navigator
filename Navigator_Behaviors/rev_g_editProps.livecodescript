@@ -5,6 +5,7 @@ on setSize
    set the rect of field "Prop Title" to zeroPoint,17,(the width of this stack + 2),31
    set the rect of fld "editProps" to (zeroPoint-2),32,(the width of this stack + 2),(the height of this stack - 15)
    set the loc of btn "closeProps" to (zeroPoint + 30),(the height of this stack - 9)
+   set the loc of btn "Props Palette" to (zeroPoint + 150),(the height of this stack - 9)
    set the loc of button "propListPopup" to -230,30
 end setSize
 
@@ -14,12 +15,22 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    -- pPropList: list of properties to edit
    -- pCustomProperties (optional): if true, editing custom properties
    -- pCustomPropertySet (optional): the customPropertySet that the properties are in
+   showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
+   showMe
+end setup
+
+on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    --put pID && pIDList && pPropList && pCustomProperties,pCustomPropertySet after message; exit to top
    --if pIDList is empty then exit setup
-   --put ticks() into message
    if pIDList is empty then put pID into pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
-   if not exists(pID) then exit setup
+   if not exists(pID) then exit showProps
+   
+   if not pCustomProperties and pPropList is empty then
+      put objectsAndPropertiesToEdit(pIDList) into OPA
+      put OPA["propList"] into pPropList
+   end if
+   
    set the cIDList of fld "editProps" to pIDList
    set the cSourceID of fld "editProps" to pID
    --put word 1 of the long -- ???
@@ -73,22 +84,24 @@ on setup pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
       if effectiveB
       then put line 1 of the effective P of pID into tProp
       else  put line 1 of the P of pID into tProp
+      if P is "htmlText" then put char 4 to -4 of tProp into tProp
       put tag[1] & P & tag[2][effectiveB][allSame] & tProp & tag[3][effectiveB][allSame] after tHTML
    end repeat
    -- if tHTML is empty then put empty into fld "editProps" of me else 
    set the htmlText of fld "editProps" of me to tHTML
-   showMe
-end setup
+end showProps
 
 on showMe
-   setSize
-   
-   --disableList
-   
-   show me with visual effect scroll left very fast
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      setSize
+      showGroup (the long id of me)
+   else
+      updatePalettes "property editor",true
+   end if
 end showMe
 
 on hideMe
-  hide me with visual effect reveal right very fast
-  --enableList
+   if word 1 of the short name of this stack is "revNavigatorp"
+   then close this stack
+   else hideGroup the long id of me
 end hideMe

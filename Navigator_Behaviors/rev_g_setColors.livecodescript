@@ -5,7 +5,10 @@ local sUndoArray -- a list of the original colors to undo
 
 
 on setup pID
+   if pID is empty then put getClickedID() into pID
+   clearColorCheckboxes
    editColors pID,getID()
+   showMe
 end setup
 
 on editCurrentHighlights
@@ -13,19 +16,26 @@ on editCurrentHighlights
 end editCurrentHighlights
 
 on editColors pID,pIDList
-   if char 1 of pClickedID is quote then put char 2 to -2 of pClickedID into pClickedID
    put pIDList into sIDList
+   if pID is empty 
+   then put line 1 of sIDList into sClickedID
+   else put pID into sClickedID   
    delete variable sUndoArray
    repeat for each line tID in sIDList
       repeat for each word tColor in "foregroundcolor backgroundcolor hilitecolor bordercolor topcolor bottomcolor shadowcolor focuscolor"
          put the tColor of tID into sUndoArray[tID][tColor]
       end repeat
    end repeat
-   if pID is empty 
-   then put line 1 of sIDList into sClickedID
-   else put pID into sClickedID
-   clearColorCheckboxes
-   showMe
+   repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
+      if not the hilite of button tColor then next repeat
+      put "color" after tColor
+      changeSettings(tColor)
+      exit repeat
+   end repeat
+   
+   put (the name of sClickedID) && "[" & the id of sClickedID & "]" into tTitle
+   if the number of lines of sIDList > 1 then put cr & "and" && (-1 + the number of lines of sIDList) && "others" after tTitle
+   put tTitle into fld "edit colors title"
 end editColors
 
 on resetColors
@@ -37,28 +47,37 @@ on resetColors
 end resetColors
 
 on clearColorCheckboxes
-  repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
-    set the hilite of button tColor to false
-  end repeat
+   repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
+      set the hilite of button tColor to false
+   end repeat
 end clearColorCheckboxes
 
 on changeSettings pColorName
-   --put sClickedID into message
-   put the effective pColorName of sClickedID into tColor
-   lock messages
-   repeat with i = 1 to 3
-      set the thumbPosition of scrollbar (item i of "red,green,blue") to (item i of tColor)
-   end repeat
+   setScrollbars (the effective pColorName of sClickedID)
 end changeSettings
 
+on setScrollbars pColor
+   lock messages
+   repeat with i = 1 to 3
+      set the thumbPosition of scrollbar (item i of "red,green,blue") to (item i of pColor)
+      put (item i of pColor) into fld ((item i of "red,green,blue") && "number")
+   end repeat
+   set the backgroundcolor of fld "color swatch" to pColor
+   unlock messages
+end setScrollbars
+
 on showMe
-  disableList
-  show me with visual effect scroll right very fast
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      showGroup (the long id of me)
+   else
+      updatePalettes "color editor",true
+   end if
 end showMe
 
 on hideMe
-   hide me with visual effect reveal left very fast
-   enableList
+   if word 1 of the short name of this stack is "revNavigatorp"
+   then close this stack
+   else hideGroup the long id of me
 end hideMe
 
 on mouseDown
@@ -71,40 +90,33 @@ end mouseDown
 
 
 on scrollbarDrag x
+   local newColor
    put the short name of the target into tName
    put x - the lastScroll of the target into dx
-   lock messages
-   repeat for each item C in "red,green,blue"
-      if C is not tName then
-         if the optionKey is "down" or the colorMethod of group "color method" is "identical" then
-            set the thumbposition of scrollbar C to x
-         else if the shiftKey is down or the colorMethod of group "color method" is "synchronous" then
-            set the thumbPosition of scrollbar C to max(min(((the thumbposition of scrollbar C) + dx),255),0)
-         else if the colorMethod of group "color method" is "proportional" then
-            set the thumbPosition of scrollbar C to round(x * (the startScroll of scrollbar C) / (the startScroll of scrollbar tName))
-         else
-            --put the colorOption of btn "color options"
-         end if
-      end if
-      put the thumbposition of scrollbar C into fld (C && "number")
-   end repeat
-   unlock messages
    set the lastScroll of the target to x
-   setColors
-end scrollbarDrag
-
-on setColors pColor
-   lock screen
-   if pColor is empty then
-      put trunc(the thumbPosition of scrollbar "red"),trunc(the thumbPosition of scrollbar "green"),trunc(the thumbPosition of scrollbar "blue") into pColor
-   else if pColor is true then
-      put empty into pColor
+   if the optionKey is "down" or the colorMethod of group "color method" is "identical" then put x,x,x into newColor
    else
-      repeat with i = 1 to 3
-         set the thumbposition of scrollbar (item i of "red,green,blue") to (item i of pColor)
+      repeat for each item C in "red,green,blue"
+         if newColor is not empty then put "," after newColor
+         if C is tName then put round(x) after newColor
+         else if the shiftKey is down or the colorMethod of group "color method" is "synchronous" then
+            put max(min(round((the thumbposition of scrollbar C) + dx),255),0) after newColor
+         else if the colorMethod of group "color method" is "proportional" then
+            put round(x * (the startScroll of scrollbar C) / (the startScroll of scrollbar tName)) after newColor
+         else put round(the thumbposition of scrollbar C) after newColor
       end repeat
    end if
-   if pColor is not empty then set the backgroundcolor of fld "color swatch" to pColor
+   setColors newColor
+end scrollbarDrag
+
+function scrollbarColor
+   return trunc(the thumbPosition of scrollbar "red"),trunc(the thumbPosition of scrollbar "green"),trunc(the thumbPosition of scrollbar "blue")
+end scrollbarColor
+
+on setColors pColor
+   if pColor is empty then put scrollbarColor() into pColor
+   else if pColor is true then put empty into pColor
+   else setScrollbars pColor
    repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
       if not the hilite of btn tColor of group "colorChoice" then next repeat
       put tColor & "color" into tColorName
@@ -112,5 +124,4 @@ on setColors pColor
          set the tColorName of tID to pColor
       end repeat
    end repeat
-   unlock screen
 end setColors

@@ -212,7 +212,7 @@ function prefsText
    end repeat
    
    -- Display Options
-   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes"
       put prefsLine(P,navID,the P of navID) after R
    end repeat
    put prefsLine("pDefaultFold",navID,the pDefaultFold of navID) after R
@@ -457,8 +457,23 @@ on hiliteLines pLineList -- takes a list of lines and hilites them
    end if
    if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
    set the hilitedLines of fld "list" of this stack to pLineList
+   updatePalettes
 end hiliteLines
 
+on updatePalettes whichPalette,openPalette
+   put getClickedID() into cID
+   put theHilitedIDs() into hIDlist
+   repeat with i = 1 to 4
+      put item i of "color editor,resizer,property editor,command palette" into pName
+      put "revNavigatorp" && pName into sName
+      put item i of "editColors,editSizes,showProps,setCommandIDList" into mName
+      put item i of "setColors,resizer,editProps,commandGroup" into gName
+      if (whichPalette is empty or whichPalette is pName) then
+         if openPalette is true then go stack sName
+         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist
+      end if
+   end repeat
+end updatePalettes
 
 function hilitedBookmarkList -- returns a comma list of the hilited bookmark lines
    local tReturn, tSeparator
@@ -2188,11 +2203,11 @@ function featuredPropertyArray pTypeList
 end featuredPropertyArray
 
 
-function objectsAndPropertiesToEdit
-   local addProps, R, tIDList
+function objectsAndPropertiesToEdit tIDList
+   local addProps, R
    
    -- returns an array of the valid selected ids and the properties that apply to them
-   put getList() into tIDList
+   if tIDList is empty then put getList() into tIDList
    put tIDList into tTypeSampleList
    split tTypeSampleList using cr and space
    combine tTypeSampleList using cr and space

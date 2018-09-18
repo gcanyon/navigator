@@ -102,7 +102,7 @@ on mouseUp
    if the cCustomProperties of me is true then
       set the customPropertySet of tID to (the cCustomPropertySet of me)
    else
-      set the oneLiner of group "editContents" to (tProp is among the lines of the oneLiners of this stack)
+      set the oneLiner of group "editContents" to (tProp is among the lines of the oneLiners of stack "revNavigator")
    end if
    
    put tProp into sProp
