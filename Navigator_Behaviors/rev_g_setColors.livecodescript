@@ -47,9 +47,9 @@ on resetColors
 end resetColors
 
 on clearColorCheckboxes
-  repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
-    set the hilite of button tColor to false
-  end repeat
+   repeat for each word tColor in "foreground background hilite border top bottom shadow focus"
+      set the hilite of button tColor to false
+   end repeat
 end clearColorCheckboxes
 
 on changeSettings pColorName
@@ -67,7 +67,11 @@ on setScrollbars pColor
 end setScrollbars
 
 on showMe
-   showGroup the long id of me
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      showGroup (the long id of me)
+   else
+      updatePalettes "color editor",true
+   end if
 end showMe
 
 on hideMe

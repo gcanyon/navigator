@@ -12,9 +12,15 @@ local sW,sH -- the width and height to resize from for proportional
 local sUndoArray -- a list of the original rects to undo
 
 on showMe
-   editSizes getClickedID(),getID()
-   showGroup the long id of me
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      editSizes getClickedID(),getID()
+      showGroup the long id of me
+   else
+      updatePalettes "resizer",true
+   end if
 end showMe
+
+
 
 on editSizes pID,pIDList
    put pID into sID

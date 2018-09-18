@@ -212,7 +212,7 @@ function prefsText
    end repeat
    
    -- Display Options
-   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines"
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes"
       put prefsLine(P,navID,the P of navID) after R
    end repeat
    put prefsLine("pDefaultFold",navID,the pDefaultFold of navID) after R
@@ -463,11 +463,11 @@ end hiliteLines
 on updatePalettes whichPalette,openPalette
    put getClickedID() into cID
    put theHilitedIDs() into hIDlist
-   repeat with i = 1 to 3
-      put item i of "color editor,resizer,property editor" into pName
+   repeat with i = 1 to 4
+      put item i of "color editor,resizer,property editor,command palette" into pName
       put "revNavigatorp" && pName into sName
-      put item i of "editColors,editSizes,showProps" into mName
-      put item i of "setColors,resizer,editProps" into gName
+      put item i of "editColors,editSizes,showProps,setCommandIDList" into mName
+      put item i of "setColors,resizer,editProps,commandGroup" into gName
       if (whichPalette is empty or whichPalette is pName) then
          if openPalette is true then go stack sName
          if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist

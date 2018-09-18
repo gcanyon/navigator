@@ -48,7 +48,6 @@ on menuPick pWhich
    switch pWhich 
       case "Property Editor..."
          if OPA["idList"] is empty then exit menuPick
-         --put ticks() && getClickedID(),OPA["idList"],OPA["propList"] into message
          dispatch "setup" to group "editProps" with getClickedID(),OPA["idList"],OPA["propList"]
          exit menuPick
       case "Size/Location Editor..."

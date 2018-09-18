@@ -5,6 +5,7 @@ on setSize
    set the rect of field "Prop Title" to zeroPoint,17,(the width of this stack + 2),31
    set the rect of fld "editProps" to (zeroPoint-2),32,(the width of this stack + 2),(the height of this stack - 15)
    set the loc of btn "closeProps" to (zeroPoint + 30),(the height of this stack - 9)
+   set the loc of btn "Props Palette" to (zeroPoint + 150),(the height of this stack - 9)
    set the loc of button "propListPopup" to -230,30
 end setSize
 
@@ -83,6 +84,7 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
       if effectiveB
       then put line 1 of the effective P of pID into tProp
       else  put line 1 of the P of pID into tProp
+      if P is "htmlText" then put char 4 to -4 of tProp into tProp
       put tag[1] & P & tag[2][effectiveB][allSame] & tProp & tag[3][effectiveB][allSame] after tHTML
    end repeat
    -- if tHTML is empty then put empty into fld "editProps" of me else 
@@ -90,11 +92,12 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
 end showProps
 
 on showMe
-   setSize
-   showGroup (the long id of me)
-   --disableList
-   
-   --show me with visual effect scroll left very fast
+   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+      setSize
+      showGroup (the long id of me)
+   else
+      updatePalettes "property editor",true
+   end if
 end showMe
 
 on hideMe
