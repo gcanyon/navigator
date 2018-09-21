@@ -6,7 +6,7 @@ To install Navigator, you have two options:
 1. Download this repo.
 2. Download the latest release version of Navigator at https://www.dropbox.com/s/kz3zqi4botzglgq/navigator.zip?dl=1
 
-Whichever way you download Navigator, place Navigator.rev, the commands folder, and the plugins folder in the "My Livecode/Plugins" folder.
+Whichever way you download Navigator, place Navigator.rev, and the Navigator_Behaviors folder in the "My Livecode/Plugins" folder.
 
 Navigator documentation is at https://gcanyon.wordpress.com/navigator-documentation/
 
