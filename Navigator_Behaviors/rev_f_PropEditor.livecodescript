@@ -1,4 +1,4 @@
-script "rev_f_PropEditor"
+﻿script "rev_f_PropEditor"
 local sDefaultValue,sLineNumber
 
 on editValue lineNumber,defaultValue

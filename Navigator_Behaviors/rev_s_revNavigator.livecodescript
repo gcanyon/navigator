@@ -2265,6 +2265,29 @@ function customPropertiesOfAll tIDList,uSet
    return R
 end customPropertiesOfAll
 
+on saveAll pID
+   save existenceWarning(pID)
+   put empty into newStackFiles
+   repeat for each line tStackIDLine in the stackFiles of pID
+      put item 1 of tStackIDLine into tStackName
+      if there is a stack tStackName then 
+         save stack tStackName
+         put tStackIDLine & cr after newStackFiles 
+      else
+         put tStackName & cr after missingStacks
+      end if
+   end repeat
+   if missingStacks is empty then exit saveAll
+   delete char -1 of newStackFiles
+   put the number of lines of missingStacks into missingStackCount
+   put replaceF(cr,"," & " ","Missing stacks:" && line 1 to 3 of missingStacks) into errorMessage
+   if missingStackCount > 3 then put " and" && missingStackCount - 3 && "others." after errorMessage
+   else put "." into char -2 to -1 of errorMessage
+   put " Remove missing stacks from the stackFiles of" && the name of pID & "?" after errorMessage
+   answer errorMessage with "Cancel" or "Remove"
+   if it is "Remove" then set the stackFiles of pID to newStackFiles
+end saveAll
+
 
 function propertiesInCommon tIDList
    local R
@@ -2430,11 +2453,12 @@ end navigatorTarget
 
 
 
-function existenceWarning pID
-  if (there is a pID) then return pID
-  answer warning (pID && "not found.") with "OK"
-  if the optionkey is "down" then put the executioncontexts
-  return empty
+function existenceWarning pID,messageOnly
+   if (there is a pID) then return pID
+   if messageOnly is true then put pID && "not found." & cr after message
+   else answer warning (pID && "not found.") with "OK"
+   if the optionkey is "down" then put the executioncontexts
+   return empty
 end existenceWarning
 
 

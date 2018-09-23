@@ -1,7 +1,8 @@
-script "rev_c_crosshair"
+﻿script "rev_c_crosshair"
 local sTracking,sGetType,sCallbackID,sCallbackMessage
 
 on mouseUp
+   -- test
    send "wrapUp" to me in 6 ticks
    cleanUp
 end mouseUp

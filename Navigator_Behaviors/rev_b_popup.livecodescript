@@ -341,10 +341,7 @@ on menuPick pWhich
                else if word 1 of tID is "group" then
                   -- no point in continuing, can't save or go
                else if tSaveAll and word 1 of tID is "stack" then
-                  save tID
-                  repeat for each line tStackIDLine in the stackFiles of tID
-                     save stack (item 1 of tStackIDLine)
-                  end repeat
+                  saveAll tID
                else if tSave and word 1 of tID is "stack" then save tID
                else if tSaveStackFiles and word 1 of tID is "stack" then
                   repeat for each line tStackIDLine in the stackFiles of tID
