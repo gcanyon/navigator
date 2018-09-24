@@ -57,13 +57,7 @@ on menuPick pWhich
          send ("doUpdateDisplay true") to me in 6 ticks
          break
       case "Bookmark|MouseControl..."
-         if the optionKey is not "down" then
-            answer "Please hold down the option/alt key while selecting this menu item. Release the option/alt key with the mouse pointer over the control you wish to bookmark." with "OK"
-            break
-         end if
-         set the lockCursor to true
-         set the cursor to plus
-         send "bookmarkMouseControl" to me in 5 ticks
+         getMouse the owner of the owner of me,"setBookmarksByMouse"
          break
       case "Bookmark|Selected Objects"
          setBookmarks ,(the selectedObjects)

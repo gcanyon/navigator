@@ -113,6 +113,10 @@ function scrollbarColor
    return trunc(the thumbPosition of scrollbar "red"),trunc(the thumbPosition of scrollbar "green"),trunc(the thumbPosition of scrollbar "blue")
 end scrollbarColor
 
+on setColorsToMouse pMouseData
+   if pMouseData["color"] is not empty then setColors pMouseData["color"]
+end setColorsToMouse
+
 on setColors pColor
    if pColor is empty then put scrollbarColor() into pColor
    else if pColor is true then put empty into pColor

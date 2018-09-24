@@ -54,8 +54,10 @@ on mouseDown
       
       put "u" & sProp into tCProp
       put "u" & word 1 of the cSourceID of me & sProp into tTypeCProp
-      if the tCProp of me is empty and the tTypeCProp of me is empty then exit mouseDown
-      if the tTypeCProp of me is empty then put the tCProp of me into btn "propListPopup" else put the tTypeCProp of me into btn "propListPopup"
+      put the tTypeCProp of fld "editProps" of stack "revNavigator" into propOptionList
+      if propOptionList is empty then put the tCProp of fld "editProps" of stack "revNavigator" into propOptionList
+      if propOptionList is empty then exit mouseDown
+      put propOptionList into btn "propListPopup"
       dispatch "doSetup" to btn "propListPopup" with true
       popup btn "propListPopup"
    end if
@@ -63,34 +65,26 @@ end mouseDown
 
 
 on mouseUp
-   --put ticks() && "mu"
    put word 2 of the clickline into sWhichLine
    if sWhichLine is empty or the text of me is empty then exit mouseUp
+   put the cSourceID of me into tSourceID
    put line sWhichLine of me into tLineData
    set the itemDelimiter to tab
-   put item 1 of tLineData into tProp
+   put item 1 of tLineData into sProp
    put item 2 of tLineData into tVal
    if the cCustomProperties of me is not true then
-      if tProp is "colors" then
-         dispatch "editColors" to group "setColors" with (the cSourceID of me),(the cIDList of me)
-      else if char -5 to -1 of tProp is "color" then
+      if sProp is "colors" then
+         dispatch "editColors" to group "setColors" with tSourceID,(the cIDList of me)
+      else if char -5 to -1 of sProp is "color" then
          answer color with item 2 of tLineData
-         if the result is empty then
-            put it into tColor
-            put empty into tCMD
-            repeat for each line tID in the cIDList of me
-               put "set the" && tProp && "of" && tID && "to" && tColor & cr after tCMD
-            end repeat
-            do tCMD
-            put tColor into item 2 of line sWhichLine of me 
+         if the result is empty then 
+            setValue it 
          end if
       else if tVal is among the words of "true false" then
-         put not tVal into tBoolean
-         repeat for each line tID in the cIDList of me
-            set the tProp of tID to tBoolean
-         end repeat
-         put tBoolean into item 2 of line sWhichLine of me
-      else 
+         setValue not tVal
+      else if sProp is among the lines of the oneLiners of stack "revNavigator" then
+         dispatch "editValue" to fld "PropEditor" with sWhichLine,the sProp of tSourceID
+      else
          put true into showEditor
       end if
       if not showEditor then exit mouseUp
@@ -102,10 +96,9 @@ on mouseUp
    if the cCustomProperties of me is true then
       set the customPropertySet of tID to (the cCustomPropertySet of me)
    else
-      set the oneLiner of group "editContents" to (tProp is among the lines of the oneLiners of stack "revNavigator")
+      set the oneLiner of group "editContents" to (sProp is among the lines of the oneLiners of stack "revNavigator")
    end if
    
-   put tProp into sProp
    put the sProp of tID into tDefaultVal
    set the uDialogText of group "editContents" to tDefaultVal
    send "showMe true" to group "editContents"

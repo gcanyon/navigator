@@ -35,7 +35,6 @@ on menuPick pWhich
    --enable btn "whichCard" of this stack
    switch
       case pWhich is "Stack List"
-         --disable btn "whichCard" of this stack
          put the optionKey is "down" or the showIDEStacks of me into allStacks
          put "Stack" into gSBCardOrBackground[the short name of this stack]
          put true into gSBShowList[the short name of this stack]
@@ -43,13 +42,8 @@ on menuPick pWhich
          put empty into gSBWhichCard[the short name of this stack]
          updateDisplay true,,allStacks,(the showSoStacks of me)
          break
-      case pWhich is "the mouseStack" and the optionKey is not "down"
-         answer "Please hold down the Option/Alt key and click OK." & cr & "Then place the pointer over the stack you want and release the Option/Alt key." with "OK"
-         if the optionKey is not "down" then break
-      case pWhich is among the items of "the topStack,the mouseStack" and the optionKey is "down"
-         set the cursor to hand
-         set the lockCursor to true
-         waitForKeys ,,"up",,"setTargetStackToMouseStack",(the long id of me)
+      case pWhich is "the mouseStack" or (pWhich is "the topStack" and the optionKey is "down")
+         getMouse the long id of me,"setTargetToMouse"
          break
       case pWhich is "Show IDE Stacks"
          set the showIDEStacks of me to not the showIDEStacks of me
@@ -70,12 +64,6 @@ on menuPick pWhich
 end menuPick
 
 
-on setTargetStackToMouseStack
-  set the lockCursor to false
-  setTargetStack the mouseStack
-end setTargetStackToMouseStack
-
-
 on setTargetStack pStack
    if pStack is gSBWhichStack[the short name of this stack] then exit setTargetStack
    --set the autoUpdateList of this stack to pStack is "the topstack"
@@ -83,5 +71,12 @@ on setTargetStack pStack
    put "card" into gSBCardOrBackground[the short name of this stack]
    put pStack into gSBWhichStack[the short name of this stack]
    put false into gSBShowList[the short name of this stack]
-   updateDisplay true
+   doUpdateDisplay true
 end setTargetStack
+
+on setTargetToMouse pMouseData
+   if pMouseData["stack"] is empty then exit setTargetToMouse
+   setTargetStack pMouseData["stack"]
+   put lineListFromIDs(pMouseData["control"]) into tLine
+   if tLine is a number then hiliteLines tLine
+end setTargetToMouse

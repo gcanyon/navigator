@@ -23,6 +23,7 @@ end showMe
 
 
 on editSizes pID,pIDList
+   if pID is empty then put line 1 of pIDList into pID
    put pID into sID
    delete variable sUndoArray
    put the rect of sID into sUndoArray[sID]

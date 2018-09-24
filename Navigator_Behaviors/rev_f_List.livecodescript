@@ -453,7 +453,8 @@ on dragLines pDragList,pTargetLine
             doUpdateDisplay true
          end if
    end switch
-   set the hilitedLines of me to numberItems(pTargetLine,(pTargetLine + sDragNum - 1))
+   --put ticks() && pTargetLine,sDragNum into message
+   hiliteLines numberItems(pTargetLine,(pTargetLine + sDragNum - 1))
 end dragLines
 
 local storeHilitedLines,storeClickLine,mouseXY
@@ -489,6 +490,10 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
+   if the mouse is up then
+      cleanup
+      exit mouseMove
+   end if
    --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
    if navigatorDragID is not empty then
       dispatch function "trackReorderExternal" to fld "list" of navigatorDragID
@@ -695,6 +700,7 @@ on startDragging X,Y
    put the short name of this stack into gSBDragStartNav
    put false into externalDrag
    set the hScrollbar of me to false
+   put the number of items of tDragList into sDragNum
    put getID(tDragList) into tDragIDList
    put the topleft of this stack into TL
    delete variable startedExternalDrag

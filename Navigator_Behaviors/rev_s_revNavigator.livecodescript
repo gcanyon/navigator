@@ -339,9 +339,10 @@ function lineListFromIDs pIDlist -- takes a line list of long IDs and returns a 
    
    put empty into tLineList
    put the separatorLine of fld "list" into tStart
+   --answer pIDlist
    repeat for each line tObject in pIDlist
       if word 1 of tObject is "stack" then
-         put tStart+1 & "," after tLineList
+         put tStart + 1 & "," after tLineList
       else if word 1 of tObject is "card" then
          put tStart + 2 & "," after tLineList
       else if navIDArray[tObject] is not empty then
@@ -791,7 +792,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
             add 1 to tCurrentLine
             put empty into newLineArray[tCurrentLine]
             repeat with j = 1 to the number of controls of tID
-               put (the long id of control J of tID) & cr after newLineArray[tCurrentLine]
+               put the long id of control j of tID into jID
+               put jID & cr after newLineArray[tCurrentLine]
+               put tCurrentLine into newIDArray[jID]
             end repeat
             delete char -1 of newLineArray[tCurrentLine]
          end if
@@ -902,6 +905,10 @@ end getStackName
 function testFunction
    return "FML"
 end testFunction
+
+on setBookmarksByMouse pMouseData
+   if pMouseData["control"] is not empty then setBookmarks ,pMouseData["control"]
+end setBookmarksByMouse
 
 
 on setBookmarks pWhichLine,pIDList
@@ -1317,6 +1324,10 @@ end setNavRect
 
 on mouseLeave
 end mouseLeave
+
+on getMouse callbackID,callbackMessage
+   dispatch "getMouse" to card "crosshair" of stack "revNavigatorCrosshair" with callbackID,callbackMessage
+end getMouse
 
 function theHilitedIDs
    return getID(the hilitedLines of fld "list")
