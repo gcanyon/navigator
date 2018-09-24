@@ -353,6 +353,8 @@ function lineListFromIDs pIDlist -- takes a line list of long IDs and returns a 
    return tLineList
 end lineListFromIDs
 
+
+
 function dontUpdate
    if not (the autoUpdateSelection of this stack) then return true
    put the short name of this stack into tStack
@@ -452,12 +454,13 @@ end restoreHilitedLines
 
 
 on hiliteLines pLineList -- takes a list of lines and hilites them
+   --put ticks() & pLineList & cr & the executioncontexts & cr after message
    if sUpdatingRevSelection then
       put false into sUpdatingRevSelection
       exit hiliteLines
    end if
    if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
-   set the hilitedLines of fld "list" of this stack to pLineList
+   dispatch "setHilites" to fld "list" of this stack with pLineList
    updatePalettes
 end hiliteLines
 
@@ -519,9 +522,10 @@ end whichColor
 
 on updateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    cancel navUpdateDisplayMessage
+   
    --   add 1 to sDoUpdateDisplayCount
    --   put sDoUpdateDisplayCount
-   --put ticks() && "updateDisplay" & cr after message box  -- debug
+   --put ticks() && "updateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks & cr after message box  -- debug
    send ("doUpdateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks) to me in 30 ticks
    put the result into navUpdateDisplayMessage
 end updateDisplay
@@ -541,6 +545,10 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    local tStackList, tStackName, tStackNameRef, tStart, tSubstackList
    local tSubstackName, tThisStack, whichColor
    --put ticks(),pForceUpdate,pRetainHilites,allStacks,soStacks into message
+   --put the executionContexts & cr & cr after message
+   --put true into pRetainHilites -- debug
+   
+   
    put the short name of this stack into tThisStack
    if allStacks is not empty then put allStacks into showAllStacks
    if soStacks is not empty then put soStacks into showSoStacks
@@ -549,6 +557,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put hilitedBookmarkList() into tBookmarkLineList
       put hilitedLineIDList() into tHilitedIDList
    end if
+   send "storeHilites" to fld "list" in 10 ticks
    put the separatorLine of fld "list" of this stack into tStart
    
    
@@ -1228,7 +1237,7 @@ on deleteObjects pWhichLine
    repeat for each line tID in idList
       if there is a tID then delete tID
    end repeat
-   send ("doUpdateDisplay") to me in 6 ticks
+   send ("doUpdateDisplay true") to me in 6 ticks
 end deleteObjects
 
 
@@ -1261,7 +1270,7 @@ on cloneObjects pWhichLine
       unlock messages
       unlock screen      
    end repeat
-   send ("doUpdateDisplay") to me in 10 ticks
+   send ("doUpdateDisplay true") to me in 10 ticks
 end cloneObjects
 
 
@@ -1997,11 +2006,11 @@ function addBehaviorChains tIDList
    repeat for each line tID in tIDList
       repeat
          if not exists(tID) then exit repeat
-         put tID & cr after R
+         add 1 to R[tID]
          put the behavior of tID into tID
       end repeat
    end repeat
-   return R
+   return the keys of R
 end addBehaviorChains
 
 

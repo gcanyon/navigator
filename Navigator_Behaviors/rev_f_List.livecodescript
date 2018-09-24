@@ -246,8 +246,7 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    if returnMSG is not empty then do returnMSG
    unlock messages
    unlock screen
-   
-   send "doUpdateDisplay true" to stack navID in 10 ticks
+   doUpdateDisplay true
    exit relayerControlList
    
    
@@ -452,9 +451,11 @@ on dragLines pDragList,pTargetLine
             addBookmarkedControls dragA[1],pTargetLine
             doUpdateDisplay true
          end if
+         hiliteLines lineListFromIDs(tDragIDList)
    end switch
    --put ticks() && pTargetLine,sDragNum into message
-   hiliteLines numberItems(pTargetLine,(pTargetLine + sDragNum - 1))
+   
+   --    send "hiliteLines" && numberItems(pTargetLine,(pTargetLine + sDragNum - 1)) to me in 5 ticks
 end dragLines
 
 local storeHilitedLines,storeClickLine,mouseXY
@@ -628,8 +629,16 @@ after mouseEnter
    storeHilites
 end mouseEnter
 
-on storeHilites
+on setHilites tList
+   set the hilitedLines of me to tList
+   put tList into tDragList
+   put tDragList into tDragArray
+   split tDragArray using comma as set
+end setHilites
+
+on storeHilites 
    put the hilitedLines of me into tDragList
+   --put tDragList & cr & the executioncontexts into message
    put tDragList into tDragArray
    split tDragArray using comma as set
 end storeHilites
@@ -699,7 +708,7 @@ on startDragging X,Y
    put true into dragStarted
    put the short name of this stack into gSBDragStartNav
    put false into externalDrag
-   set the hScrollbar of me to false
+   --set the hScrollbar of me to false
    put the number of items of tDragList into sDragNum
    put getID(tDragList) into tDragIDList
    put the topleft of this stack into TL
@@ -713,10 +722,9 @@ on startDragging X,Y
    end repeat
    delete char -1 of sNavWindowRectList
    --put ticks()
-   put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
+   put (the left of me - 5),-5,(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
    put the number of lines of myHTMLtext into myLineCount
-   --put the effective textHeight of me + 1 into myTH
    put trunc(the textheightsum of me)/(the number of lines of me) into myTH
    lock screen
    -- put "made it! 1" && startDraggingCount && ticks()
@@ -737,7 +745,7 @@ on startDraggingExternal tExternalDraggerID
    set the vis of theDraggerID to true
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the number of lines of me into myLineCount
-   put the effective textHeight of me + 1 into myTH
+   put trunc(the textheightsum of me)/(the number of lines of me) into myTH
    dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
    get trackReorderExternal()
 end startDraggingExternal
@@ -771,10 +779,12 @@ on trackReorder X,Y
       tidyUp
       exit trackReorder
    end if
+   --put hilitedLineIDList() into message
    set the topLeft of theDraggerID to (X + 8),(Y + 8)
    autoScrollTheField
-   put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .5))) into targetLine
-   put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
+   put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .9))) into targetLine
+   --put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
+   put max(35,-4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me) into pointerTop
    set the top of thePointerID to pointerTop
    set the points of thePointerID to the points of thePointerID
    --if the optionkey is down then set the topLeft of thePointerID to X,(Y+20)
@@ -849,9 +859,9 @@ on finishReorder
    --       set the hilitedLines of me to newHilite
    --       set the scroll of me to S
    --    end if
-   dispatch "dragLines" to me with tDragList,targetLine
+   dragLines tDragList,targetLine
    --dispatch "dragLines" to me with tDragList,newHilite
-   put the hilitedLines of me into tDragList
+   --put the hilitedLines of me into tDragList
 end finishReorder
 
 
