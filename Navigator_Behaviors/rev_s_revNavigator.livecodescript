@@ -2412,8 +2412,24 @@ function targetFromGlobals whichStack,showList,cardOrBackground,whichCard,whichB
    return whichCard && "of" && SN 
 end targetFromGlobals
 
+local recentTargetList
+
+function recentTargets
+   return empty --recentTargetList
+end recentTargets
+
+on addRecentTarget pTarget
+   set wholematches to true
+   put lineOffset(pTarget,recentTargetList) into hitLine
+   if hitLine > 0 then delete line hitLine of recentTargetList
+   put pTarget & cr before recentTargetList
+   if char -1 of recentTargetList is cr then delete char -1 of recentTargetList
+end addRecentTarget
+
 function globalsFromTarget navTarget
    -- returns an array with whichStack,showList,cardOrBackground,whichCard,whichBackground
+   --addRecentTarget navTarget
+   if navTarget is "this card" then put " of the topStack" after navTarget
    put (word 2 of navTarget is "list") into R["showList"]
    put word iff(word 1 of navTarget is "this",2,1) of navTarget into R["cardOrBackground"]
    if R["cardOrBackground"] is "group" then put "background" into R["cardOrBackground"]
@@ -2422,6 +2438,7 @@ function globalsFromTarget navTarget
       if R["cardOrBackground"] is not "stack" then put R["cardOrBackground"] && "list" into R["which" & R["cardOrBackground"]]
       return R
    end if
+   
    
    if word -5 of navTarget is "stack" then 
       put the value of word -4 of navTarget into R["whichStack"]
@@ -2451,19 +2468,21 @@ end globalsFromTarget
 
 function navigatorTarget navName
    -- returns one of the following:
-
-   -- <card id> of the topstack
-   -- this card of the topstack
-   -- this card of stack "<stack name>"
+   
+   -- this card (of the topstack)
    
    -- stack list
-   -- card list of the topstack
+   
    -- card list of stack "<stack name>"
-   -- background list of the topstack
    -- background list of stack "<stack name>"
    
    -- <card long id>
    -- <group long id>
+   
+   -- NO -- <card id> of the topstack
+   -- NO -- this card of stack "<stack name>" 
+   -- NO -- card list of the topstack
+   -- NO -- background list of the topstack
    
    if navName is empty or navName is the short name of me then return navigatorTarget
    dispatch function "navigatorTarget" to stack navName

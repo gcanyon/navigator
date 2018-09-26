@@ -67,7 +67,7 @@ end menuPick
 on setTargetStack pStack
    if pStack is gSBWhichStack[the short name of this stack] then exit setTargetStack
    --set the autoUpdateList of this stack to pStack is "the topstack"
-   put "this card" into gSBWhichCard[the short name of this stack]
+   put the short name of this card of stack pStack into gSBWhichCard[the short name of this stack]
    put "card" into gSBCardOrBackground[the short name of this stack]
    put pStack into gSBWhichStack[the short name of this stack]
    put false into gSBShowList[the short name of this stack]
