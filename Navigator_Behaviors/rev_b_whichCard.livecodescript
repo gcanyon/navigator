@@ -2,7 +2,7 @@
 global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground
 global gSBShowList
 
-local nonTargetCount
+local nonTargetCount,tList,SBG
 
 on mouseDown 
    put the short name of this stack into thisStack
@@ -11,13 +11,18 @@ on mouseDown
    if char -1 of tDefault is not cr then put cr & "-" & cr after tDefault
    put the number of lines of tDefault into nonTargetCount
    if SBG then 
-      put cr & backgroundsOf((the long id of stack getStackName()),"base","name","short") into tList
+      put cr & backgroundsOf((the long id of stack getStackName()),"base","name and id","short") into tList
       replace cr & "group" with cr & "background" in tList
       delete char 1 of tList
-   else put the cardnames of stack getStackName() into tList
-   if the shiftKey is "down" then sort lines of tList
+   else put cardsOf(the long id of stack getStackName()) into tList
+   set the itemDel to tab
+   if the shiftKey is "down" then sort lines of tList by item 1 of each
+   repeat for each line L in tList
+      put item 1 of L & cr after tNameList
+   end repeat
+   delete char -1 of tNameList
    replace "/" with "//" in tList
-   put tDefault & line 1 to (the pMenuLimit of this stack) - nonTargetCount of tList into me
+   put tDefault & line 1 to (the pMenuLimit of this stack) - nonTargetCount of tNameList into me
 end mouseDown
 
 on menuPick pWhich
@@ -28,7 +33,13 @@ on menuPick pWhich
    else 
       put gSBWhichStack[thisStack] into sStack
       if sStack = "the topStack" then put the short name of the topStack into sStack
-      setNavigatorTarget ,(the long id of (pWhich && "of stack" && Q(sStack)))
+      set the itemDel to tab
+      put item 2 of line MH - nonTargetCount of tList into itemID
+      put iff(SBG,"group","card") && "id" && itemID && "of stack" && Q(sStack) into itemLongID
+      --put itemLongID;exit to top
+      --put itemLongID; exit to top -- & cr & (the long id of (pWhich && "of stack" && Q(sStack))) into message;exit to top
+      setNavigatorTarget ,itemLongID
+      --setNavigatorTarget ,(the long id of (pWhich && "of stack" && Q(sStack)))
    end if
    exit menuPick
    

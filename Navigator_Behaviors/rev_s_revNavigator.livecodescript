@@ -652,7 +652,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          end if
       end if
       put the long id of stack tStackName into tStackID
-      
       if not gSBShowList[tThisStack] then
          put getCardOrBGid(tStackID) into tCardOrBGid
          if tCardOrBGid is empty then exit doUpdateDisplay
@@ -1951,21 +1950,32 @@ function backgroundsOf stackID,bFilter,returnType,typeModifier
       if not (bFilter = "all" \
             or bFilter = "backgroundNames" and the backgroundBehavior of background i of stackID \
             or bFilter = "base" and word 5 of the long id of background i of stackID is not "group") then next repeat
-      if returnType = "id" then
-         switch typeModifier
-            case empty; put (the id of background i of stackID) & cr after R; break
-            case "short"; put (the short id of background i of stackID) & cr after R; break
-            case "long"; put (the long id of background i of stackID) & cr after R; break
-         end switch
-      else
-         switch typeModifier
-            case empty; put (the name of background i of stackID) & cr after R; break
-            case "short"; put (the short name of background i of stackID) & cr after R; break
-            case "long"; put (the long name of background i of stackID) & cr after R; break
-         end switch
-      end if
+      switch 
+         case word 1 of returnType = "name"
+            switch typeModifier
+               case empty; put (the name of background i of stackID) after R; break
+               case "short"; put (the short name of background i of stackID) after R; break
+               case "long"; put (the long name of background i of stackID) after R; break
+            end switch
+            if returnType = "name" then break
+            put tab after R
+         case word 1 of returnType = "id"
+            switch typeModifier
+               case empty; put (the id of background i of stackID) after R; break
+               case "short"; put (the short id of background i of stackID) after R; break
+               case "long"; put (the long id of background i of stackID) after R; break
+            end switch
+      end switch
+      put cr after R
    end repeat
 end backgroundsOf
+
+function cardsOf stackID
+   repeat with i = 1 to 999999
+      if not (there is a card i of stackID) then return char 1 to -2 of R
+      put (the short name of card i of stackID) & tab & (the short id of card i of stackID) & cr after R
+   end repeat
+end cardsOf
 
 
 
@@ -2379,15 +2389,14 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
-   put "hiya" into message
    put globalsFromTarget(targetContainer) into V
-   --    put targetContainer into fld 1 of stack "untitled 1"
-   --    exit setGlobalsFromTarget
    put V["WhichStack"] into gSBWhichStack[navName]
    put V["WhichCard"] into gSBWhichCard[navName]
    put V["CardOrBackground"] into gSBCardOrBackground[navName]
    put V["WhichBackground"] into gSBWhichBackground[navName]
    put V["ShowList"] into gSBShowList[navName]
+   
+   --combine V using cr and tab;put V & cr & cr & navName && gSBWhichBackground[navName];exit to top
    
    --    repeat for each item G in "WhichStack,WhichCard,CardOrBackground,WhichBackground,ShowList"
    --       put "put V[" & Q(G) & "] into gSB" & G & "[navName]" & cr after T
@@ -2447,7 +2456,7 @@ function globalsFromTarget navTarget
    --addRecentTarget navTarget
    
    put the short name of this stack into N
-   
+   --put navTarget;exit to top
    switch
       case navTarget is "stack list"
          put true into R["showList"]
@@ -2469,8 +2478,12 @@ function globalsFromTarget navTarget
       default -- long id
          put false into R["showList"]
          put stackNameFromID(navTarget,true) into R["whichStack"]
-         put word 1 of navTarget into R["cardOrBackground"]
-         put idWithoutStack(navTarget) into R["which" & word 1 of navTarget]
+         put iff(word 1 of navTarget is among the items of "background,bkgnd,group","background",word 1 of navTarget) into controlType
+         put controlType into R["cardOrBackground"]
+         if controlType = "background" then put "group" into word 1 of navTarget
+         put idWithoutStack(navTarget) into R["which" & controlType]
+         --if word 1 of R["which" & controlType] is among the items of "bkgnd,background" then put "group" into word 1 of test
+         --combine R using cr and tab;put R;exit to top
          return R
    end switch
 end globalsFromTarget
