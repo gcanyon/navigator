@@ -1615,10 +1615,15 @@ function uniqueStacksFromIDs idList,onlyMainstacks
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function stackNameFromID tID,onlyMainstacks
-   if word -5 of tID is "stack" and not onlyMainstacks then return word -5 to -4 of tID
-   return the name of stack (word -2 to -1 of tID)
+function stackNameFromID tID,shortName
+   if word -5 of tID is "stack" 
+   then if shortName is true then return the value of word -4 of tID else return word -5 to -4 of tID
+   if shortName is true then return the short name of stack (word -2 to -1 of tID) else return the name of stack (word -2 to -1 of tID)
 end stackNameFromID
+
+function idWithoutStack tID
+   if word -5 of tID is "stack" then return word 1 to -7 of tID else return word 1 to -4 of tID
+end idWithoutStack
 
 
 function stackMapFromIDs idList
@@ -2374,6 +2379,7 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
+   put "hiya" into message
    put globalsFromTarget(targetContainer) into V
    --    put targetContainer into fld 1 of stack "untitled 1"
    --    exit setGlobalsFromTarget
@@ -2428,42 +2434,47 @@ end addRecentTarget
 
 function globalsFromTarget navTarget
    -- returns an array with whichStack,showList,cardOrBackground,whichCard,whichBackground
+   -- this card (of the topstack)
+   
+   -- stack list
+   
+   -- card list of stack "<stack name>"
+   -- background list of stack "<stack name>"
+   
+   -- <card long id>
+   -- <group long id>
+   
    --addRecentTarget navTarget
-   if navTarget is "this card" then put " of the topStack" after navTarget
-   put (word 2 of navTarget is "list") into R["showList"]
-   put word iff(word 1 of navTarget is "this",2,1) of navTarget into R["cardOrBackground"]
-   if R["cardOrBackground"] is "group" then put "background" into R["cardOrBackground"]
    
-   if R["showList"] then
-      if R["cardOrBackground"] is not "stack" then put R["cardOrBackground"] && "list" into R["which" & R["cardOrBackground"]]
-      return R
-   end if
+   put the short name of this stack into N
    
-   
-   if word -5 of navTarget is "stack" then 
-      put the value of word -4 of navTarget into R["whichStack"]
-      put word 1 to -7 of navTarget into R["which" & R["cardOrBackground"]]
-   else if word -2 to -1 of navTarget is "the topstack" then 
-      put "the topstack" into R["whichStack"]
-      put word 1 to -4 of navTarget into R["which" & R["cardOrBackground"]]
-   else if navTarget is not "stack list" then 
-      put the short name of stack (word -2 to -1 of navTarget) into R["whichStack"]
-      put word 1 to -4 of navTarget into R["which" & R["cardOrBackground"]]
-   end if
-   
-   return R
-   
-   
-   
-   if word 1 to 2 of navTarget is "this card" then 
-      put "this card" into R["whichCard"]
-   else if R["whichStack"] is "the topStack" then 
-      put word 1 to -4 of navTarget into R["whichCard"]
-   else if R["cardOrBackground"] is not "stack" then
-      put the long id of navTarget into R["which" & R["cardOrBackground"]]
-   end if
-   return R
+   switch
+      case navTarget is "stack list"
+         put true into R["showList"]
+         put "stack" into R["cardOrBackground"]
+         return R
+      case word 1 to 2 of navTarget is among the items of "card list,background list"
+         put true into R["showList"]
+         put word 1 of navTarget into R["cardOrBackground"]
+         if the number of words of navTarget is 5 then put word 4 to 5 of navTarget into R["whichStack"]
+         else put gSBWhichStack[N] into R["whichStack"]
+         put word 1 to 2 of navTarget into R["which" & word 1 of navTarget]
+         return R
+      case word 1 to 2 of navTarget is "this card" 
+         put false into R["showList"]
+         put "card" into R["cardOrBackground"]
+         put "this card" into R["whichCard"]
+         put "the topStack" into R["whichStack"]
+         return R
+      default -- long id
+         put false into R["showList"]
+         put stackNameFromID(navTarget,true) into R["whichStack"]
+         put word 1 of navTarget into R["cardOrBackground"]
+         put idWithoutStack(navTarget) into R["which" & word 1 of navTarget]
+         return R
+   end switch
 end globalsFromTarget
+
 
 
 function navigatorTarget navName
