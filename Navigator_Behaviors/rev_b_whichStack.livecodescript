@@ -58,7 +58,11 @@ on menuPick pWhich
          if the optionKey is "down" then toplevel stack pWhich
          else go stack pWhich
          break
+      case pWhich is not "the topstack"
+         put "stack" && Q(pWhich) into pWhich
       default
+         setNavigatorTarget ,pWhich
+         break
          setTargetStack pWhich
    end switch
 end menuPick

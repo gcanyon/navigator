@@ -123,3 +123,7 @@ on setValue pText
    set the itemDelimiter to tab
    put line 1 of pText into item 2 of line sWhichLine of me
 end setValue
+
+on scrollbardrag
+   if the vis of fld "propEditor" then dispatch "setRect" to fld "propEditor"
+end scrollbardrag

@@ -1609,7 +1609,9 @@ end scriptOnlyStackNamesFromFolderList
 
 function uniqueStacksFromIDs idList,onlyMainstacks
    repeat for each line tID in idList
+      put tID,onlyMainstacks
       add 1 to stackList[the short name of stackNameFromID(tID,onlyMainstacks)]
+      put "ha"
    end repeat
    return the keys of stackList
 end uniqueStacksFromIDs
@@ -2389,6 +2391,7 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
+   --put navName && targetContainer && "peekaboo";exit to top
    put globalsFromTarget(targetContainer) into V
    put V["WhichStack"] into gSBWhichStack[navName]
    put V["WhichCard"] into gSBWhichCard[navName]
@@ -2462,6 +2465,9 @@ function globalsFromTarget navTarget
          put true into R["showList"]
          put "stack" into R["cardOrBackground"]
          return R
+      case word 1 of navTarget is "stack"
+         if there is a navTarget then return globalsFromTarget("card id" && (the short id of this card of navTarget) && "of" && navTarget)
+         else return globalsFromTarget("this card")
       case word 1 to 2 of navTarget is among the items of "card list,background list"
          put true into R["showList"]
          put word 1 of navTarget into R["cardOrBackground"]
@@ -2469,7 +2475,7 @@ function globalsFromTarget navTarget
          else put gSBWhichStack[N] into R["whichStack"]
          put word 1 to 2 of navTarget into R["which" & word 1 of navTarget]
          return R
-      case word 1 to 2 of navTarget is "this card" 
+      case word 1 to 2 of navTarget is among the items of "this card,the topstack" 
          put false into R["showList"]
          put "card" into R["cardOrBackground"]
          put "this card" into R["whichCard"]

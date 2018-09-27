@@ -564,6 +564,7 @@ on prepareItems
       if noCardStack and word 1 of tID is among the items of "card,stack" then put false into noCardStack
       if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack and not exportToBehaviors then exit repeat
    end repeat
+   
    if exportToBehaviors then
       put uniqueStacksFromIDs(tIDList,true) into parentStackList
       repeat for each line stackName in parentStackList
@@ -576,7 +577,8 @@ on prepareItems
          exit repeat
       end repeat
    end if
-
+   
+   
    if tContainer and tObjectType is "mixed" then put "container" into tObjectType
    if the number of items of tLines > 1 then put "multi" before tObjectType
    put true into noStacks

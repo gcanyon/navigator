@@ -25,6 +25,8 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    if pIDList is empty then put pID into pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
    if not exists(pID) then exit showProps
+   if pID is the cSourceID of fld "editProps" and pIDList is the cIDList of fld "editProps" then exit showProps
+   hide fld "propEditor"
    
    if not pCustomProperties and pPropList is empty then
       put objectsAndPropertiesToEdit(pIDList) into OPA
@@ -94,6 +96,7 @@ end showProps
 on showMe
    if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
       setSize
+      hide fld "propEditor"
       showGroup (the long id of me)
    else
       updatePalettes "property editor",true
