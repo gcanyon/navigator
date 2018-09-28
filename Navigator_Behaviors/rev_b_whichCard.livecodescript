@@ -29,36 +29,13 @@ on menuPick pWhich
    put the short name of this stack into thisStack
    put the menuHistory of me into MH
    if MH is among the items of "3,4" then set the showBackgrounds of me to (MH is 4)
-   if MH <= nonTargetCount then setNavigatorTarget ,pWhich
+   if MH <= nonTargetCount then setRecentNavigatorTarget pWhich
    else 
       put gSBWhichStack[thisStack] into sStack
       if sStack = "the topStack" then put the short name of the topStack into sStack
       set the itemDel to tab
       put item 2 of line MH - nonTargetCount of tList into itemID
       put iff(SBG,"group","card") && "id" && itemID && "of stack" && Q(sStack) into itemLongID
-      --put itemLongID;exit to top
-      --put itemLongID; exit to top -- & cr & (the long id of (pWhich && "of stack" && Q(sStack))) into message;exit to top
       setNavigatorTarget ,itemLongID
-      --setNavigatorTarget ,(the long id of (pWhich && "of stack" && Q(sStack)))
    end if
-   exit menuPick
-   
-   if true then  
-   else if MH = 1 then setNavigatorTarget ,"this card"
-   else if MH < nonTargetCount then setNavigatorTarget ,pWhich
-   else
-      setNavigatorTarget ,(iff(the showBackgrounds of me is true,"background","card") && Q(pWhich) && "of" && iff(gSBWhichStack[thisStack] = "the topstack","the topstack","stack" && Q(gSBWhichStack[thisStack])))
-   end if
-   
-   exit menuPick
-   put the short name of this stack into thisStack
-   put pWhich into gSBWhichCard[thisStack]
-   put the menuHistory of me into MH
-   if MH is among the items of "3,4" then set the showBackgrounds of me to (MH is 4)
-   put the showBackgrounds of me is true into SBG
-   put iff(SBG and MH <> 1,"background","card") into gSBCardOrBackground[thisStack]
-   put (MH is among the items of "3,4") into gSBShowList[thisStack]
-   if the commandKey is "down" and MH > nonTargetCount and not SBG 
-   then go cd pWhich of stack getStackName() 
-   else updateDisplay true
 end menuPick

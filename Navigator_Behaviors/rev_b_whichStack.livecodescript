@@ -32,16 +32,7 @@ end mouseDown
 
 
 on menuPick pWhich
-   --enable btn "whichCard" of this stack
    switch
-      case pWhich is "Stack List"
-         put the optionKey is "down" or the showIDEStacks of me into allStacks
-         put "Stack" into gSBCardOrBackground[the short name of this stack]
-         put true into gSBShowList[the short name of this stack]
-         put empty into gSBWhichStack[the short name of this stack]
-         put empty into gSBWhichCard[the short name of this stack]
-         updateDisplay true,,allStacks,(the showSoStacks of me)
-         break
       case pWhich is "the mouseStack" or (pWhich is "the topStack" and the optionKey is "down")
          getMouse the long id of me,"setTargetToMouse"
          break
@@ -58,29 +49,15 @@ on menuPick pWhich
          if the optionKey is "down" then toplevel stack pWhich
          else go stack pWhich
          break
-      case pWhich is not "the topstack"
+      case not pWhich is among the items of "the topstack,stack list"
          put "stack" && Q(pWhich) into pWhich
       default
          setNavigatorTarget ,pWhich
          break
-         setTargetStack pWhich
    end switch
 end menuPick
 
-
-on setTargetStack pStack
-   if pStack is gSBWhichStack[the short name of this stack] then exit setTargetStack
-   --set the autoUpdateList of this stack to pStack is "the topstack"
-   put the short name of this card of stack pStack into gSBWhichCard[the short name of this stack]
-   put "card" into gSBCardOrBackground[the short name of this stack]
-   put pStack into gSBWhichStack[the short name of this stack]
-   put false into gSBShowList[the short name of this stack]
-   doUpdateDisplay true
-end setTargetStack
-
 on setTargetToMouse pMouseData
-   if pMouseData["stack"] is empty then exit setTargetToMouse
-   setTargetStack pMouseData["stack"]
-   put lineListFromIDs(pMouseData["control"]) into tLine
-   if tLine is a number then hiliteLines tLine
+   if pMouseData["stack"] is not empty then setNavigatorTarget ,("stack" && Q(pMouseData["stack"]))
 end setTargetToMouse
+
