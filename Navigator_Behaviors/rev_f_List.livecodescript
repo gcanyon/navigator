@@ -164,7 +164,6 @@ on mouseDown pWhichButton
    put word 2 of the clickLine into tWhichLine
    set the uClickedLine of this card to tWhichLine
    send "updatesDoubleHiliteList" to me in 30 ticks
-   
    if pWhichButton is not 3 then exit MouseDown
    dontDrag
    if not (tWhichLine is among the items of the hilitedLines of the target) \
@@ -531,10 +530,10 @@ after mouseMove X,Y
       trackReorder X,Y  
    else if tDragListClickLine > 0 then 
       startDragging X,Y
-   else if within (grc "groupFoldBar",(X,Y)) then
-      set the tooltip of me to the tooltip of grc "groupFoldBar"
-   else
-      set the tooltip of me to empty
+      --    else if within (grc "groupFoldBar",(X,Y)) then
+      --       set the tooltip of me to the tooltip of grc "groupFoldBar"
+      --    else
+      --       set the tooltip of me to empty
    end if
 end mouseMove
 
@@ -593,6 +592,11 @@ after mouseUp
       cleanUpExternalDrag  
    else 
       if tDragListClickLine > 0 then cleanUp sHiliteList -- fieldClickLine
+      repeat with i = 1 to the number of controls of group "commandBars"
+         if within (grc ("commandBar" & i),the mouseLoc) then 
+            put ("commandBar" & i) & cr & getID()
+         end if
+      end repeat
       if not (sHiliteList contains comma) then
          put getClickedID() into tID
          if word 1 of tID is "group" then
@@ -608,6 +612,7 @@ after mouseUp
 end mouseUp
 
 after mouseRelease
+   
    if not dragStarted then exit mouseRelease 
    if navigatorDragID is not empty then 
       dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 

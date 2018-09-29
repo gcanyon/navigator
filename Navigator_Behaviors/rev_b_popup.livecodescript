@@ -446,13 +446,7 @@ on menuPick pWhich
                   end try
                end repeat
             end if
-            if there is a stack tStackName then
-               put false into gSBShowList[the short name of this stack]
-               put "card" into gSBCardOrBackground[the short name of this stack]
-               put "this card" into gSBWhichCard[the short name of this stack]
-               put tStackName into gSBWhichStack[the short name of this stack]
-               updateDisplay true
-            end if
+            if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
          end if
          if item 1 of pWhich is "Command" then
             put item 2 of pWhich into tCommandFile

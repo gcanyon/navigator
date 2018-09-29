@@ -1311,6 +1311,11 @@ on navResizeStack tWidth,tHeight
    
    set the rect of fld "list" to -2,35,(tWidth+1),(tHeight+1)
    set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
+   put max(120,tWidth - 104) into commandBarLeft
+   repeat with i = 1 to the number of controls of group "commandBars"
+      set the rect of grc ("commandBar" & i) to commandBarLeft,35,commandBarLeft + 30,(tHeight+1)
+      add 30 to commandBarLeft
+   end repeat
    
    repeat for each item G in "about,commandGroup,editContents,editProps"
       if the vis of group G then dispatch "setSize" to group G
@@ -2136,9 +2141,10 @@ on setColor pProp,pColor
    if pProp is "pColorListLines" then set the borderColor of fld "list" to pColor
    if pProp is "pColorBackground" then 
       set the backgroundColor of this cd to pColor
-      put pColor into pFoldColor
+      --put pColor into pFoldColor
       repeat with i = 1 to 3
-         if item i of pFoldColor > 128 then subtract 15 from item i of pFoldColor else add 20 to item i of pFoldColor
+         put 255 - item i of pColor into item i of pFoldColor
+         --if item i of pFoldColor > 128 then subtract 15 from item i of pFoldColor else add 20 to item i of pFoldColor
       end repeat
       set the backgroundColor of grc "groupFoldBar" to pFoldColor
    end if
