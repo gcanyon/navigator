@@ -2306,18 +2306,29 @@ function customPropertiesOfAll tIDList,uSet
 end customPropertiesOfAll
 
 on saveAll pID
+   put field "Navigator Title" into tTitle 
    save existenceWarning(pID)
+   put "Saved:" && the short name of pID into field "Navigator Title"
    put empty into newStackFiles
+   put 0 into savedCount
    repeat for each line tStackIDLine in the stackFiles of pID
       put item 1 of tStackIDLine into tStackName
       if there is a stack tStackName then 
          save stack tStackName
          put tStackIDLine & cr after newStackFiles 
+         put "Saved:" && tStackName into field "Navigator Title"
+         wait 0 ticks
+         add 1 to savedCount
       else
          put tStackName & cr after missingStacks
       end if
    end repeat
-   if missingStacks is empty then exit saveAll
+   put "Saved:" && savedCount && "files" into field "Navigator Title"
+   if missingStacks is empty then 
+      wait 1 second
+      put "Saved:" && tTitle into field "Navigator Title"
+      exit saveAll
+   end if
    delete char -1 of newStackFiles
    put the number of lines of missingStacks into missingStackCount
    put replaceF(cr,"," & " ","Missing stacks:" && line 1 to 3 of missingStacks) into errorMessage
@@ -2326,6 +2337,7 @@ on saveAll pID
    put " Remove missing stacks from the stackFiles of" && the name of pID & "?" after errorMessage
    answer errorMessage with "Cancel" or "Remove"
    if it is "Remove" then set the stackFiles of pID to newStackFiles
+   put "Saved:" && tTitle into field "Navigator Title"
 end saveAll
 
 

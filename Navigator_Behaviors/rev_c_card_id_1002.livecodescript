@@ -86,8 +86,15 @@ on setPrefs
       set the pDefaultFold of navID to the label of btn "Default Fold"
       put the label of btn "List Font" into FN
       if char 1 of FN is space then delete char 1 of FN
+      set the fixedLineHeight of fld "list" of navID to false
       set the textFont of fld "list" of navID to FN
       set the textSize of fld "list" of navID to the label of btn "List Font Size"
+      if fld "list" of navID is empty then put cr into fld "list" of navID
+      put trunc((the textheightsum of fld "list" of navID)/(the number of lines of fld "list" of navID)) into myTH
+      set the fixedLineHeight of fld "list" of navID to true
+      set the textHeight of fld "list" of navID to myTH
+
+
       set the pObjectLimit of navID to the label of btn "List Object Limit"
       set the pMenuLimit of navID to the label of btn "Menu Limit"
       
