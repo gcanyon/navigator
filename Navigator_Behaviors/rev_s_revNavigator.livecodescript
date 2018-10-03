@@ -176,7 +176,7 @@ on prefsLoad
 end prefsLoad
 
 on prefsSave
-   fileWrite("navigatorPrefs.txt",prefsText())
+   fileWrite "navigatorPrefs.txt",prefsText()
 end prefsSave
 
 function prefsLine U,pID,V

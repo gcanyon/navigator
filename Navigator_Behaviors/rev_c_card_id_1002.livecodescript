@@ -128,7 +128,7 @@ on setPrefs
    -- Other
    set the navigatorStackFileVersion of stack mainNavID to the label of btn "stackFileVersion"
    
-   
+   prefsSave
 end setPrefs
 
 on updateAddProperties cProp,cValue
