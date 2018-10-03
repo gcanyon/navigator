@@ -51,11 +51,17 @@ on mouseDown
    else if the cCustomProperties of me is true then 
       exit mouseDown
    else
-      
-      put "u" & sProp into tCProp
-      put "u" & word 1 of the cSourceID of me & sProp into tTypeCProp
-      put the tTypeCProp of fld "editProps" of stack "revNavigator" into propOptionList
-      if propOptionList is empty then put the tCProp of fld "editProps" of stack "revNavigator" into propOptionList
+      if sProp = "textFont" then
+         put the fontNames into propOptionList
+         replace "(" with "\(" in propOptionList
+         sort lines of propOptionList
+      end if
+      if propOptionList is empty then
+         put "u" & sProp into tCProp
+         put "u" & word 1 of the cSourceID of me & sProp into tTypeCProp
+         put the tTypeCProp of fld "editProps" of stack "revNavigator" into propOptionList
+         if propOptionList is empty then put the tCProp of fld "editProps" of stack "revNavigator" into propOptionList
+      end if
       if propOptionList is empty then exit mouseDown
       put propOptionList into btn "propListPopup"
       dispatch "doSetup" to btn "propListPopup" with true
@@ -83,7 +89,8 @@ on mouseUp
       else if tVal is among the words of "true false" then
          setValue not tVal
       else if sProp is among the lines of the oneLiners of stack "revNavigator" then
-         dispatch "editValue" to fld "PropEditor" with sWhichLine,the sProp of tSourceID
+         if sProp is "name" then put the short name of tSourceID into tVal else put the sProp of tSourceID into tVal
+         dispatch "editValue" to fld "PropEditor" with sWhichLine,tVal
       else
          put true into showEditor
       end if
@@ -101,13 +108,16 @@ on mouseUp
    
    put the sProp of tID into tDefaultVal
    set the uDialogText of group "editContents" to tDefaultVal
-   send "showMe true" to group "editContents"
+   send "showMe true",(sProp is "htmlText") to group "editContents"
    --put value(the clickline)
 end mouseUp
 
 on resultMessage pText
-  if pText is empty then put fld "setContents" into pText
-  setValue pText
+   if pText is empty then 
+      if sProp is "htmlText" then put the htmlText of fld "setContents" into pText
+      else put fld "setContents" into pText
+   end if
+   setValue pText
 end resultMessage
 
 on setValue pText
@@ -123,3 +133,7 @@ on setValue pText
    set the itemDelimiter to tab
    put line 1 of pText into item 2 of line sWhichLine of me
 end setValue
+
+on scrollbardrag
+   if the vis of fld "propEditor" then dispatch "setRect" to fld "propEditor"
+end scrollbardrag

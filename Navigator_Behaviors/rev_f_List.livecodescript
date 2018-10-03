@@ -8,7 +8,6 @@ global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects
 global gSBDragStartNav -- the short name of the Navigator originating a drag
 global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
-local tOriginalScroll,tClickLine
 local tStartDragMessage
 local sDropLines -- the items that actually need to be rearranged on dropping.
 
@@ -164,7 +163,6 @@ on mouseDown pWhichButton
    put word 2 of the clickLine into tWhichLine
    set the uClickedLine of this card to tWhichLine
    send "updatesDoubleHiliteList" to me in 30 ticks
-   
    if pWhichButton is not 3 then exit MouseDown
    dontDrag
    if not (tWhichLine is among the items of the hilitedLines of the target) \
@@ -531,10 +529,10 @@ after mouseMove X,Y
       trackReorder X,Y  
    else if tDragListClickLine > 0 then 
       startDragging X,Y
-   else if within (grc "groupFoldBar",(X,Y)) then
-      set the tooltip of me to the tooltip of grc "groupFoldBar"
-   else
-      set the tooltip of me to empty
+      --    else if within (grc "groupFoldBar",(X,Y)) then
+      --       set the tooltip of me to the tooltip of grc "groupFoldBar"
+      --    else
+      --       set the tooltip of me to empty
    end if
 end mouseMove
 
@@ -593,21 +591,27 @@ after mouseUp
       cleanUpExternalDrag  
    else 
       if tDragListClickLine > 0 then cleanUp sHiliteList -- fieldClickLine
-      if not (sHiliteList contains comma) then
-         put getClickedID() into tID
-         if word 1 of tID is "group" then
-            --put the mouseLoc
-            if within (grc "groupFoldBar",the mouseLoc) then 
-               setFolded tID
-               doUpdateDisplay true
-            end if
+      repeat with i = 1 to the number of controls of group "commandBars"
+         if within (grc ("commandBar" & i),the mouseLoc) then 
+            put ("commandBar" & i) & cr & getID()
          end if
-      end if
+      end repeat
+      --       if not (sHiliteList contains comma) then
+      --          put getClickedID() into tID
+      --          if word 1 of tID is "group" then
+      --             --put the mouseLoc
+      --             if within (grc "groupFoldBar",the mouseLoc) then 
+      --                setFolded tID
+      --                doUpdateDisplay true
+      --             end if
+      --          end if
+      --       end if
    end if
    
 end mouseUp
 
 after mouseRelease
+   
    if not dragStarted then exit mouseRelease 
    if navigatorDragID is not empty then 
       dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 
@@ -725,7 +729,8 @@ on startDragging X,Y
    put (the left of me - 5),-5,(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the htmlText of me into myHTMLtext
    put the number of lines of myHTMLtext into myLineCount
-   put trunc(the textheightsum of me)/(the number of lines of me) into myTH
+   --put trunc((the textheightsum of me)/(the number of lines of me)) into myTH
+   put the textHeight of me into myTH
    lock screen
    -- put "made it! 1" && startDraggingCount && ticks()
    put newPointer() into thePointerID
@@ -745,7 +750,8 @@ on startDraggingExternal tExternalDraggerID
    set the vis of theDraggerID to true
    put (the left of me - 5),(the top of me - 20),(the right of me + 5),(the bottom of me + 20) into noFlyRect
    put the number of lines of me into myLineCount
-   put trunc(the textheightsum of me)/(the number of lines of me) into myTH
+   --put trunc((the textheightsum of me)/(the number of lines of me)) into myTH
+   put the textHeight of me into myTH
    dispatch "finishDrag" to this cd of stack "revDragRep" with "windows"
    get trackReorderExternal()
 end startDraggingExternal
@@ -903,14 +909,18 @@ function newDragger
    return R
 end newDragger
 
-on autoScrollTheField
+on autoScrollTheField scrollInc,scrollIncSign,scrollIncMax
    if the vis of stack "revDragRep" or (navigatorDragID is not empty and navigatorDragID is not the name of this stack) then exit autoScrollTheField
-   put (mouseV() - item 2 of the loc of me) div (the height of me div 2) * myTH into scrollInc 
-   if "autoScrollTheField" is in pendingMessages() or scrollInc = 0 then exit autoScrollTheField
+   if "autoScrollTheField" is in pendingMessages() or (mouseV() > the top of me + 2 and mouseV() < the bottom of me - 10) then exit autoScrollTheField
+   if scrollInc is empty then 
+      put myTH into scrollInc
+      put iff(mouseV() < item 2 of the loc of me,-1,1) into scrollIncSign
+      put 8 * scrollInc into scrollIncMax
+   end if
    put the scroll of me into S
-   set the scroll of me to S + scrollInc
-   if the scroll of me = S then exit autoScrollTheField
-   send "autoScrollTheField" to me in 80 millisecs
+   set the scroll of me to S + scrollInc * scrollIncSign
+   put min(trunc(1.2 * scrollInc) + 1,scrollIncMax) into scrollInc
+   if the scroll of me <> S then send "autoScrollTheField" && scrollInc,scrollIncSign,scrollIncMax to me in 4 ticks
 end autoScrollTheField
 
 ## THESE ARE UTILITY ROUTINES ##

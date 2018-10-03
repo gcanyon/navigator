@@ -11,6 +11,10 @@ end mouseDown
 
 on prepareItems
    put objectsAndPropertiesToEdit() into OPA -- idList, propList
+   if OPA["idList"] is empty then
+      put "(No Objects Selected" into me
+      exit prepareItems
+   end if
    put OPA["idList"] into tIDList
    repeat for each line L in OPA["propList"] 
       put empty into TFpropA[L]
@@ -38,9 +42,9 @@ on prepareItems
          "Single Object Inspector" & cr & \
          "Individual Object Inspectors" & cr & \
          "-" & cr & OPA["propList"]
-      put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
-   end repeat
-   put tMenuText into me
+   put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
+end repeat
+put tMenuText into me
 end prepareItems
 
 

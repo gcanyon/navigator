@@ -1,0 +1,1 @@
+if tIndex = 1 thenask "Base Name:"if the result is not empty then exit to topput it into tNameend ifset the name of tID to tName && tIndex

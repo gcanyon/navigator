@@ -29,8 +29,9 @@ on editButton
   showMe
 end editButton
 
-on showMe pAsAskDialog
+on showMe pAsAskDialog,startAsHTML
    put pAsAskDialog into sAsAskDialog
+   set the hilite of btn "editContentsHTML" to startAsHTML is true
    if sAsAskDialog then
       put the uDialogText of me into fld "setContents"
       put the uID of me into sCallingObjectID
@@ -48,7 +49,6 @@ on showMe pAsAskDialog
    end if
    
    setSize
-   set the hilite of btn "editContentsHTML" to false
    showGroup the long id of me
    select after text of fld "setContents"
 end showMe

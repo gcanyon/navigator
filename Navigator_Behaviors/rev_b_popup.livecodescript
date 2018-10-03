@@ -322,22 +322,7 @@ on menuPick pWhich
             if not (word 1 of tID is among the items of "group,card,stack") then next repeat
             try
                if tBrowseControls then
-                  put false into gSBShowList[the short name of this stack]
-                  if word 1 of tID is "stack" then
-                     put "card" into gSBCardOrBackground[the short name of this stack]
-                     put "this card" into gSBWhichCard[the short name of this stack]
-                  else if word 1 of tID is "group" then
-                     put "background" into gSBCardOrBackground[the short name of this stack]
-                     put word 1 to -4 of tID into gSBWhichBackground[the short name of this stack]
-                  else if word 1 of tID is "card" then
-                     put "card" into gSBCardOrBackground[the short name of this stack]
-                     put word 1 to -4 of tID into gSBWhichCard[the short name of this stack]
-                  end if
-                  set the wholematches to true
-                  put wordOffset("stack",tID) into tS
-                  put word tS to -1 of tID into tStackID
-                  put the short name of stack tStackID into gSBWhichStack[the short name of this stack]
-                  updateDisplay true
+                  setNavigatorTarget ,tID
                else if word 1 of tID is "group" then
                   -- no point in continuing, can't save or go
                else if tSaveAll and word 1 of tID is "stack" then
@@ -461,29 +446,13 @@ on menuPick pWhich
                   end try
                end repeat
             end if
-            if there is a stack tStackName then
-               put false into gSBShowList[the short name of this stack]
-               put "card" into gSBCardOrBackground[the short name of this stack]
-               put "this card" into gSBWhichCard[the short name of this stack]
-               put tStackName into gSBWhichStack[the short name of this stack]
-               updateDisplay true
-            end if
+            if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
          end if
          if item 1 of pWhich is "Command" then
-            put item 2 of pWhich into tCommandFile
-            put the value of word -1 the long id of this stack into tPath
-            set the itemDelimiter to "/"
-            put "Navigator Commands" into item -1 of tPath
-            put "/" & tCommandFile after tPath
-            if not (there is a file tPath) then
-               answer warning ("Command Missing:" && tPath) with "OK"
-               break
-            end if
-            put ("file:" & tPath) into tURL
-            put url tURL into tCommand
-            set the commandCode of button "do" of group "commandcontrols" to tCommand
+            put commandRead(item 2 of pWhich) into tCommandData
+            set the commandCode of button "do" of group "commandcontrols" to tCommandData
             put getID() into tIDList
-            if tIDList is empty then break
+            if tIDList is empty or tCommandData is empty then break
             set the pWorkingLines of group "commandGroup" to tIDList
             send "doCode" to button "do" of group "commandcontrols"
          end if
@@ -546,24 +515,28 @@ on prepareItems
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
    put getID(tClickedLine) into sClickedID --  local to store universally within this script the id that was clicked
    
-   
+   --put tIDList into message
    
    put the basicItems of btn "popup" into tItems
    put gSBCustomCommands after tItems
    put true into allBehaviors
    put true into tContainer
-   put word 1 of tIDList into tObjectType
+   if word 1 of tIDList is "bkgnd" then put "group" into tObjectType else put word 1 of tIDList into tObjectType
    put true into noCardStack
    put true into exportToBehaviors
    
    repeat for each line tID in tIDList
-      if tObjectType is not "mixed" and word 1 of tID is not tObjectType then put "mixed" into tObjectType
+      if word 1 of tID is "bkgnd" then put "group" into tIDType else put word 1 of tID into tIDType
+      if tObjectType is not "mixed" and tIDType is not tObjectType then put "mixed" into tObjectType
       if allBehaviors and the behavior of tID is empty then put false into allBehaviors
       if exportToBehaviors and the behavior of tID is not empty then put false into exportToBehaviors
-      if tContainer and word 1 of tID is not among the items of "card,stack,group" then put false into tContainer
-      if noCardStack and word 1 of tID is among the items of "card,stack" then put false into noCardStack
+      if tContainer and tIDType is not among the items of "card,stack,group" then put false into tContainer
+      if noCardStack and tIDType is among the items of "card,stack" then put false into noCardStack
       if tObjectType is "mixed" and not allBehaviors and not tContainer and not noCardStack and not exportToBehaviors then exit repeat
    end repeat
+   
+   --put tObjectType into message
+   
    if exportToBehaviors then
       put uniqueStacksFromIDs(tIDList,true) into parentStackList
       repeat for each line stackName in parentStackList
@@ -576,7 +549,8 @@ on prepareItems
          exit repeat
       end repeat
    end if
-
+   
+   
    if tContainer and tObjectType is "mixed" then put "container" into tObjectType
    if the number of items of tLines > 1 then put "multi" before tObjectType
    put true into noStacks
@@ -612,7 +586,7 @@ on prepareItems
    if tCopiedType is "button" then put "Set Copied Btn as Behavior" & cr before tItems
    -- put tObjectType && tCopiedType
    put tObjectType & "Items" into uProp1
-   -- put uProp1
+    --put uProp1 into message
    if tCopiedType is not empty then put tObjectType & tCopiedType & "Items" into uProp2
    put the uProp1 of me & the uProp2 of me before tItems
    
