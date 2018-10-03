@@ -95,6 +95,7 @@ on doSetup
       catch someErr
       end try
       set the custompropertyset of N to empty
+      buildCustomCommandList
    end if
    show this stack
    set the minHeight of N to 120
@@ -109,7 +110,9 @@ on doSetup
    set the customPropertySet of me to "gSBControlSetsProp"
    put the customProperties of me into gSBControlSets
    set the customPropertySet of me to empty
-   buildCustomCommandList
+   
+   set the textHeight of fld "list" to 1 + round(4 * the textSize of fld "list" / 3)
+   
    setSeparatorLine 0 -- may need to fix this
    put true into sSetupComplete
    cleangREVMessageDispatch
@@ -134,19 +137,46 @@ on closeStack
    save me
 end closeStack
 
-on prefsLoad
-   put the filename of stack "revNavigator" into P
+on fileWrite tPathName,tContents
+   put tContents into url navigatorFileURL(tPathName)
+end fileWrite
+
+function fileRead tPathName
+   return url navigatorFileURL(tPathName,true)
+end fileRead
+
+function navigatorFileURL tPathName,checkExistence
+   put navigatorPath(tPathName) into tPath 
+   if checkExistence and not (there is a file tPath) then answer warning ("File Missing:" && tPath) with "OK"
+   return "file:" & tPath
+end navigatorFileURL
+
+function navigatorPath tPathName,isFolder
+   put the filename of stack "revNavigator" into R
    set the itemdelimiter to "/"
-   put "navigatorPrefs.txt" into item -1 of P
-   put url ("file:" & P) into pText
-   prefsLoadFromText pText
+   put tPathName into item -1 of R
+   repeat with i = the number of items of tPathName down to iff(isFolder,1,2)
+      if not (there is a folder (item 1 to -i of R)) then create folder (item 1 to -i of R)
+   end repeat
+   return R
+end navigatorPath
+
+on commandWrite tCommand,tCommandText
+   if char -4 to -1 of tCommand is not ".txt" then put ".txt" after tCommand
+   fileWrite "Navigator Commands/" & tCommand,tCommandText
+end commandWrite
+
+function commandRead tCommand
+   if char -4 to -1 of tCommand is not ".txt" then put ".txt" after tCommand
+   return fileRead("Navigator Commands/" & tCommand)
+end commandRead
+
+on prefsLoad
+   prefsLoadFromText fileRead("navigatorPrefs.txt")
 end prefsLoad
 
 on prefsSave
-   put the filename of stack "revNavigator" into P
-   set the itemdelimiter to "/"
-   put "navigatorPrefs.txt" into item -1 of P
-   put prefsText() into url ("file:" & P)
+   fileWrite("navigatorPrefs.txt",prefsText())
 end prefsSave
 
 function prefsLine U,pID,V
@@ -225,6 +255,7 @@ function prefsText
    put prefsLine("pMenuLimit",navID,the pMenuLimit of navID) after R
    put prefsLine("textFont",the long id of fld "list" of navID,the textFont of fld "list" of navID) after R
    put prefsLine("textSize",the long id of fld "list" of navID,the textSize of fld "list" of navID) after R
+   put prefsLine("textHeight",the long id of fld "list" of navID,the textHeight of fld "list" of navID) after R
    
    -- Object Properties
    put the customProperties["gSBAddPropsProp"] of navID into addPropArray
@@ -591,7 +622,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
-      disable btn "whichCard" of this stack
+      --disable btn "whichCard" of this stack
       repeat with i = 1 to 4
          put "</font></p>" & cr before tColor[i]
       end repeat
@@ -642,7 +673,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    else
       
       enable btn "whichCard" of this stack
-      
       if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
       if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
       
@@ -651,6 +681,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       
       put the long id of stack tStackName into tStackID
       if not gSBShowList[tThisStack] then
+         
+         --put getCardOrBGid(tThisStack) into tCardOrBGid
          put getCardOrBGid(tStackID) into tCardOrBGid
          if tCardOrBGid is empty then exit doUpdateDisplay
       end if -- not gSBShowList[the short name of this stack]
@@ -688,6 +720,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
             put the number of bgs of tStackID into tControlCount
             put "Nav: Backgrounds of" && the name of tStackID into fld "Navigator Title"
          end if
+         
       else
          if tCheckScripts
          then put tColor[whichColor(tCardOrBGid)] & "<b>" & the name of tCardOrBGid & "</b>"after tControlList
@@ -726,9 +759,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          if foldB[tCurrentIndentLine] then next repeat
          if gSBShowList[tThisStack] then
             if gSBCardOrBackground[tThisStack] is "card" then
-               put the long id of cd i into tID --of tStackID into tID  --defaultStack test
+               put the long id of cd i of tStackID into tID  --defaultStack test
             else
-               put the long id of bg i into tID --of tStackID into tID  --defaultStack test
+               put the long id of bg i of tStackID into tID  --defaultStack test
             end if
          else
             put the long id of control i of tCardOrBGid into tID
@@ -896,7 +929,7 @@ end getCardOrBGid
 
 function getStackName obeyLCSetting
    put the short name of this stack into N
-   
+   if gSBShowList[N] and gSBCardOrBackground[N] is "stack" then return empty
    if gSBWhichStack[N] is not "the topStack" and existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
       put "the topStack" into gSBWhichStack[N]
       put "this card" into gSBWhichCard[N]
@@ -1038,26 +1071,17 @@ end setSeparatorLine
 on buildCustomCommandList
    local tFiles, tHoldDirectory, tPath
    
-   put the value of word -1 the long id of this stack into tPath
-   set the itemDelimiter to "/"
-   put "Navigator Commands" into item -1 of tPath
-   --answer tPath
-   --exit to top
-   if not (there is a folder tPath) then
-      --answer "creating"
-      create folder tPath
-   end if
+   put navigatorPath("Navigator Commands",true) into tPath
+   
    put the directory into tHoldDirectory
    set the directory to tPath
    put the files into tFiles
    set the directory to tHoldDirectory
-   --answer tFiles
    if line 1 of tFiles is ".DS_Store" then delete line 1 of tFiles
    replace ".txt" & cr with cr in tFiles
    if char -4 to -1 of tFiles is ".txt" then delete char -4 to -1 of tFiles
    replace cr with cr & tab in tFiles
    put cr & "Command" & cr & tab & tFiles into gSBCustomCommands
-   --answer gSBCustomCommands
 end buildCustomCommandList
 
 
@@ -1310,15 +1334,17 @@ on navResizeStack tWidth,tHeight
    set the rect of fld "Navigator Title" to tRect
    
    set the rect of fld "list" to -2,35,(tWidth+1),(tHeight+1)
-   set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
-   put max(120,tWidth - 104) into commandBarLeft
-   repeat with i = 1 to the number of controls of group "commandBars"
-      set the rect of grc ("commandBar" & i) to commandBarLeft,35,commandBarLeft + 30,(tHeight+1)
-      add 30 to commandBarLeft
-   end repeat
+   if there is a grc "groupFoldBar" then set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
+   if there is a group "commandBars" then
+      put max(120,tWidth - 104) into commandBarLeft
+      repeat with i = 1 to the number of controls of group "commandBars"
+         set the rect of grc ("commandBar" & i) to commandBarLeft,35,commandBarLeft + 30,(tHeight+1)
+         add 30 to commandBarLeft
+      end repeat
+   end if
    
    repeat for each item G in "about,commandGroup,editContents,editProps"
-      if the vis of group G then dispatch "setSize" to group G
+      if there is a group G and the vis of group G then dispatch "setSize" to group G
    end repeat
    set the rect of grc "navBorder" to 0,0,(the width of this stack),(the height of this stack)
 end navResizeStack
@@ -1354,7 +1380,6 @@ function answerF M,I,T
       put " or" && Q(param(x)) after C
    end repeat
    if T is not empty then put " titled" && Q(T) after C
-   --if the optionkey is "down" then put C into message
    do C
    return it
 end answerF
@@ -1619,7 +1644,7 @@ end uniqueStacksFromIDs
 
 function stackNameFromID tID,onlyMainstacks,shortName
    if word -5 of tID is "stack" and not onlyMainstacks then put word -5 to -4 of tID into tStack
-   put the name of stack (word -2 to -1 of tID) into tStack
+   else put the name of stack (word -2 to -1 of tID) into tStack
    if shortName then return the short name of tStack else return tStack
    
 end stackNameFromID
@@ -2248,6 +2273,7 @@ function objectsAndPropertiesToEdit tIDList
    
    -- returns an array of the valid selected ids and the properties that apply to them
    if tIDList is empty then put getList() into tIDList
+   if tIDList is empty then return empty
    put tIDList into tTypeSampleList
    split tTypeSampleList using cr and space
    combine tTypeSampleList using cr and space
@@ -2306,7 +2332,7 @@ function customPropertiesOfAll tIDList,uSet
 end customPropertiesOfAll
 
 on saveAll pID
-   put field "Navigator Title" into tTitle 
+   put field "Navigator Title" into tOriginalTitle 
    save existenceWarning(pID)
    put "Saved:" && the short name of pID into field "Navigator Title"
    put empty into newStackFiles
@@ -2326,7 +2352,7 @@ on saveAll pID
    put "Saved:" && savedCount && "files" into field "Navigator Title"
    if missingStacks is empty then 
       wait 1 second
-      put "Saved:" && tTitle into field "Navigator Title"
+      put tOriginalTitle into field "Navigator Title"
       exit saveAll
    end if
    delete char -1 of newStackFiles
@@ -2337,7 +2363,7 @@ on saveAll pID
    put " Remove missing stacks from the stackFiles of" && the name of pID & "?" after errorMessage
    answer errorMessage with "Cancel" or "Remove"
    if it is "Remove" then set the stackFiles of pID to newStackFiles
-   put "Saved:" && tTitle into field "Navigator Title"
+   put tOriginalTitle into field "Navigator Title"
 end saveAll
 
 
@@ -2418,9 +2444,9 @@ end setGlobalsFromTarget
 
 function checkCurrentNavTarget N,checkOnly
    if N is empty then put the short name of this stack into N
-   if gSBShowList[N] then return gSBCardOrBackground[N] && "list"
    
    put currentNavTarget(N) into tID
+   if gSBShowList[N] then return tID
    if existenceWarning(tID) is not empty then return tID
    if checkOnly then return empty
    setNavigatorTarget N,"the topstack"
@@ -2431,14 +2457,15 @@ function currentNavTarget N
    --    put the executioncontexts
    --    exit to top
    if N is empty then put the short name of this stack into N
-   if gSBShowList[N] then return gSBCardOrBackground[N] && "list"
-   if gSBWhichStack[N] is "the topstack" then return "card id" && the id of this card of the topstack && "of" && the name of the topstack
-   
-   if gSBCardOrBackground[N] is "card" and gSBWhichCard[N] is "this card"
-   then return "card id" && the id of this card of stack gSBWhichStack[N] && "of" && the name of stack gSBWhichStack[N]
-   else if gSBCardOrBackground[N] is "card" 
-   then return gSBWhichCard[N] && "of stack" && Q(gSBWhichStack[N])
-   else return gSBWhichBackground[N] && "of stack" && Q(gSBWhichStack[N])
+   if gSBWhichStack[N] is "the topstack" or (gSBCardOrBackground[N] is "card" and gSBWhichCard[N] is "this card") then 
+      put false into gSBShowList[N]
+      put "card" into gSBCardOrBackground[N]
+      return "card id" && the id of this card of the topstack && "of" && the name of the topstack
+   end if
+   put "of stack" && Q(gSBWhichStack[N]) into R
+   if gSBShowList[N] then return gSBCardOrBackground[N] && "list" && R
+   else if gSBCardOrBackground[N] is "card" then return gSBWhichCard[N] && R
+   else return gSBWhichBackground[N] && R
 end currentNavTarget
 
 
@@ -2521,9 +2548,8 @@ function globalsFromTarget navTarget
       case word 1 to 2 of navTarget is among the items of "card list,background list"
          put true into R["showList"]
          put word 1 of navTarget into R["cardOrBackground"]
-         if the number of words of navTarget is 5 then put word 4 to 5 of navTarget into R["whichStack"]
-         else put gSBWhichStack[N] into R["whichStack"]
-         put word 1 to 2 of navTarget into R["which" & word 1 of navTarget]
+         put stackNameFromID(navTarget,false,true) into R["whichStack"]
+         put word 1 of navTarget into R["which" & word 1 of navTarget]
          return R
       case word 1 to 2 of navTarget is among the items of "this card,the topstack" 
          put false into R["showList"]

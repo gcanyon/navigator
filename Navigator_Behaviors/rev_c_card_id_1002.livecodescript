@@ -17,7 +17,7 @@ on getPrefs
       set the highlight of btn P to the P of navID
    end repeat
    put the fontNames into FN
-   replace "(" with " (" in FN
+   replace "(" with "\(" in FN
    sort lines of FN
    put FN into btn "List Font"
    set the label of btn "Default Fold" to the pDefaultFold of navID 
@@ -84,15 +84,13 @@ on setPrefs
       end repeat
       set the hGrid of fld "list" of navID to the highlight of btn "showListLines"
       set the pDefaultFold of navID to the label of btn "Default Fold"
-      put the label of btn "List Font" into FN
-      if char 1 of FN is space then delete char 1 of FN
-      set the fixedLineHeight of fld "list" of navID to false
-      set the textFont of fld "list" of navID to FN
+      --set the fixedLineHeight of fld "list" of navID to false
+      set the textFont of fld "list" of navID to the label of btn "List Font"
       set the textSize of fld "list" of navID to the label of btn "List Font Size"
-      if fld "list" of navID is empty then put cr into fld "list" of navID
-      put trunc((the textheightsum of fld "list" of navID)/(the number of lines of fld "list" of navID)) into myTH
-      set the fixedLineHeight of fld "list" of navID to true
-      set the textHeight of fld "list" of navID to myTH
+      --if fld "list" of navID is empty then put cr into fld "list" of navID
+      --put trunc((the textheightsum of fld "list" of navID)/(the number of lines of fld "list" of navID)) into myTH
+      --set the fixedLineHeight of fld "list" of navID to true
+      set the textHeight of fld "list" of navID to 1 + round(4 * the textSize of fld "list" of navID / 3) -- myTH
 
 
       set the pObjectLimit of navID to the label of btn "List Object Limit"

@@ -7,35 +7,49 @@ local nonTargetCount,tList,SBG
 on mouseDown 
    put the short name of this stack into thisStack
    put the showBackgrounds of me is true into SBG
-   put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" & cr & recentTargets() into tDefault 
-   if char -1 of tDefault is not cr then put cr & "-" & cr after tDefault
+   put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" into tDefault
+   put recentTargets() into RT
+   if RT is not empty then put cr & RT & cr & "-" after tDefault
    put the number of lines of tDefault into nonTargetCount
-   if SBG then 
-      put cr & backgroundsOf((the long id of stack getStackName()),"base","name and id","short") into tList
-      replace cr & "group" with cr & "background" in tList
-      delete char 1 of tList
-   else put cardsOf(the long id of stack getStackName()) into tList
-   set the itemDel to tab
-   if the shiftKey is "down" then sort lines of tList by item 1 of each
-   repeat for each line L in tList
-      put item 1 of L & cr after tNameList
-   end repeat
-   delete char -1 of tNameList
-   replace "/" with "//" in tList
-   put tDefault & line 1 to (the pMenuLimit of this stack) - nonTargetCount of tNameList into me
+   --put gSBShowList[thisStack] && gSBCardOrBackground[thisStack] into message
+   if gSBShowList[thisStack] is false or gSBCardOrBackground[thisStack] is not "stack" then
+      if SBG then 
+         put cr & backgroundsOf((the long id of stack getStackName()),"base","name and id","short") into tList
+         replace cr & "group" with cr & "background" in tList
+         delete char 1 of tList
+      else put cardsOf(the long id of stack getStackName()) into tList
+      set the itemDel to tab
+      if the shiftKey is "down" then sort lines of tList by item 1 of each
+      repeat for each line L in tList
+         put item 1 of L & cr after tNameList
+      end repeat
+      delete char -1 of tNameList
+      replace "/" with "//" in tNameList
+      put cr & line 1 to (the pMenuLimit of this stack) - nonTargetCount of tNameList after tDefault
+   end if
+   put tDefault into me
 end mouseDown
 
 on menuPick pWhich
-   put the short name of this stack into thisStack
+   put the short name of this stack into N
+   
+   put getStackName() into stackID
+   if stackID is not empty then put the name of stack stackID into stackID
    put the menuHistory of me into MH
-   if MH is among the items of "3,4" then set the showBackgrounds of me to (MH is 4)
-   if MH <= nonTargetCount then setRecentNavigatorTarget pWhich
-   else 
-      put gSBWhichStack[thisStack] into sStack
-      if sStack = "the topStack" then put the short name of the topStack into sStack
+   if MH = 1 then 
+      setNavigatorTarget ,"the topstack"
+   else if MH is among the items of "3,4" then 
+      set the showBackgrounds of me to (MH is 4)
+      if stackID is not empty then 
+         setNavigatorTarget ,(pWhich && "of" && stackID)
+      end if
+      
+   else if MH <= nonTargetCount then 
+      setRecentNavigatorTarget pWhich
+   else if stackID is not empty then
       set the itemDel to tab
       put item 2 of line MH - nonTargetCount of tList into itemID
-      put iff(SBG,"group","card") && "id" && itemID && "of stack" && Q(sStack) into itemLongID
+      put iff(SBG,"group","card") && "id" && itemID && "of" && stackID into itemLongID
       setNavigatorTarget ,itemLongID
    end if
 end menuPick

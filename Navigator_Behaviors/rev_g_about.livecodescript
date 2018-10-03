@@ -1,8 +1,8 @@
 ﻿script "rev_g_about"
 on mouseUp
-   if the clickText is "gcanyon.wordpress.com/navigator-documentation" \
-         then launch url "http://gcanyon.wordpress.com/navigator-documentation/" \
-         else hideMe
+   if char 1 to 8 of the clickText is "https://"
+   then launch url the clickText
+   else hideMe
 end mouseUp
 
 on setSize

@@ -8,7 +8,6 @@ global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects
 global gSBDragStartNav -- the short name of the Navigator originating a drag
 global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
-local tOriginalScroll,tClickLine
 local tStartDragMessage
 local sDropLines -- the items that actually need to be rearranged on dropping.
 
@@ -597,16 +596,16 @@ after mouseUp
             put ("commandBar" & i) & cr & getID()
          end if
       end repeat
-      if not (sHiliteList contains comma) then
-         put getClickedID() into tID
-         if word 1 of tID is "group" then
-            --put the mouseLoc
-            if within (grc "groupFoldBar",the mouseLoc) then 
-               setFolded tID
-               doUpdateDisplay true
-            end if
-         end if
-      end if
+      --       if not (sHiliteList contains comma) then
+      --          put getClickedID() into tID
+      --          if word 1 of tID is "group" then
+      --             --put the mouseLoc
+      --             if within (grc "groupFoldBar",the mouseLoc) then 
+      --                setFolded tID
+      --                doUpdateDisplay true
+      --             end if
+      --          end if
+      --       end if
    end if
    
 end mouseUp

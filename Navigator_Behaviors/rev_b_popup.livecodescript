@@ -449,20 +449,10 @@ on menuPick pWhich
             if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
          end if
          if item 1 of pWhich is "Command" then
-            put item 2 of pWhich into tCommandFile
-            put the value of word -1 the long id of this stack into tPath
-            set the itemDelimiter to "/"
-            put "Navigator Commands" into item -1 of tPath
-            put "/" & tCommandFile after tPath
-            if not (there is a file tPath) then
-               answer warning ("Command Missing:" && tPath) with "OK"
-               break
-            end if
-            put ("file:" & tPath) into tURL
-            put url tURL into tCommand
-            set the commandCode of button "do" of group "commandcontrols" to tCommand
+            put commandRead(item 2 of pWhich) into tCommandData
+            set the commandCode of button "do" of group "commandcontrols" to tCommandData
             put getID() into tIDList
-            if tIDList is empty then break
+            if tIDList is empty or tCommandData is empty then break
             set the pWorkingLines of group "commandGroup" to tIDList
             send "doCode" to button "do" of group "commandcontrols"
          end if

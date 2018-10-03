@@ -59,5 +59,6 @@ end menuPick
 
 on setTargetToMouse pMouseData
    if pMouseData["stack"] is not empty then setNavigatorTarget ,("stack" && Q(pMouseData["stack"]))
+   put lineListFromIDs(pMouseData["control"]) into tLine
+   if tLine is a number then hiliteLines tLine
 end setTargetToMouse
-

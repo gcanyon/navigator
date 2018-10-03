@@ -5,7 +5,7 @@ on setSize
    set the rect of field "Prop Title" to zeroPoint,17,(the width of this stack + 2),31
    set the rect of fld "editProps" to (zeroPoint-2),32,(the width of this stack + 2),(the height of this stack - 15)
    set the loc of btn "closeProps" to (zeroPoint + 30),(the height of this stack - 9)
-   set the loc of btn "Props Palette" to (zeroPoint + 150),(the height of this stack - 9)
+   if there is a btn "Props Palette" then set the loc of btn "Props Palette" to (zeroPoint + 150),(the height of this stack - 9)
    set the loc of button "propListPopup" to -230,30
 end setSize
 
@@ -25,7 +25,7 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
    if pIDList is empty then put pID into pIDList
    if not exists(pID) or pID is not among the lines of pIDList then put line 1 of pIDList into pID
    if not exists(pID) then exit showProps
-   if pID is the cSourceID of fld "editProps" and pIDList is the cIDList of fld "editProps" then exit showProps
+   --if pID is the cSourceID of fld "editProps" and pIDList is the cIDList of fld "editProps" then exit showProps
    hide fld "propEditor"
    
    if not pCustomProperties and pPropList is empty then
@@ -76,16 +76,26 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
          next repeat
       end if
       put true into allSame
-      put the P of pID into pIDP
-      repeat for each line tID in pIDList
-         if the P of tID is pIDP then next repeat
-         put false into allSame
-         exit repeat
-      end repeat
-      put the P of pID is empty and pCustomProperties is not true into effectiveB
+      if P is "name" and pCustomProperties is not true then
+         put the short name of pID into pIDP
+         --put ticks() && pIDP into message
+         repeat for each line tID in pIDList
+            if the short name of tID is pIDP then next repeat
+            put false into allSame
+            exit repeat
+         end repeat 
+      else 
+         put the P of pID into pIDP
+         repeat for each line tID in pIDList
+            if the P of tID is pIDP then next repeat
+            put false into allSame
+            exit repeat
+         end repeat
+      end if
+      put pIDP is empty and pCustomProperties is not true into effectiveB
       if effectiveB
       then put line 1 of the effective P of pID into tProp
-      else  put line 1 of the P of pID into tProp
+      else  put line 1 of pIDP into tProp
       if P is "htmlText" then put char 4 to -4 of tProp into tProp
       put tag[1] & P & tag[2][effectiveB][allSame] & tProp & tag[3][effectiveB][allSame] after tHTML
    end repeat
