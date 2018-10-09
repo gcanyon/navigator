@@ -107,11 +107,11 @@ on mouseDoubleUp
       put the tProperty of this stack into tCommand
       --put tProperty,tCommand && cr after message
       
-      if tCommand is among the items of "EditScript,EditBehaviorScript,SingleObjectInspector,IndividualObjectInspectors,Bookmark-Remove"
+      if tCommand is among the items of "Edit Script,Edit Behavior Script,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove"
       then doCommandCode tCommand,sHiliteList
       else
          put getID(sHiliteList) into tIDList
-         if tCommand is "PropertyEditor" then
+         if tCommand is "Property Editor" then
             put getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)) into leadID
             set wholeMatches to true
             put lineOffset(leadID,tIDList) into tLeadLine

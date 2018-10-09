@@ -13,7 +13,7 @@ local sUndoArray -- a list of the original rects to undo
 
 on showMe pID,pIDList,asPalette
    if asPalette is empty then put (the optionKey is "down") is not (the EditorsAsPalettes of stack "revNavigator") into asPalette
-   debug "SM",pID,pIDList,asPalette
+   --debug "SM",pID,pIDList,asPalette
    if asPalette is true
    then updatePalettesWithID "resizer",true,pID,pIDList
    else
@@ -25,6 +25,7 @@ end showMe
 
 
 on editSizes pID,pIDList
+   --debug pID,pIDList
    if pID is empty then put line 1 of pIDList into pID
    if pID is empty then exit editSizes
    put pID into sID

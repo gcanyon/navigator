@@ -4,11 +4,17 @@ local sClickedID -- id of the object that was clicked to display
 local sUndoArray -- a list of the original colors to undo
 
 
-on setup pID
+on setup pID,pIDList,asPalette
+   if asPalette is empty then put (the optionKey is "down") is not (the EditorsAsPalettes of stack "revNavigator") into asPalette
    if pID is empty then put getClickedID() into pID
-   clearColorCheckboxes
-   editColors pID,getID()
-   showMe
+   if pIDList is empty then put getID() into pIDList
+   if asPalette is true
+   then updatePalettesWithID "color editor",true,pID,pIDList
+   else
+      clearColorCheckboxes
+      editColors pID,pIDList
+      showMe
+   end if
 end setup
 
 on editCurrentHighlights

@@ -390,33 +390,34 @@ function lineListFromIDs pIDlist -- takes a line list of long IDs and returns a 
 end lineListFromIDs
 
 on doCommandCode tCommand,tLineOrIDList,tClickID
-   debug tCommand,tLineOrIDList,tClickID
+   --debug tCommand,tLineOrIDList,tClickID
    if tLineOrIDList is empty then
-      if tCommand is among the items of "EditScript,EditBehaviorScript,SingleObjectInspector,IndividualObjectInspectors,Bookmark-Remove"
+      if tCommand is among the items of "Edit Script,Edit Behavior Script,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove"
       then put the hilitedlines of fld "list" into tLineOrIDList
       else put getID() into tLineOrIDList
    end if
+   if tClickID is empty then put line 1 of tLineOrIDList into tClickID
    
    if tCommand is "<None>" then
-   else if tCommand is "EditScript" then
+   else if tCommand is "Edit Script" then
       editObjectScripts tLineOrIDList
-   else if tCommand is "EditBehaviorScript" then
+   else if tCommand is "Edit Behavior Script" then
       editObjectScripts tLineOrIDList,true
-   else if tCommand is "SingleObjectInspector" then
+   else if tCommand is "Single Object Inspector" then
       objectInspector1 tLineOrIDList
-   else if tCommand is "IndividualObjectInspectors" then
+   else if tCommand is "Individual Object Inspectors" then
       objectInspectorN tLineOrIDList
    else if tCommand is "Bookmark-Remove" then
       bookmarkRemove tLineOrIDList
-   else if tCommand is "PropertyEditor" then
+   else if tCommand is "Property Editor" then
       put objectsAndPropertiesToEdit(tLineOrIDList) into OPA -- idList, propList
       dispatch "setup" to group "editProps" with line 1 of tLineOrIDList,OPA["idList"],OPA["propList"]
-   else if tCommand is "CopyID" then
+   else if tCommand is "Copy ID" then
       set the clipboardData["text"] to tLineOrIDList
-   else if tCommand is "Size/LocationEditor" then
-      dispatch "showMe" to group "resizer"
-   else if tCommand is "ColorEditor" then
-      dispatch "editCurrentHighlights" to group "setColors"
+   else if tCommand is "Size/Location Editor" then
+      dispatch "showMe" to group "resizer" with tClickID,tLineOrIDList
+   else if tCommand is "Color Editor" then
+      dispatch "setup" to group "setColors" with tClickID,tLineOrIDList 
    else   
       put the doCommandScript of me into tCommandScript
       replace "--tCommandCode" with tCommand in tCommandScript
@@ -424,7 +425,7 @@ on doCommandCode tCommand,tLineOrIDList,tClickID
       if the result is empty then dispatch "doCommand" to group "commandControls" with tIDList
       else
          answer warning "Script Error -- putting script in the message box." with "OK"
-         put tScript
+         put tCommandScript
       end if
    end if
 end doCommandCode
@@ -1383,7 +1384,7 @@ on navResizeStack tWidth,tHeight
    put tWidth + 5 into item 3 of tRect
    set the rect of grc "fieldtop" to tRect
    
-   put item 4 of tRect - 3 into fieldTop
+   put item 4 of tRect - 4 into fieldTop
    set the rect of fld "list" to -2,fieldTop,(tWidth+1),(tHeight+1)
    add 4 to fieldTop
    if there is a group "barGroup" then set the rect of grp "barGroup" to -2,fieldTop,(tWidth - 15),(tHeight - 15)
