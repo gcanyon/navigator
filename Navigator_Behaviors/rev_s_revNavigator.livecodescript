@@ -389,6 +389,46 @@ function lineListFromIDs pIDlist -- takes a line list of long IDs and returns a 
    return tLineList
 end lineListFromIDs
 
+on doCommandCode tCommand,tLineOrIDList,tClickID
+   debug tCommand,tLineOrIDList,tClickID
+   if tLineOrIDList is empty then
+      if tCommand is among the items of "EditScript,EditBehaviorScript,SingleObjectInspector,IndividualObjectInspectors,Bookmark-Remove"
+      then put the hilitedlines of fld "list" into tLineOrIDList
+      else put getID() into tLineOrIDList
+   end if
+   
+   if tCommand is "<None>" then
+   else if tCommand is "EditScript" then
+      editObjectScripts tLineOrIDList
+   else if tCommand is "EditBehaviorScript" then
+      editObjectScripts tLineOrIDList,true
+   else if tCommand is "SingleObjectInspector" then
+      objectInspector1 tLineOrIDList
+   else if tCommand is "IndividualObjectInspectors" then
+      objectInspectorN tLineOrIDList
+   else if tCommand is "Bookmark-Remove" then
+      bookmarkRemove tLineOrIDList
+   else if tCommand is "PropertyEditor" then
+      put objectsAndPropertiesToEdit(tLineOrIDList) into OPA -- idList, propList
+      dispatch "setup" to group "editProps" with line 1 of tLineOrIDList,OPA["idList"],OPA["propList"]
+   else if tCommand is "CopyID" then
+      set the clipboardData["text"] to tLineOrIDList
+   else if tCommand is "Size/LocationEditor" then
+      dispatch "showMe" to group "resizer"
+   else if tCommand is "ColorEditor" then
+      dispatch "editCurrentHighlights" to group "setColors"
+   else   
+      put the doCommandScript of me into tCommandScript
+      replace "--tCommandCode" with tCommand in tCommandScript
+      set the script of group "commandControls" to tCommandScript
+      if the result is empty then dispatch "doCommand" to group "commandControls" with tIDList
+      else
+         answer warning "Script Error -- putting script in the message box." with "OK"
+         put tScript
+      end if
+   end if
+end doCommandCode
+
 
 
 function dontUpdate
@@ -495,14 +535,16 @@ on hiliteLines pLineList -- takes a list of lines and hilites them
       put false into sUpdatingRevSelection
       exit hiliteLines
    end if
-   if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
+   --if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
    dispatch "setHilites" to fld "list" of this stack with pLineList
    updatePalettes
 end hiliteLines
 
 on updatePalettes whichPalette,openPalette
-   put getClickedID() into cID
-   put theHilitedIDs() into hIDlist
+   updatePalettesWithID whichPalette,openPalette,getClickedID(),theHilitedIDs()
+end updatePalettes
+
+on updatePalettesWithID whichPalette,openPalette,pID,pIDList
    repeat with i = 1 to 4
       put item i of "color editor,resizer,property editor,command palette" into pName
       put "revNavigatorp" && pName into sName
@@ -510,10 +552,10 @@ on updatePalettes whichPalette,openPalette
       put item i of "setColors,resizer,editProps,commandGroup" into gName
       if (whichPalette is empty or whichPalette is pName) then
          if openPalette is true then go stack sName
-         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist
+         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with pID,pIDList
       end if
    end repeat
-end updatePalettes
+end updatePalettesWithID
 
 function hilitedBookmarkList -- returns a comma list of the hilited bookmark lines
    local tReturn, tSeparator
@@ -1025,11 +1067,15 @@ on removeBookmarks pListOfLines
    local tNewHTML, tSeparatorLine
    
    if pListOfLines is empty then put the hilitedLines of fld "list" into pListOfLines
-   
    put the separatorLine of fld "list" into tSeparatorLine
-   put removeLines(the htmlText of line 1 to tSeparatorLine of fld "list",pListOfLines) into tNewHTML
-   set the htmlText of line 1 to tSeparatorLine of fld "list" to tNewHTML
-   if tNewHTML is empty then delete line 1 of fld "list"
+   repeat for each item i in pListOfLines
+      if i <= tSeparatorLine then put i,"" after pBookmarkList
+   end repeat
+   delete char -1 of pBookmarkList
+   if pBookmarkList is empty then exit removeBookmarks
+   put removeLines(the htmlText of line 1 to tSeparatorLine of fld "list",pBookmarkList) into tNewHTML
+   if tNewHTML is empty then delete line 1 to tSeparatorLine of fld "list"
+   else set the htmlText of line 1 to tSeparatorLine of fld "list" to tNewHTML
    set the hilitedLines of fld "list" to empty
    setSeparatorLine (the number of lines of tNewHTML)
 end removeBookmarks
@@ -1048,12 +1094,16 @@ function removeLines pText,removeList
 end removeLines
 
 
-on bookmarkRemove pWhichLine
-   if pWhichLine > the separatorLine of fld "list" then
-      setBookmarks pWhichLine
-   else
-      removeBookmarks pWhichLine
-   end if
+on bookmarkRemove pLineList
+   -- need to get IDs first -- otherwise line references are off
+   repeat for each item P in pLineList
+      if P > the separatorLine of fld "list" then put P,"" after bList else put P,"" after rList
+   end repeat
+   delete char -1 of bList
+   delete char -1 of rList
+   put getID(bList) into bIDList
+   removeBookmarks rList
+   setBookmarks ,bIDList
 end bookmarkRemove
 
 
@@ -1317,14 +1367,7 @@ on navResizeStack tWidth,tHeight
    local tLines, tRect
    
    put the hilitedLines of fld "list" into tLines
-   --put the rect of me
-   put the rect of fld "filter" into tRect
-   put tWidth - 1 into item 3 of tRect
-   set the rect of fld "filter" to tRect
-   put the rect of grc "fieldtop" into tRect
-   put tWidth + 5 into item 3 of tRect
-   set the rect of grc "fieldtop" to tRect
-   
+ 
    put the rect of grc "navTitleBar" into tRect
    put tWidth into item 3 of tRect
    set the rect of grc "navTitleBar" to tRect
@@ -1332,13 +1375,23 @@ on navResizeStack tWidth,tHeight
    set the topright of btn "CloseNavAll" to (item 3 of tRect - 17),(item 2 of tRect + 2)
    subtract 34 from item 3 of tRect
    set the rect of fld "Navigator Title" to tRect
+
+   put the rect of fld "filter" into tRect
+   put tWidth - 1 into item 3 of tRect
+   set the rect of fld "filter" to tRect
+   put the rect of grc "fieldtop" into tRect
+   put tWidth + 5 into item 3 of tRect
+   set the rect of grc "fieldtop" to tRect
    
-   set the rect of fld "list" to -2,35,(tWidth+1),(tHeight+1)
-   if there is a grc "groupFoldBar" then set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
+   put item 4 of tRect - 3 into fieldTop
+   set the rect of fld "list" to -2,fieldTop,(tWidth+1),(tHeight+1)
+   add 4 to fieldTop
+   if there is a group "barGroup" then set the rect of grp "barGroup" to -2,fieldTop,(tWidth - 15),(tHeight - 15)
+   if there is a grc "groupFoldBar" then set the rect of grc "groupFoldBar" to -2,fieldTop,30,(tHeight+1)
    if there is a group "commandBars" then
       put max(120,tWidth - 104) into commandBarLeft
       repeat with i = 1 to the number of controls of group "commandBars"
-         set the rect of grc ("commandBar" & i) to commandBarLeft,35,commandBarLeft + 30,(tHeight+1)
+         set the rect of grc ("commandBar" & i) to commandBarLeft,fieldTop,commandBarLeft + 30,(tHeight+1)
          add 30 to commandBarLeft
       end repeat
    end if
@@ -2514,10 +2567,10 @@ on addRecentTarget pTargetID
    set wholematches to true
    put lineOffset(pTargetName,recentTargetList) into hitLine
    if hitLine > 0 then delete line hitLine of recentTargetList
-   put line 8 of recentTargetList into idToDelete
+   put line 100 of recentTargetList into idToDelete
    if idToDelete is not empty then delete variable recentTargetArray[idToDelete]
    put pTargetID into recentTargetArray[pTargetName]
-   put line 1 to 7 of (pTargetName & cr & recentTargetList) into recentTargetList
+   put line 1 to 99 of (pTargetName & cr & recentTargetList) into recentTargetList
    if char -1 of recentTargetList is cr then delete char -1 of recentTargetList
 end addRecentTarget
 
@@ -2712,9 +2765,26 @@ on forceNControls pID,N
    if N = 0 then hide control 1 of pID else show control 1 of pID
 end forceNControls
 
+local sDebugLastCall
+on debug
+   --exit debug
+   if sDebugLastCall is empty or ticks() - sDebugLastCall > 120 then put empty
+   put ticks() into sDebugLastCall
+   put line -2 of the executionContexts into LC
+   put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr into R
+   repeat with i = 1 to paramCount()
+      put param(i) & cr & cr after R
+   end repeat
+   put R after message
+end debug
+
 on debugNavigator B
    global gRevDevelopment
-   put B into gRevDevelopment
+   if B is empty then put not gRevDevelopment into gRevDevelopment
+   else put B into gRevDevelopment
+   revIDESetPreference "cScriptEditor,explicitVariables", false
+   if not exists(stack "revPreferencesGUI") then answer "Open preferences and try again."
+   else dispatch "updateOpenScriptEditors" to stack "revPreferencesGUI"
 end debugNavigator
 
 
@@ -2769,7 +2839,7 @@ function titleSpace S
    repeat for each character C in S
       if C is in "QWERTYUIOPASDFGHJKLZXCVBNM" and char -1 of R is in "qwertyuiopasdfghjklzxcvbnm" then put space after R
       put C after R
-   end repeat
+   end repeat 
    return R
 end titleSpace
 

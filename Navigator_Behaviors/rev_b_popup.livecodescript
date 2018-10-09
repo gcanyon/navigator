@@ -267,7 +267,8 @@ on menuPick pWhich
       case "Set Copied Btn as Behavior"
          doCodeN1 "set the behavior of xID to the long id of yID",getID(),(line 1 of gSBLastCopiedObjectList); break
       case "Resize..."
-         send "showMe" to group "resizer"; break
+         debug tClickedID,getID()
+         dispatch "showMe" to group "resizer" with tClickedID,getID(); break
       case "Property Editor..."
          put objectsAndPropertiesToEdit() into P
          dispatch "setup" to group "editProps" with tClickedID,P["idList"],P["propList"]; break
@@ -370,7 +371,7 @@ on menuPick pWhich
                   show tID
                end if
             catch someErr
-               set the textColor of line tItem of fld "list" of this stack to the pColorObjectMissing of this stack
+               --set the textColor of line tItem of fld "list" of this stack to the pColorObjectMissing of this stack
             end try
          end repeat
          break
@@ -603,3 +604,4 @@ on prepareItems
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me
 end prepareItems
+

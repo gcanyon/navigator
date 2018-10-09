@@ -11,12 +11,14 @@ local sNRa -- the array of new rects for the controls
 local sW,sH -- the width and height to resize from for proportional
 local sUndoArray -- a list of the original rects to undo
 
-on showMe
-   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
-      editSizes getClickedID(),getID()
-      showGroup the long id of me
+on showMe pID,pIDList,asPalette
+   if asPalette is empty then put (the optionKey is "down") is not (the EditorsAsPalettes of stack "revNavigator") into asPalette
+   debug "SM",pID,pIDList,asPalette
+   if asPalette is true
+   then updatePalettesWithID "resizer",true,pID,pIDList
    else
-      updatePalettes "resizer",true
+      editSizes pID,pIDList
+      showGroup the long id of me
    end if
 end showMe
 
@@ -24,6 +26,7 @@ end showMe
 
 on editSizes pID,pIDList
    if pID is empty then put line 1 of pIDList into pID
+   if pID is empty then exit editSizes
    put pID into sID
    delete variable sUndoArray
    put the rect of sID into sUndoArray[sID]
@@ -65,6 +68,11 @@ on setResizeMode
     put the height of L into sH[i]
   end repeat
 end setResizeMode
+
+on switchToPalette
+   hideMe
+   updatePalettesWithID "resizer",true,sID,sIDList
+end switchToPalette
 
 on hideMe
    if word 1 of the short name of this stack is "revNavigatorp"

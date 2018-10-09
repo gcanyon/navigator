@@ -41,7 +41,7 @@ on showMe pAsAskDialog,startAsHTML
       put getID() into sIDList
       put getIDFirst(the uClickedLine of this card) into sClickedID
       set the textFont of fld "setContents" to the effective textFont of sClickedID
-      if sIsField then
+      if sIsField and not startAsHTML then
          set the htmlText of fld "setContents" to the htmlText of sClickedID
       else
          put value(sClickedID) into fld "setContents"

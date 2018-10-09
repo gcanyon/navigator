@@ -98,7 +98,6 @@ on mouseDoubleUp
          put "Command-" before tProperty
          if word 2 of the clickLine is among the items of sDoubleHiliteList 
          then put sDoubleHiliteList into sHiliteList
-         --             put "",(word 2 of the clickLine) after sHiliteList
          else put (word 2 of the clickLine) into sHiliteList
          set the hilitedlines of me to sHiliteList
          storeHilites
@@ -106,38 +105,22 @@ on mouseDoubleUp
       if the shiftKey is "down" then put "Shift-" before tProperty
       if the optionKey is "down" then put "Option-" before tProperty
       put the tProperty of this stack into tCommand
-      --put sHiliteList after message
-      if tCommand is "<None>" then
-      else if tCommand is "EditScript" then
-         editObjectScripts sHiliteList -- tLine
-      else if tCommand is "EditBehaviorScript" then
-         editObjectScripts sHiliteList,true --tLine,true
-      else if tCommand is "SingleObjectInspector" then
-         objectInspector1 sHiliteList -- tLine
-      else if tCommand is "IndividualObjectInspectors" then
-         objectInspectorN sHiliteList -- tLine
-      else if tCommand is "Bookmark-Remove" then
-         bookmarkRemove sHiliteList -- tLine
-      else if tCommand is "PropertyEditor" then
-         put objectsAndPropertiesToEdit() into OPA -- idList, propList
-         dispatch "setup" to group "editProps" with getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
-      else if tCommand is "CopyID" then
-         set the clipboardData["text"] to getID(sHiliteList)
-      else if tCommand is "Size/LocationEditor" then
-         dispatch "showMe" to group "resizer"
-      else if tCommand is "ColorEditor" then
-         dispatch "editCurrentHighlights" to group "setColors"
+      --put tProperty,tCommand && cr after message
+      
+      if tCommand is among the items of "EditScript,EditBehaviorScript,SingleObjectInspector,IndividualObjectInspectors,Bookmark-Remove"
+      then doCommandCode tCommand,sHiliteList
       else
-         put getID(sHiliteList) into idList
-         repeat for each line cID in idList
-            put tCommand into tControlCommand
-            replace "tID" with cID in tControlCommand
-            try
-               do tControlCommand
-            catch someErr
-               put someErr into tErr
-            end try
-         end repeat
+         put getID(sHiliteList) into tIDList
+         if tCommand is "PropertyEditor" then
+            put getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)) into leadID
+            set wholeMatches to true
+            put lineOffset(leadID,tIDList) into tLeadLine
+            if tLeadLine > 0 then
+               delete line tLeadLine of tIDList
+               put leadID & cr before tIDList
+            end if
+         end if
+         doCommandCode tCommand,tIDList
       end if
    catch tErr
       
@@ -635,9 +618,11 @@ end mouseEnter
 
 on setHilites tList
    set the hilitedLines of me to tList
+   set the uClickedLine of this card to item 1 of tList
    put tList into tDragList
    put tDragList into tDragArray
    split tDragArray using comma as set
+   --updatePalettes
 end setHilites
 
 on storeHilites 
