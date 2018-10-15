@@ -10,7 +10,6 @@ global gSBWhichStack -- which stack are we displaying
 global gSBWhichBackground -- which background/group are we displaying
 global gSBShowList -- true: show list of cards or bgs | false: show controls
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
-global gSBCustomCommands
 
 local tDoneStackList -- a list of the stacks that have already been done when counting scripts
 
@@ -519,7 +518,7 @@ on prepareItems
    --put tIDList into message
    
    put the basicItems of btn "popup" into tItems
-   put gSBCustomCommands after tItems
+   put the customCommandSubmenu of stack "revNavigator" after tItems
    put true into allBehaviors
    put true into tContainer
    if word 1 of tIDList is "bkgnd" then put "group" into tObjectType else put word 1 of tIDList into tObjectType

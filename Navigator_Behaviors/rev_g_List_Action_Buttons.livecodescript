@@ -11,6 +11,7 @@ on menuPick LDS
       set the label of the target to LDS
       exit menuPick
    end if
+   dispatch "showMe" to group "commandGroup" with getID(),"palette","command",(the long id of me),"setCommandID"
    
    ask "Action to take:" with cLDS
    if the result is empty then 

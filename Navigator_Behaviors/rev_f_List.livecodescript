@@ -1,7 +1,6 @@
 ﻿script "rev_f_List"
 global gLastLineClicked
 global gSBWhichStack,gSBWhichCard,gSBlastHilitedLines,gSBshowTooltip
-global gSBCustomCommands -- the menu of custom commands available
 global gSBShowList -- if true, show a list of cards/backgrounds
 global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
@@ -472,9 +471,12 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
-   if the mouse is up then
-      cleanup
-      exit mouseMove
+   if (dragStarted or externalDrag) then
+      --put dragStarted, externalDrag, the mouse & cr after message
+      if the mouse is up then
+         cleanup
+         exit mouseMove
+      end if
    end if
    --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
    if navigatorDragID is not empty then
@@ -493,6 +495,7 @@ after mouseMove X,Y
          go navigatorDragID
          exit repeat
       end repeat
+      
       -- if not continueExternal then put word 2 to -1 of navLine else put empty
       if navigatorDragID is empty then 
          if the vis of stack "revDragRep" then
@@ -594,8 +597,7 @@ after mouseUp
 end mouseUp
 
 after mouseRelease
-   
-   if not dragStarted then exit mouseRelease 
+   if the mouse is "down" or not dragStarted then exit mouseRelease 
    if navigatorDragID is not empty then 
       dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 
    else if the vis of stack "revDragRep" then 

@@ -7,6 +7,11 @@ on mouseDown
    prepItems
 end mouseDown
 
+on popMe
+   prepItems
+   popup me
+end popMe
+
 on prepItems
    local tList, tMainList, tMenuLimit, tSubstacks
    
@@ -42,6 +47,7 @@ end prepItems
 
 on menuPick pWhich
    put the menuHistory of me into MH
+   debug pWhich,MH
    switch
       case MH is 2 or (MH is 1 and the optionKey is "down")
          getMouse the long id of me,"setTargetToMouse"
@@ -69,7 +75,7 @@ on menuPick pWhich
          if the optionKey is "down" then toplevel stack pWhich
          else go stack pWhich
          break
-      case not pWhich is among the items of "the topstack,stack list"
+      case not (pWhich is among the items of "the topstack,stack list")
          put "stack" && Q(pWhich) into pWhich
       default
          setNavigatorTarget ,pWhich

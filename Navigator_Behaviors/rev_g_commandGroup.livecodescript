@@ -1,30 +1,48 @@
 ﻿script "rev_g_commandGroup"
+local callbackID,callbackMessage
+
 on setSize
    lock screen
-   put the highlight of btn "help" of group "commandControls" of me and the height of this stack > 300 into H
-   put the height of this stack - iff(H,217,43) into T
-   if H then set the rect of fld "commandHelp" to 0,T+30,the width of this stack,the height of this stack - 13
-   set the vis of fld "commandHelp" to H
-   set the rect of grp "commandControls" to 0,T,the width of this stack,T + 30
-   set the rect of fld "command" to -1,27,the width of this stack + 1,T+2
-   set the rect of fld "command title" to 0,15,the width of this stack,29
+   put the width of this stack into W
+   put the height of this stack into H
+   if H < 300 then set the highlight of btn "help" of group "commandControls" of me to false
+   put the highlight of btn "help" of group "commandControls" of me into SH
+   put H - iff(SH,217,43) into T
+   if SH then set the rect of fld "commandHelp" to 0,T+30,W,H - 13
+   set the vis of fld "commandHelp" to SH
+   set the rect of grc "commandScreen" to 0,15,W,H - 13
+   set the rect of grp "commandControls" to 0,T,W,T + 30
+   set the rect of btn "CommandTab" to 0,30,W,T
+   set the rect of fld "command" to -1,50,W + 1,T+2
+   set the rect of fld "command title" to 0,15,W,29
    dispatch "checkMyScroll" to fld "command"
    unlock screen
 end setSize
 
-on showMe
-   put getID() into tIDList
+on showMe tIDList,forceStyle,forceTab,saveCallBackID,saveCallbackMessage
+   if tIDList is empty then put getID() into tIDList
    if tIDList is empty then exit showMe
-   setCommandIDList ,tIDList
-   if (the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") then
+   if ((the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") or forceStyle is "popup") and forceStyle is not "palette" then
       setSize
+      setCommandIDList ,tIDList
       showGroup (the long id of me)
-      select text of fld "command"
+      doSetup forceTab,saveCallBackID,saveCallbackMessage
    else
-      updatePalettes "command palette",true
-      select text of fld "command" of stack "revNavigatorp Command Palette"
+      updatePalettesWithID "command palette",true,empty,tIDList
+      dispatch "doSetup" to group "commandGroup" of stack "revNavigatorp Command Palette" with forceTab,saveCallBackID,saveCallbackMessage
    end if
 end showMe
+
+on doSetup forceTab,saveCallBackID,saveCallbackMessage
+   select text of fld "command"
+   if forceTab is not empty then dispatch "menuPick" to button "commandTab" with forceTab
+   put saveCallbackID into callbackID
+   put iff(saveCallbackMessage = empty,"saveResult",saveCallbackMessage) into callbackMessage
+end doSetup
+
+on doCallBack C
+   if callbackID is not empty then dispatch callbackMessage to callbackID with C
+end doCallBack
 
 
 on setCommandIDList pID,pIDList
