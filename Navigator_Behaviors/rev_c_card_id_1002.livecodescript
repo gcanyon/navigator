@@ -1,7 +1,16 @@
 ﻿script "rev_c_card_id_1002"
 on preOpenStack
    getPrefs
+   buildActionsList
 end preOpenStack
+
+on buildActionsList
+   buildCustomCommandList
+   put the customCommandList of stack "revNavigator" into ccList
+   put the baseMenuItemList of group "list action buttons" into BMIL
+   if ccList is not empty then put cr & "-" & cr & ccList after BMIL
+   set the menuItemList of group "list action buttons" to BMIL
+end buildActionsList
 
 on getPrefs
    put the long id of stack (the pNavigatorName of this stack) into navID

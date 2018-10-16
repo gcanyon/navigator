@@ -119,6 +119,7 @@ on mouseDoubleUp
                put leadID & cr before tIDList
             end if
          end if
+         if not (tCommand is among the items of "Property Editor,Color Editor,Command,Copy ID,Size/Location Editor") then put commandRead(tCommand) into tCommand
          doCommandCode tCommand,tIDList
       end if
    catch tErr
@@ -471,13 +472,12 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
-   if (dragStarted or externalDrag) then
-      --put dragStarted, externalDrag, the mouse & cr after message
-      if the mouse is up then
-         cleanup
-         exit mouseMove
-      end if
+   --if (dragStarted or externalDrag) then
+   if the mouse is up then
+      cleanup
+      exit mouseMove
    end if
+   --end if
    --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
    if navigatorDragID is not empty then
       dispatch function "trackReorderExternal" to fld "list" of navigatorDragID

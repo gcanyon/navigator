@@ -4,9 +4,9 @@ local sCallerName
 on doPopup callerName
    put callerName into sCallerName
    put the baseItems of me into BI
+   if the customCommandList of stack "revNavigator" is not empty then put cr & "-" & cr & the customCommandList of stack "revNavigator" after BI
    put lineOffset(the clickAction of grc sCallerName,BI) into LO
    if LO > 0 then put "!c" before line LO of BI
-   if the customCommandList of stack "revNavigator" is not empty then put cr & "-" & cr & the customCommandList of stack "revNavigator" after BI
    put BI into me
    popup me
 end doPopup
@@ -22,6 +22,8 @@ on menuPick pWhich
 end menuPick
 
 on setCommandID C
-   set the clickAction of grc sCallerName to C
-   set the toolTip of grc sCallerName to C
+   repeat for each line N in navigatorList()
+      set the clickAction of grc sCallerName of stack N to C
+      set the toolTip of grc sCallerName of stack N to C
+   end repeat
 end setCommandID

@@ -266,7 +266,6 @@ on menuPick pWhich
       case "Set Copied Btn as Behavior"
          doCodeN1 "set the behavior of xID to the long id of yID",getID(),(line 1 of gSBLastCopiedObjectList); break
       case "Resize..."
-         debug tClickedID,getID()
          dispatch "showMe" to group "resizer" with tClickedID,getID(); break
       case "Property Editor..."
          put objectsAndPropertiesToEdit() into P

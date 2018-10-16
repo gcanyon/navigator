@@ -6,8 +6,8 @@ on mouseDown
 end mouseDown
 
 on mouseUp
-   if ticks() - popTicks < 10 then dispatch "popMe" to button "whichStack"
-   else getMouse the long id of me,"setTargetToMouse"
+   if ticks() - popTicks < 10 then getMouse the long id of me,"setTargetToMouse"
+   else dispatch "popMe" to button "whichStack"
 end mouseUp
 
 on mouseStillDown

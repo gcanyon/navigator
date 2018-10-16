@@ -23,10 +23,10 @@ on showMe tIDList,forceStyle,forceTab,saveCallBackID,saveCallbackMessage
    if tIDList is empty then put getID() into tIDList
    if tIDList is empty then exit showMe
    if ((the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") or forceStyle is "popup") and forceStyle is not "palette" then
+      doSetup forceTab,saveCallBackID,saveCallbackMessage
       setSize
       setCommandIDList ,tIDList
       showGroup (the long id of me)
-      doSetup forceTab,saveCallBackID,saveCallbackMessage
    else
       updatePalettesWithID "command palette",true,empty,tIDList
       dispatch "doSetup" to group "commandGroup" of stack "revNavigatorp Command Palette" with forceTab,saveCallBackID,saveCallbackMessage
@@ -35,7 +35,12 @@ end showMe
 
 on doSetup forceTab,saveCallBackID,saveCallbackMessage
    select text of fld "command"
-   if forceTab is not empty then dispatch "menuPick" to button "commandTab" with forceTab
+   if forceTab is not empty then 
+      put offset(forceTab,button "commandTab") into OT
+      if OT > 0 then set the menuHistory of button "commandTab" to OT
+      --set the label of button "commandTab" to forceTab
+      --dispatch "menuPick" to button "commandTab" with forceTab
+   end if
    put saveCallbackID into callbackID
    put iff(saveCallbackMessage = empty,"saveResult",saveCallbackMessage) into callbackMessage
 end doSetup

@@ -32,16 +32,23 @@ on prepareItems
       end repeat
    end repeat
    
-   put format("\tTrue\n\tFalse\n") into tItem["Mixed"]
-   put format("!c\tTrue\n\tFalse\n") into tItem["True"]
-   put format("\tTrue\n!c\tFalse\n") into tItem["False"]
+   if true then
+      put format("\tTrue\n\tFalse\n") into tItem["Mixed"]
+      put format("!c\tTrue\n\tFalse\n") into tItem["True"]
+      put format("\tTrue\n!c\tFalse\n") into tItem["False"]
+   else
+      put "\-" into tItem["Mixed"]
+      put "!c" into tItem["True"]
+      put "!r" into tItem["False"]
+   end if
    
    repeat for each line tProp in "Property Editor..." & cr & \
          "Color Editor..." & cr & \
          "Size\/Location Editor..." & cr & \
          "Single Object Inspector" & cr & \
          "Individual Object Inspectors" & cr & \
-         "-" & cr & OPA["propList"]
+         "-" & cr & OPA["propList"] 
+   --put tItem[TFpropA[tProp]] & tProp & cr after tMenuText
    put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
 end repeat
 put tMenuText into me
@@ -84,9 +91,8 @@ on menuPick pWhich
          put "PropertyValue" into tDefaultVal
       end if
       set the uID of group "editContents" to the long id of me
-      set the oneLiner of group "editContents" to (sProp is among the lines of the oneLiners of this stack)
       set the uDialogText of group "editContents" to tDefaultVal
-      dispatch "showMe" to group "editContents" with true,(sProp is "htmlText")
+      dispatch "showMe" to group "editContents" with true,(sProp is "htmlText"),(sProp is among the lines of the oneLiners of this stack)
    else
       resultMessage tVal
    end if
