@@ -18,7 +18,7 @@ on editField
   set the hilite of btn "don't wrap" to false
   set the dontwrap of fld "setContents" to false
   put true into sIsField
-  showMe
+  showMe ,,false
 end editField
 
 on editButton
@@ -26,11 +26,12 @@ on editButton
   set the dontwrap of fld "setContents" to true
   hide grp "setContentsHTMLText"
   put false into sIsField
-  showMe
+  showMe ,,false
 end editButton
 
-on showMe pAsAskDialog,startAsHTML
+on showMe pAsAskDialog,startAsHTML,isOneLiner
    put pAsAskDialog into sAsAskDialog
+   if isOneLiner is not empty then set the oneLiner of me to isOneLiner
    set the hilite of btn "editContentsHTML" to startAsHTML is true
    if sAsAskDialog then
       put the uDialogText of me into fld "setContents"
@@ -41,7 +42,7 @@ on showMe pAsAskDialog,startAsHTML
       put getID() into sIDList
       put getIDFirst(the uClickedLine of this card) into sClickedID
       set the textFont of fld "setContents" to the effective textFont of sClickedID
-      if sIsField then
+      if sIsField and not startAsHTML then
          set the htmlText of fld "setContents" to the htmlText of sClickedID
       else
          put value(sClickedID) into fld "setContents"

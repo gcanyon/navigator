@@ -108,7 +108,7 @@ on menuPick pWhich
          end if
          set the uID of group "editContents" to the long id of me
          set the uDialogText of group "editContents" to tDefaultVal
-         dispatch "showMe" to group "editContents" with true
+         dispatch "showMe" to group "editContents" with true,,false
    end switch
    
 end menuPick

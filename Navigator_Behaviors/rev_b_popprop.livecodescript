@@ -1,9 +1,9 @@
 ﻿script "rev_b_popprop"
 global gSBControlSets
 
-local tIDList
 local sProp -- the name of the property to be set
 local OPA -- objects and properties to edit
+local tClickedID -- the object clicked
 
 on mouseDown
   prepareItems
@@ -11,11 +11,11 @@ end mouseDown
 
 on prepareItems
    put objectsAndPropertiesToEdit() into OPA -- idList, propList
+   put getClickedID() into tClickedID
    if OPA["idList"] is empty then
       put "(No Objects Selected" into me
       exit prepareItems
    end if
-   put OPA["idList"] into tIDList
    repeat for each line L in OPA["propList"] 
       put empty into TFpropA[L]
    end repeat
@@ -32,16 +32,23 @@ on prepareItems
       end repeat
    end repeat
    
-   put format("\tTrue\n\tFalse\n") into tItem["Mixed"]
-   put format("!c\tTrue\n\tFalse\n") into tItem["True"]
-   put format("\tTrue\n!c\tFalse\n") into tItem["False"]
+   if true then
+      put format("\tTrue\n\tFalse\n") into tItem["Mixed"]
+      put format("!c\tTrue\n\tFalse\n") into tItem["True"]
+      put format("\tTrue\n!c\tFalse\n") into tItem["False"]
+   else
+      put "\-" into tItem["Mixed"]
+      put "!c" into tItem["True"]
+      put "!r" into tItem["False"]
+   end if
    
    repeat for each line tProp in "Property Editor..." & cr & \
          "Color Editor..." & cr & \
          "Size\/Location Editor..." & cr & \
          "Single Object Inspector" & cr & \
          "Individual Object Inspectors" & cr & \
-         "-" & cr & OPA["propList"]
+         "-" & cr & OPA["propList"] 
+   --put tItem[TFpropA[tProp]] & tProp & cr after tMenuText
    put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
 end repeat
 put tMenuText into me
@@ -52,13 +59,13 @@ on menuPick pWhich
    switch pWhich 
       case "Property Editor..."
          if OPA["idList"] is empty then exit menuPick
-         dispatch "setup" to group "editProps" with getClickedID(),OPA["idList"],OPA["propList"]
+         dispatch "setup" to group "editProps" with tClickedID,OPA["idList"],OPA["propList"]
          exit menuPick
       case "Size/Location Editor..."
-         dispatch "showMe" to group "resizer"
+         dispatch "showMe" to group "resizer" with tClickedID,OPA["idList"] 
          exit menuPick
       case "Color Editor..."
-         dispatch "setup" to group "setColors"
+         dispatch "setup" to group "setColors" with tClickedID,OPA["idList"] 
          exit menuPick
       case "Single Object Inspector"
          objectInspector1
@@ -72,9 +79,8 @@ on menuPick pWhich
    put item 1 of pWhich into sProp
    put item 2 of pWhich into tVal
    if tVal is empty then
-      put getIDFirst(the uClickedLine of this card) into tClickedID
       if there is a tClickedID then
-         put the sProp of tClickedID into tDefaultVal
+         if sProp is "name" then put the short name of tClickedID into tDefaultVal else put the sProp of tClickedID into tDefaultVal
          --put tDefaultVal into message
          if the commandKey is "down" then
             resultMessage tDefaultVal
@@ -85,9 +91,8 @@ on menuPick pWhich
          put "PropertyValue" into tDefaultVal
       end if
       set the uID of group "editContents" to the long id of me
-      set the oneLiner of group "editContents" to (sProp is among the lines of the oneLiners of this stack)
       set the uDialogText of group "editContents" to tDefaultVal
-      dispatch "showMe" to group "editContents" with true
+      dispatch "showMe" to group "editContents" with true,(sProp is "htmlText"),(sProp is among the lines of the oneLiners of this stack)
    else
       resultMessage tVal
    end if
@@ -97,7 +102,7 @@ on resultMessage pText
    if pText is empty then put fld "setContents" into pText
    lock screen
    lock messages
-   repeat for each line tID in tIDList
+   repeat for each line tID in OPA["idList"]
       try
          set the sProp of tID to pText
       catch someErr

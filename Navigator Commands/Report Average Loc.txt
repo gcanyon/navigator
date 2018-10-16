@@ -1,0 +1,1 @@
+add item 1 of the loc of tID to Xadd item 2 of the loc of tID to Yif tIndex = tCount thenput "The average loc is:" && (X div tCount),(Y div tCount)end if

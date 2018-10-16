@@ -4,12 +4,12 @@ global gSBShowList
 
 local nonTargetCount,tList,SBG
 
-on mouseDown 
+on mouseDown
    put the short name of this stack into thisStack
    put the showBackgrounds of me is true into SBG
    put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" into tDefault
-   put recentTargets() into RT
-   if RT is not empty then put cr & RT & cr & "-" after tDefault
+   --    put recentTargets() into RT
+   --    if RT is not empty then put cr & line 1 to 7 of RT & cr & "-" after tDefault
    put the number of lines of tDefault into nonTargetCount
    --put gSBShowList[thisStack] && gSBCardOrBackground[thisStack] into message
    if gSBShowList[thisStack] is false or gSBCardOrBackground[thisStack] is not "stack" then

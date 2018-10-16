@@ -1,7 +1,6 @@
 ﻿script "rev_f_List"
 global gLastLineClicked
 global gSBWhichStack,gSBWhichCard,gSBlastHilitedLines,gSBshowTooltip
-global gSBCustomCommands -- the menu of custom commands available
 global gSBShowList -- if true, show a list of cards/backgrounds
 global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
@@ -98,7 +97,6 @@ on mouseDoubleUp
          put "Command-" before tProperty
          if word 2 of the clickLine is among the items of sDoubleHiliteList 
          then put sDoubleHiliteList into sHiliteList
-         --             put "",(word 2 of the clickLine) after sHiliteList
          else put (word 2 of the clickLine) into sHiliteList
          set the hilitedlines of me to sHiliteList
          storeHilites
@@ -106,38 +104,23 @@ on mouseDoubleUp
       if the shiftKey is "down" then put "Shift-" before tProperty
       if the optionKey is "down" then put "Option-" before tProperty
       put the tProperty of this stack into tCommand
-      --put sHiliteList after message
-      if tCommand is "<None>" then
-      else if tCommand is "EditScript" then
-         editObjectScripts sHiliteList -- tLine
-      else if tCommand is "EditBehaviorScript" then
-         editObjectScripts sHiliteList,true --tLine,true
-      else if tCommand is "SingleObjectInspector" then
-         objectInspector1 sHiliteList -- tLine
-      else if tCommand is "IndividualObjectInspectors" then
-         objectInspectorN sHiliteList -- tLine
-      else if tCommand is "Bookmark-Remove" then
-         bookmarkRemove sHiliteList -- tLine
-      else if tCommand is "PropertyEditor" then
-         put objectsAndPropertiesToEdit() into OPA -- idList, propList
-         dispatch "setup" to group "editProps" with getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)),OPA["idList"],OPA["propList"]
-      else if tCommand is "CopyID" then
-         set the clipboardData["text"] to getID(sHiliteList)
-      else if tCommand is "Size/LocationEditor" then
-         dispatch "showMe" to group "resizer"
-      else if tCommand is "ColorEditor" then
-         dispatch "editCurrentHighlights" to group "setColors"
+      --put tProperty,tCommand && cr after message
+      
+      if tCommand is among the items of "Edit Script,Edit Behavior Script,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove"
+      then doCommandCode tCommand,sHiliteList
       else
-         put getID(sHiliteList) into idList
-         repeat for each line cID in idList
-            put tCommand into tControlCommand
-            replace "tID" with cID in tControlCommand
-            try
-               do tControlCommand
-            catch someErr
-               put someErr into tErr
-            end try
-         end repeat
+         put getID(sHiliteList) into tIDList
+         if tCommand is "Property Editor" then
+            put getIDFirst(firstNotEmpty(word 2 of the clickLine,the uClickedLine of this card)) into leadID
+            set wholeMatches to true
+            put lineOffset(leadID,tIDList) into tLeadLine
+            if tLeadLine > 0 then
+               delete line tLeadLine of tIDList
+               put leadID & cr before tIDList
+            end if
+         end if
+         if not (tCommand is among the items of "Property Editor,Color Editor,Command,Copy ID,Size/Location Editor") then put commandRead(tCommand) into tCommand
+         doCommandCode tCommand,tIDList
       end if
    catch tErr
       
@@ -489,10 +472,12 @@ on isDragStarted
 end isDragStarted
 
 after mouseMove X,Y
+   --if (dragStarted or externalDrag) then
    if the mouse is up then
       cleanup
       exit mouseMove
    end if
+   --end if
    --put "list" && dragStarted && externalDrag && ticks() & cr after fld "log" of stack "layers deep"
    if navigatorDragID is not empty then
       dispatch function "trackReorderExternal" to fld "list" of navigatorDragID
@@ -510,6 +495,7 @@ after mouseMove X,Y
          go navigatorDragID
          exit repeat
       end repeat
+      
       -- if not continueExternal then put word 2 to -1 of navLine else put empty
       if navigatorDragID is empty then 
          if the vis of stack "revDragRep" then
@@ -611,8 +597,7 @@ after mouseUp
 end mouseUp
 
 after mouseRelease
-   
-   if not dragStarted then exit mouseRelease 
+   if the mouse is "down" or not dragStarted then exit mouseRelease 
    if navigatorDragID is not empty then 
       dispatch "finishReorderExternal" to fld "list" of navigatorDragID with tDragIDList 
    else if the vis of stack "revDragRep" then 
@@ -635,9 +620,11 @@ end mouseEnter
 
 on setHilites tList
    set the hilitedLines of me to tList
+   set the uClickedLine of this card to item 1 of tList
    put tList into tDragList
    put tDragList into tDragArray
    split tDragArray using comma as set
+   --updatePalettes
 end setHilites
 
 on storeHilites 

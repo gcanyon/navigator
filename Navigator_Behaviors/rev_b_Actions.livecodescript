@@ -6,8 +6,16 @@ global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShow
 
 local addPropertiesForType
 
+global gRevDevelopment
+on mouseDown
+   if line -1 of the text of me contains "Debug IDE" then set the text of me to line 1 to -3 of the text of me
+   if the optionKey is down then set the text of me to the text of me & cr & "-" & cr & iff(gRevDevelopment,"!c","") & "Debug IDE"
+end mouseDown
+
 on menuPick pWhich
    switch pWhich
+      case "Debug IDE"
+         debugNavigator; break
       case "Prefs..."
          set the pNavigatorName of stack "revNavigatorPrefs" to the short name of this stack
          palette stack "revNavigatorPrefs"

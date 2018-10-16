@@ -100,15 +100,12 @@ on mouseUp
    set the uID of group "editContents" to the long id of me
    put the cSourceID of me into tID
    
-   if the cCustomProperties of me is true then
-      set the customPropertySet of tID to (the cCustomPropertySet of me)
-   else
-      set the oneLiner of group "editContents" to (sProp is among the lines of the oneLiners of stack "revNavigator")
-   end if
+   if the cCustomProperties of me is true then set the customPropertySet of tID to (the cCustomPropertySet of me)
    
    put the sProp of tID into tDefaultVal
    set the uDialogText of group "editContents" to tDefaultVal
-   send "showMe true",(sProp is "htmlText") to group "editContents"
+   dispatch "showMe" to group "editContents" with true,(sProp is "htmlText"),(the cCustomProperties of me is false and sProp is among the lines of the oneLiners of stack "revNavigator")
+
    --put value(the clickline)
 end mouseUp
 

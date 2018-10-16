@@ -10,7 +10,6 @@ global gSBWhichStack -- which stack are we displaying
 global gSBWhichBackground -- which background/group are we displaying
 global gSBShowList -- true: show list of cards or bgs | false: show controls
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
-global gSBCustomCommands
 
 local tDoneStackList -- a list of the stacks that have already been done when counting scripts
 
@@ -267,7 +266,7 @@ on menuPick pWhich
       case "Set Copied Btn as Behavior"
          doCodeN1 "set the behavior of xID to the long id of yID",getID(),(line 1 of gSBLastCopiedObjectList); break
       case "Resize..."
-         send "showMe" to group "resizer"; break
+         dispatch "showMe" to group "resizer" with tClickedID,getID(); break
       case "Property Editor..."
          put objectsAndPropertiesToEdit() into P
          dispatch "setup" to group "editProps" with tClickedID,P["idList"],P["propList"]; break
@@ -370,7 +369,7 @@ on menuPick pWhich
                   show tID
                end if
             catch someErr
-               set the textColor of line tItem of fld "list" of this stack to the pColorObjectMissing of this stack
+               --set the textColor of line tItem of fld "list" of this stack to the pColorObjectMissing of this stack
             end try
          end repeat
          break
@@ -518,7 +517,7 @@ on prepareItems
    --put tIDList into message
    
    put the basicItems of btn "popup" into tItems
-   put gSBCustomCommands after tItems
+   put the customCommandSubmenu of stack "revNavigator" after tItems
    put true into allBehaviors
    put true into tContainer
    if word 1 of tIDList is "bkgnd" then put "group" into tObjectType else put word 1 of tIDList into tObjectType
@@ -603,3 +602,4 @@ on prepareItems
    if allBehaviors then put "Edit Behavior Scripts" & cr before tItems
    put tItems into me
 end prepareItems
+

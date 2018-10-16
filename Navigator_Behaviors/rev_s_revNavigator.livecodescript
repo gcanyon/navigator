@@ -1,8 +1,11 @@
 ﻿script "rev_s_revNavigator"
 //>GLOBALS
-global gREVMessageDispatch, gSBCardOrBackground, gSBControlSets, gSBCustomCommands
+global gREVMessageDispatch, gSBControlSets
 global gSBLeadSpaces
-global gSBShowAllStacks, gSBShowList, gSBshowTooltip
+global gSBShowAllStacks
+global gSBShowList -- should be true for gSBCardOrBackground in "stack list, card list, background list"
+global gSBCardOrBackground -- for lists should be in "stack list, card list, background list" otherwise should be in "card, group"
+global gSBshowTooltip -- maybe obsolete? need to check
 global gSBWhichBackground, gSBWhichCard, gSBWhichStack
 global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
@@ -187,13 +190,6 @@ function prefsLine U,pID,V
    return U & tab & pID & tab & navEncode(V,cr & tab) & cr
 end prefsLine
 
-function prefsLineOld U,pID,V
-   put the long name of pID into pID
-   if word -5 of pID is "stack"
-   then delete word -3 to -1 of pID
-   else put the name of (word -2 to -1 of pID) into word -2 to -1 of pID 
-   return U & numtochar(255) & pID & numtochar(255) & urlEncode(V) & cr
-end prefsLineOld
 
 on prefsLoadFromText pText
    local CP
@@ -216,7 +212,15 @@ on prefsLoadFromText pText
          set the pProp of pTarget to pValue
       end if
    end repeat
+   updateCommandBars
 end prefsLoadFromText
+
+on updateCommandBars
+   repeat with i = 1 to 6
+      set the vis of grc ("commandBar" & i) to (i <= the pCommandBarCount of stack "revNavigator")
+   end repeat
+   navResizeStack
+end updateCommandBars
 
 on prefsLoadFromTextOld pText
    local CP
@@ -273,9 +277,10 @@ function prefsText
    
    -- List Actions
    
-   repeat for each item U in "Double-Click:,Option-Double-Click:,Shift-Double-Click:,Command-Double-Click:,Option-Shift-Double-Click:,Option-Command-Double-Click:,Shift-Command-Double-Click:,Option-Shift-Command-Double-Click"
+   repeat for each item U in "pCommandBarCount,Double-Click:,Option-Double-Click:,Shift-Double-Click:,Command-Double-Click:,Option-Shift-Double-Click:,Option-Command-Double-Click:,Shift-Command-Double-Click:,Option-Shift-Command-Double-Click"
       put prefsLine(U,navID,the U of navID) after R
    end repeat
+
    
    -- List Display Strings
    put prefsLine("pIndentString",navID,the pIndentString of navID) after R
@@ -389,6 +394,52 @@ function lineListFromIDs pIDlist -- takes a line list of long IDs and returns a 
    return tLineList
 end lineListFromIDs
 
+on doCommandCode tCommand,tLineOrIDList,tClickID
+   if tLineOrIDList is empty then
+      if tCommand is among the items of "Edit Script,Edit Behavior Script,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove"
+      then put the hilitedlines of fld "list" into tLineOrIDList
+      else put getID() into tLineOrIDList
+   end if
+   if tClickID is empty then put line 1 of tLineOrIDList into tClickID
+   
+   switch tCommand 
+      case "<None>" 
+         break
+      case "Edit Script"
+      case "Edit Scripts"
+         editObjectScripts tLineOrIDList; break
+      case "Edit Behavior Script"
+      case "Edit Behavior Scripts"
+         editObjectScripts tLineOrIDList,true; break
+      case "Single Object Inspector"
+         objectInspector1 tLineOrIDList; break
+      case "Individual Object Inspector"
+      case "Individual Object Inspectors"
+         objectInspectorN tLineOrIDList; break
+      case "Bookmark-Remove"
+         bookmarkRemove tLineOrIDList; break
+      case "Property Editor"
+         put objectsAndPropertiesToEdit(tLineOrIDList) into OPA -- idList, propList
+         dispatch "setup" to group "editProps" with line 1 of tLineOrIDList,OPA["idList"],OPA["propList"]
+         break
+      case "Size/Location Editor"
+         dispatch "showMe" to group "resizer" with tClickID,tLineOrIDList; break
+      case "Color Editor"
+         dispatch "setup" to group "setColors" with tClickID,tLineOrIDList; break
+      case "Command"
+         dispatch "showMe" to group "commandGroup" with tLineOrIDList; break
+      default  
+         put the doCommandScript of me into tCommandScript
+         replace "--tCommandCode" with tCommand in tCommandScript
+         set the script of group "commandControls" to tCommandScript
+         if the result is empty then dispatch "doCommand" to group "commandControls" with tLineOrIDList
+         else
+            answer warning "Script Error -- putting script in the message box." with "OK"
+            put tCommandScript
+         end if
+   end switch
+end doCommandCode
+
 
 
 function dontUpdate
@@ -495,14 +546,16 @@ on hiliteLines pLineList -- takes a list of lines and hilites them
       put false into sUpdatingRevSelection
       exit hiliteLines
    end if
-   if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
+   --if the hilitedlines of fld "list" of this stack is pLineList then exit hiliteLines
    dispatch "setHilites" to fld "list" of this stack with pLineList
    updatePalettes
 end hiliteLines
 
 on updatePalettes whichPalette,openPalette
-   put getClickedID() into cID
-   put theHilitedIDs() into hIDlist
+   updatePalettesWithID whichPalette,openPalette,getClickedID(),theHilitedIDs()
+end updatePalettes
+
+on updatePalettesWithID whichPalette,openPalette,pID,pIDList
    repeat with i = 1 to 4
       put item i of "color editor,resizer,property editor,command palette" into pName
       put "revNavigatorp" && pName into sName
@@ -510,10 +563,10 @@ on updatePalettes whichPalette,openPalette
       put item i of "setColors,resizer,editProps,commandGroup" into gName
       if (whichPalette is empty or whichPalette is pName) then
          if openPalette is true then go stack sName
-         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with cID,hIDlist
+         if the mode of stack sName is 4 then dispatch mName to group gName of stack sName with pID,pIDList
       end if
    end repeat
-end updatePalettes
+end updatePalettesWithID
 
 function hilitedBookmarkList -- returns a comma list of the hilited bookmark lines
    local tReturn, tSeparator
@@ -558,10 +611,6 @@ end whichColor
 
 on updateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    cancel navUpdateDisplayMessage
-   
-   --   add 1 to sDoUpdateDisplayCount
-   --   put sDoUpdateDisplayCount
-   --put ticks() && "updateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks & cr after message box  -- debug
    send ("doUpdateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks) to me in 30 ticks
    put the result into navUpdateDisplayMessage
 end updateDisplay
@@ -580,9 +629,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStackNameRef, tStart, tSubstackList
    local tSubstackName, tThisStack, whichColor
-   --put ticks(),pForceUpdate,pRetainHilites,allStacks,soStacks into message
-   --put the executionContexts & cr & cr after message
-   --put true into pRetainHilites -- debug
    
    
    put the short name of this stack into tThisStack
@@ -609,7 +655,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    
    put empty into gSBContainerID[tThisStack]
-   
    put the byTest of group "filter toggle" into tFilterByTest
    
    if tFilterByTest and fld "filter" is not empty 
@@ -622,7 +667,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
-      --disable btn "whichCard" of this stack
+      disable btn "whichCard" of this stack
       repeat with i = 1 to 4
          put "</font></p>" & cr before tColor[i]
       end repeat
@@ -823,7 +868,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          then put tColor[whichColor(tID)] & tName after tControlList
          else put tColor[1] & tName after tControlList
          
-         --if tName contains "group" then put tColor[whichColor(tID)] & tName -- debug
          put tCurrentLine into newIDArray[tID]
          put tID into newLineArray[tCurrentLine]
          if foldedIDArray[tID] and foldedControlCount > 0 then
@@ -854,11 +898,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put cr & " " after fld "List" of this stack
       lock screen
       set the htmlText of line tStart + 1 to -1 of fld "list" of this stack to tControlList
-      --put tControlList -- debug
       set the scroll of fld "list" to tScroll
       put tControlList into navLastFieldUpdate
       put newIDArray into navIDArray
-      --if the number of lines of the keys of newLineArray is 0 then answer "we're doing a bad thing"
       put newLineArray into navLineArray
       
    end if
@@ -937,6 +979,7 @@ function getStackName obeyLCSetting
    if gSBWhichStack[N] is "the topStack"
    then put the short name of the topStack into tStackName
    else put gSBWhichStack[N] into tStackName
+   --answer tStackName
    if obeyLCSetting then return filterStacksList(tStackName)
    return tStackName
 end getStackName
@@ -1025,11 +1068,15 @@ on removeBookmarks pListOfLines
    local tNewHTML, tSeparatorLine
    
    if pListOfLines is empty then put the hilitedLines of fld "list" into pListOfLines
-   
    put the separatorLine of fld "list" into tSeparatorLine
-   put removeLines(the htmlText of line 1 to tSeparatorLine of fld "list",pListOfLines) into tNewHTML
-   set the htmlText of line 1 to tSeparatorLine of fld "list" to tNewHTML
-   if tNewHTML is empty then delete line 1 of fld "list"
+   repeat for each item i in pListOfLines
+      if i <= tSeparatorLine then put i,"" after pBookmarkList
+   end repeat
+   delete char -1 of pBookmarkList
+   if pBookmarkList is empty then exit removeBookmarks
+   put removeLines(the htmlText of line 1 to tSeparatorLine of fld "list",pBookmarkList) into tNewHTML
+   if tNewHTML is empty then delete line 1 to tSeparatorLine of fld "list"
+   else set the htmlText of line 1 to tSeparatorLine of fld "list" to tNewHTML
    set the hilitedLines of fld "list" to empty
    setSeparatorLine (the number of lines of tNewHTML)
 end removeBookmarks
@@ -1048,12 +1095,15 @@ function removeLines pText,removeList
 end removeLines
 
 
-on bookmarkRemove pWhichLine
-   if pWhichLine > the separatorLine of fld "list" then
-      setBookmarks pWhichLine
-   else
-      removeBookmarks pWhichLine
-   end if
+on bookmarkRemove pLineList
+   repeat for each item P in pLineList
+      if P > the separatorLine of fld "list" then put P,"" after bList else put P,"" after rList
+   end repeat
+   delete char -1 of bList
+   delete char -1 of rList
+   put getID(bList) into bIDList
+   if rList is not empty then removeBookmarks rList
+   if bList is not empty then setBookmarks ,bIDList
 end bookmarkRemove
 
 
@@ -1077,11 +1127,12 @@ on buildCustomCommandList
    set the directory to tPath
    put the files into tFiles
    set the directory to tHoldDirectory
-   if line 1 of tFiles is ".DS_Store" then delete line 1 of tFiles
+   filter lines of tFiles without ".*"
    replace ".txt" & cr with cr in tFiles
    if char -4 to -1 of tFiles is ".txt" then delete char -4 to -1 of tFiles
+   set the customCommandList of stack "revNavigator" to tFiles
    replace cr with cr & tab in tFiles
-   put cr & "Command" & cr & tab & tFiles into gSBCustomCommands
+   set the customCommandSubmenu of stack "revNavigator" to cr & "Command" & cr & tab & tFiles
 end buildCustomCommandList
 
 
@@ -1315,16 +1366,11 @@ end iffv
 
 on navResizeStack tWidth,tHeight
    local tLines, tRect
+   if tWidth is empty then put the width of me into tWidth
+   if tHeight is empty then put the height of me into tHeight
    
    put the hilitedLines of fld "list" into tLines
-   --put the rect of me
-   put the rect of fld "filter" into tRect
-   put tWidth - 1 into item 3 of tRect
-   set the rect of fld "filter" to tRect
-   put the rect of grc "fieldtop" into tRect
-   put tWidth + 5 into item 3 of tRect
-   set the rect of grc "fieldtop" to tRect
-   
+ 
    put the rect of grc "navTitleBar" into tRect
    put tWidth into item 3 of tRect
    set the rect of grc "navTitleBar" to tRect
@@ -1332,14 +1378,25 @@ on navResizeStack tWidth,tHeight
    set the topright of btn "CloseNavAll" to (item 3 of tRect - 17),(item 2 of tRect + 2)
    subtract 34 from item 3 of tRect
    set the rect of fld "Navigator Title" to tRect
+
+   put the rect of fld "filter" into tRect
+   put tWidth - 1 into item 3 of tRect
+   set the rect of fld "filter" to tRect
+   put the rect of grc "fieldtop" into tRect
+   put tWidth + 5 into item 3 of tRect
+   set the rect of grc "fieldtop" to tRect
    
-   set the rect of fld "list" to -2,35,(tWidth+1),(tHeight+1)
-   if there is a grc "groupFoldBar" then set the rect of grc "groupFoldBar" to -2,35,30,(tHeight+1)
+   put item 4 of tRect - 4 into fieldTop
+   set the rect of fld "list" to -2,fieldTop + 2,(tWidth+1),(tHeight+1)
+   add 4 to fieldTop
+   if there is a group "barGroup" then set the rect of grp "barGroup" to -2,fieldTop,(tWidth - 15),(tHeight - 15)
+   if there is a grc "groupFoldBar" then set the rect of grc "groupFoldBar" to -2,fieldTop,30,(tHeight+1)
    if there is a group "commandBars" then
-      put max(120,tWidth - 104) into commandBarLeft
-      repeat with i = 1 to the number of controls of group "commandBars"
-         set the rect of grc ("commandBar" & i) to commandBarLeft,35,commandBarLeft + 30,(tHeight+1)
-         add 30 to commandBarLeft
+      put the pCommandBarCount of stack "revNavigator" into visCount
+      put max(120,tWidth - 14 - visCount * 25) into commandBarLeft
+      repeat with i = 1 to visCount
+         set the rect of grc ("commandBar" & i) to commandBarLeft,fieldTop,commandBarLeft + 25,(tHeight+1)
+         add 25 to commandBarLeft
       end repeat
    end if
    
@@ -1642,15 +1699,28 @@ function uniqueStacksFromIDs idList,onlyMainstacks
    return the keys of stackList
 end uniqueStacksFromIDs
 
+function simpleID pID
+   if not exists(pID) then return empty
+   if word 1 of pID is "stack" then return stackNameFromID(pID)
+   return word 1 to 4 of the long id of pID && stackNameFromID(pID)
+end simpleID
+
+function simpleName pID
+   if not exists(pID) then return empty
+   if word 1 of pID is "stack" then return stackNameFromID(pID)
+   return (the name of pID) && "of" && stackNameFromID(pID)
+end simpleName
+
 function stackNameFromID tID,onlyMainstacks,shortName
+   if not exists(tID) then return empty else put the long id of tID into tID
    if word -5 of tID is "stack" and not onlyMainstacks then put word -5 to -4 of tID into tStack
    else put the name of stack (word -2 to -1 of tID) into tStack
    if shortName then return the short name of tStack else return tStack
-   
 end stackNameFromID
 
 function idWithoutStack tID
-   if word -5 of tID is "stack" then return word 1 to -7 of tID else return word 1 to -4 of tID
+   if exists(tID) then return word 1 to 3 of the long id of tID
+   --if word -5 of tID is "stack" then return word 1 to -7 of tID else return word 1 to -4 of tID
 end idWithoutStack
 
 
@@ -1833,6 +1903,7 @@ on enableList
    if the enabled of fld "list" then exit enableList
    subtract 1 from sDisableCount
    if sDisableCount > 0 then exit enableList
+   enable group "barGroup"
    enable fld "list"
    set the hilitedLines of fld "list" to sLines
 end enableList
@@ -1844,6 +1915,7 @@ on disableList
    if sDisableCount > 1 then exit disableList
    put the hilitedlines of fld "list" into sLines
    disable fld "list"
+   disable group "barGroup"
 end disableList
 
 
@@ -2201,14 +2273,20 @@ function navStack
 end navStack
 
 function navWindowRects includeCollapsed,includeHidden
-   repeat for each line W in the windows
-      if word 1 of W is not among the items of "revNavigator,Navigator" then next repeat
+   repeat for each line W in navigatorList()
       if not (the vis of stack W or includeHidden) then next repeat
       if not (not the cIAmHidden of stack W or includeCollapsed) then next repeat
       put (the rect of stack W) && W & cr after R
    end repeat
    return char 1 to -2 of R
 end navWindowRects
+
+function navigatorList
+   repeat for each line W in the windows
+      if word 1 of W is among the items of "revNavigator,Navigator" then put W & cr after R
+   end repeat
+   return R
+end navigatorList
 
 
 function deDupe L,D
@@ -2433,7 +2511,6 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
-   --put navName && targetContainer && "peekaboo";exit to top
    put globalsFromTarget(targetContainer) into V
    put V["WhichStack"] into gSBWhichStack[navName]
    put V["WhichCard"] into gSBWhichCard[navName]
@@ -2442,13 +2519,25 @@ on setGlobalsFromTarget targetContainer
    put V["ShowList"] into gSBShowList[navName]
 end setGlobalsFromTarget
 
+function currentNavTargetIsValidID N
+   if N is empty then put the short name of this stack into N
+   put currentNavTarget(N) into tID
+   if gSBShowList[N] or word 1 to 2 of tID is "this card" then return false
+   if exists(tID) then return true else return false
+end currentNavTargetIsValidID
+
 function checkCurrentNavTarget N,checkOnly
    if N is empty then put the short name of this stack into N
    
    put currentNavTarget(N) into tID
-   if gSBShowList[N] then return tID
-   if existenceWarning(tID) is not empty then return tID
-   if checkOnly then return empty
+   if gSBShowList[N] or word 1 to 2 of tID is "this card" then return tID
+   if checkOnly then
+      if not exists(tID) then 
+         return empty
+      end if
+   else
+      if existenceWarning(tID) is not empty then return tID
+   end if
    setNavigatorTarget N,"the topstack"
    return currentNavTarget(N)
 end checkCurrentNavTarget
@@ -2491,8 +2580,9 @@ end targetFromGlobals
 local recentTargetList,recentTargetArray
 
 function recentTargets
-   return recentTargetList
-   return empty --recentTargetList
+   if the short name of me is "revNavigator" then return recentTargetList
+   dispatch function "recentTargets" to stack "revNavigator"
+   return the result
 end recentTargets
 
 on setRecentNavigatorTarget pTargetName
@@ -2506,18 +2596,23 @@ on reportRecent
 end reportRecent
 
 on addRecentTarget pTargetID
-   if pTargetID is empty then put checkCurrentNavTarget(,true) into pTargetID
+   if pTargetID is empty then put currentNavTarget() into pTargetID
    if not exists(pTargetID) then exit addRecentTarget
-   if pTargetID is among the items of "stack list,card list,background list" then exit addRecentTarget
-   put pTargetID into pTargetName
-   put the name of pTargetID into word 1 to -4 of pTargetName
+   
+   if the short name of me is not "revNavigator" then
+      dispatch "addRecentTarget" to stack "revNavigator" with pTargetID
+      exit addRecentTarget
+   end if
+   
+   put simpleName(pTargetID) into targetName
+   put simpleID(pTargetID) into targetID
    set wholematches to true
-   put lineOffset(pTargetName,recentTargetList) into hitLine
+   put lineOffset(targetName,recentTargetList) into hitLine
    if hitLine > 0 then delete line hitLine of recentTargetList
-   put line 8 of recentTargetList into idToDelete
+   put line 100 of recentTargetList into idToDelete
    if idToDelete is not empty then delete variable recentTargetArray[idToDelete]
-   put pTargetID into recentTargetArray[pTargetName]
-   put line 1 to 7 of (pTargetName & cr & recentTargetList) into recentTargetList
+   put targetID into recentTargetArray[targetName]
+   put line 1 to 99 of (targetName & cr & recentTargetList) into recentTargetList
    if char -1 of recentTargetList is cr then delete char -1 of recentTargetList
 end addRecentTarget
 
@@ -2564,8 +2659,6 @@ function globalsFromTarget navTarget
          put controlType into R["cardOrBackground"]
          if controlType = "background" then put "group" into word 1 of navTarget
          put idWithoutStack(navTarget) into R["which" & controlType]
-         --if word 1 of R["which" & controlType] is among the items of "bkgnd,background" then put "group" into word 1 of test
-         --combine R using cr and tab;put R;exit to top
          return R
    end switch
 end globalsFromTarget
@@ -2600,7 +2693,7 @@ function existenceWarning pID,messageOnly
    if pID is empty or (there is a pID) then return pID
    if messageOnly is true then put pID && "not found." & cr after message
    else answer warning (pID && "not found.") with "OK"
-   if the optionkey is "down" then put the executioncontexts
+   if the optionkey is "down" then debug pID,the executioncontexts
    return empty
 end existenceWarning
 
@@ -2712,9 +2805,26 @@ on forceNControls pID,N
    if N = 0 then hide control 1 of pID else show control 1 of pID
 end forceNControls
 
+local sDebugLastCall
+on debug
+   exit debug
+   if sDebugLastCall is empty or ticks() - sDebugLastCall > 120 then put empty
+   put ticks() into sDebugLastCall
+   put line -2 of the executionContexts into LC
+   put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr into R
+   repeat with i = 1 to paramCount()
+      put i & ":" && param(i) & cr & cr after R
+   end repeat
+   put R after message
+end debug
+
 on debugNavigator B
    global gRevDevelopment
-   put B into gRevDevelopment
+   if B is empty then put not gRevDevelopment into gRevDevelopment
+   else put B into gRevDevelopment
+   revIDESetPreference "cScriptEditor,explicitVariables", false
+   if not exists(stack "revPreferencesGUI") then answer "Open preferences and try again."
+   else dispatch "updateOpenScriptEditors" to stack "revPreferencesGUI"
 end debugNavigator
 
 
@@ -2769,7 +2879,7 @@ function titleSpace S
    repeat for each character C in S
       if C is in "QWERTYUIOPASDFGHJKLZXCVBNM" and char -1 of R is in "qwertyuiopasdfghjklzxcvbnm" then put space after R
       put C after R
-   end repeat
+   end repeat 
    return R
 end titleSpace
 
