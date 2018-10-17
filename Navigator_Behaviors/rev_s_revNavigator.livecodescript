@@ -632,6 +632,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    
    put the short name of this stack into tThisStack
+   --debug gSBShowList[tThisStack],gSBCardOrBackground[tThisStack]
    if allStacks is not empty then put allStacks into showAllStacks
    if soStacks is not empty then put soStacks into showSoStacks
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
@@ -643,11 +644,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    put the separatorLine of fld "list" of this stack into tStart
    
    
-   put "<p><font color=" & quote & the pColorBehaviorMissing of this stack & quote & ">" into tColor[0]
-   put "<p><font color=" & quote & the pColorDefault of this stack & quote & ">" into tColor[1]
-   put "<p><font color=" & quote & the pColorScriptedObject of this stack & quote & ">" into tColor[2]
-   put "<p><font color=" & quote & the pColorBehaviorScripted of this stack & quote & ">" into tColor[3]
-   put "<p><font color=" & quote & the pColorScriptandBehavior of this stack & quote & ">" into tColor[4]
+   put "</font></p>" & cr & "<p><font color=" & quote & the pColorBehaviorMissing of this stack & quote & ">" into tColor[0]
+   put "</font></p>" & cr & "<p><font color=" & quote & the pColorDefault of this stack & quote & ">" into tColor[1]
+   put "</font></p>" & cr & "<p><font color=" & quote & the pColorScriptedObject of this stack & quote & ">" into tColor[2]
+   put "</font></p>" & cr & "<p><font color=" & quote & the pColorBehaviorScripted of this stack & quote & ">" into tColor[3]
+   put "</font></p>" & cr & "<p><font color=" & quote & the pColorScriptandBehavior of this stack & quote & ">" into tColor[4]
    put 1 into whichColor
    
    put the ColorScriptedObjects of this stack into tCheckScripts
@@ -668,9 +669,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
       disable btn "whichCard" of this stack
-      repeat with i = 1 to 4
-         put "</font></p>" & cr before tColor[i]
-      end repeat
+      
       
       put the mainStacks into tStackList
       sort lines of tStackList
@@ -744,15 +743,13 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put the name of stack tStackName into tStackNameRef
       if tCheckScripts and (the password of tStackNameRef is empty) then 
          put whichColor(tStackNameRef) into tStackColor
-         put tColor[tStackColor] & "<b>" & tStackNameRef & "</b></p>" into tControlList 
+         put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
       else 
-         put tColor[1] & "<b>" & tStackNameRef & "</b></p>" into tControlList
+         put (char 12 to -1 of tColor[1]) & "<b>" & tStackNameRef & "</b>" into tControlList
       end if
+      
       put tStackID into newLineArray[1]
       
-      repeat with i = 1 to 4
-         put "</font></p>" & cr before tColor[i]
-      end repeat
       
       if the password of tStackID is not empty then put false into tCheckScripts
       if gSBShowList[tThisStack] then
@@ -798,7 +795,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       
       put the defaultStack into tPrevDefaultStack
       set the defaultStack to tStackName
-      
       repeat with i = 1 to tControlCount
          add 1 to tCurrentIndentLine
          if foldB[tCurrentIndentLine] then next repeat
@@ -902,7 +898,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put tControlList into navLastFieldUpdate
       put newIDArray into navIDArray
       put newLineArray into navLineArray
-      
    end if
    if pRetainHilites then
       put lineListFromIDs(tHilitedIDList) into tIDLineList
@@ -972,7 +967,7 @@ end getCardOrBGid
 function getStackName obeyLCSetting
    put the short name of this stack into N
    if gSBShowList[N] and gSBCardOrBackground[N] is "stack" then return empty
-   if gSBWhichStack[N] is not "the topStack" and existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
+   if gSBWhichStack[N] is "the topStack" or gSBWhichStack[N] is empty or existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
       put "the topStack" into gSBWhichStack[N]
       put "this card" into gSBWhichCard[N]
    end if
@@ -1712,10 +1707,11 @@ function simpleName pID
 end simpleName
 
 function stackNameFromID tID,onlyMainstacks,shortName
-   if not exists(tID) then return empty else put the long id of tID into tID
-   if word -5 of tID is "stack" and not onlyMainstacks then put word -5 to -4 of tID into tStack
-   else put the name of stack (word -2 to -1 of tID) into tStack
-   if shortName then return the short name of tStack else return tStack
+   if exists(tID) then put the long id of tID into tID
+   if word -5 of tID is "stack" and not onlyMainstacks then put the value of (word -4 of tID) into tStackName
+   else put the value of (word -1 of tID) into tStackName
+   if not(there is a stack tStackName) then return empty
+   if shortName is true then return the short name of stack tStackName else return the name of stack tStackName
 end stackNameFromID
 
 function idWithoutStack tID
@@ -2511,6 +2507,7 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
+   
    put globalsFromTarget(targetContainer) into V
    put V["WhichStack"] into gSBWhichStack[navName]
    put V["WhichCard"] into gSBWhichCard[navName]
@@ -2636,7 +2633,7 @@ function globalsFromTarget navTarget
       case navTarget is "stack list"
          put true into R["showList"]
          put "stack" into R["cardOrBackground"]
-         return R
+         break
       case word 1 of navTarget is "stack"
          if there is a navTarget then return globalsFromTarget("card id" && (the short id of this card of navTarget) && "of" && navTarget)
          else return globalsFromTarget("this card")
@@ -2645,13 +2642,13 @@ function globalsFromTarget navTarget
          put word 1 of navTarget into R["cardOrBackground"]
          put stackNameFromID(navTarget,false,true) into R["whichStack"]
          put word 1 of navTarget into R["which" & word 1 of navTarget]
-         return R
+         break
       case word 1 to 2 of navTarget is among the items of "this card,the topstack" 
          put false into R["showList"]
          put "card" into R["cardOrBackground"]
          put "this card" into R["whichCard"]
          put "the topStack" into R["whichStack"]
-         return R
+         break
       default -- long id
          put false into R["showList"]
          put stackNameFromID(navTarget,,true) into R["whichStack"]
@@ -2659,8 +2656,9 @@ function globalsFromTarget navTarget
          put controlType into R["cardOrBackground"]
          if controlType = "background" then put "group" into word 1 of navTarget
          put idWithoutStack(navTarget) into R["which" & controlType]
-         return R
+         break
    end switch
+   return R
 end globalsFromTarget
 
 
