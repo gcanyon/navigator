@@ -32,15 +32,10 @@ on prepareItems
       end repeat
    end repeat
    
-   if true then
-      put format("\tTrue\n\tFalse\n") into tItem["Mixed"]
-      put format("!c\tTrue\n\tFalse\n") into tItem["True"]
-      put format("\tTrue\n!c\tFalse\n") into tItem["False"]
-   else
-      put "\-" into tItem["Mixed"]
-      put "!c" into tItem["True"]
-      put "!r" into tItem["False"]
-   end if
+   put numToCodepoint(8863) & " " into tItem["Mixed"]
+   put numToCodepoint(9745) & " " into tItem["True"]
+   put numToCodepoint(9723) & " " into tItem["False"]
+   
    
    repeat for each line tProp in "Property Editor..." & cr & \
          "Color Editor..." & cr & \
@@ -48,8 +43,7 @@ on prepareItems
          "Single Object Inspector" & cr & \
          "Individual Object Inspectors" & cr & \
          "-" & cr & OPA["propList"] 
-   --put tItem[TFpropA[tProp]] & tProp & cr after tMenuText
-   put tProp & cr & tItem[TFpropA[tProp]] after tMenuText
+   put tItem[TFpropA[tProp]] & tProp & cr after tMenuText
 end repeat
 put tMenuText into me
 end prepareItems
@@ -76,17 +70,21 @@ on menuPick pWhich
    end switch
    
    set the itemDelimiter to "|"
-   put item 1 of pWhich into sProp
    put item 2 of pWhich into tVal
-   if tVal is empty then
+   put item 1 of pWhich into sProp
+   if char 2 of sProp is space then 
+      delete char 1 to 2 of sProp
+      if char 1 of pWhich is numToCodepoint(9745) then resultMessage false 
+      else 
+         resultMessage true
+      end if
+   else if tVal is empty then
       if there is a tClickedID then
          if sProp is "name" then put the short name of tClickedID into tDefaultVal else put the sProp of tClickedID into tDefaultVal
-         --put tDefaultVal into message
          if the commandKey is "down" then
             resultMessage tDefaultVal
             exit menuPick
          end if
-         --put sProp & cr & tClickedID & cr & the sProp of tClickedID -- debug
       else
          put "PropertyValue" into tDefaultVal
       end if
