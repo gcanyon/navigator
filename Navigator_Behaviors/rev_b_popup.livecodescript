@@ -318,11 +318,11 @@ on menuPick pWhich
       case "Go|Show"
          put empty into reloadConfirmed
          repeat for each line tID in getID()
-            if not (word 1 of tID is among the items of "group,card,stack") then next repeat
+            if not (word 1 of tID is among the items of "bkgnd,group,card,stack") then next repeat
             try
                if tBrowseControls then
                   setNavigatorTarget ,tID
-               else if word 1 of tID is "group" then
+               else if word 1 of tID is among the items of "group,bkgnd" then
                   -- no point in continuing, can't save or go
                else if tSaveAll and word 1 of tID is "stack" then
                   saveAll tID

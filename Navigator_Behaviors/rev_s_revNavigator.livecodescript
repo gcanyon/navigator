@@ -618,9 +618,6 @@ end updateDisplay
 
 
 on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
-   --put true into pRetainHilites
-   --put "doUpdateDisplay" && pForceUpdate && pRetainHilites && the short name of this stack && ticks() & cr before fld 1 of stack "untitled 3"
-   --put the short name of this stack && ticks() & cr &  the executionContexts & cr & cr & cr before fld 1 of stack "untitled 3"
    
    local tBookmarkLineList, tCardOrBGid, tCheckScripts, tColor, tControlCount
    local tControlList, tCurrentIndentLine, tCurrentLine, tDisplay, tFilter
@@ -632,10 +629,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    
    put the short name of this stack into tThisStack
-   --debug gSBShowList[tThisStack],gSBCardOrBackground[tThisStack]
+   if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
+   if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
+   
    if allStacks is not empty then put allStacks into showAllStacks
    if soStacks is not empty then put soStacks into showSoStacks
-   if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
    if pRetainHilites then
       put hilitedBookmarkList() into tBookmarkLineList
       put hilitedLineIDList() into tHilitedIDList
@@ -644,11 +642,12 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    put the separatorLine of fld "list" of this stack into tStart
    
    
-   put "</font></p>" & cr & "<p><font color=" & quote & the pColorBehaviorMissing of this stack & quote & ">" into tColor[0]
-   put "</font></p>" & cr & "<p><font color=" & quote & the pColorDefault of this stack & quote & ">" into tColor[1]
-   put "</font></p>" & cr & "<p><font color=" & quote & the pColorScriptedObject of this stack & quote & ">" into tColor[2]
-   put "</font></p>" & cr & "<p><font color=" & quote & the pColorBehaviorScripted of this stack & quote & ">" into tColor[3]
-   put "</font></p>" & cr & "<p><font color=" & quote & the pColorScriptandBehavior of this stack & quote & ">" into tColor[4]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorMissing of this stack) into tColor[0]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptedObject of this stack) into tColor[2]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorScripted of this stack) into tColor[3]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptandBehavior of this stack) into tColor[4]
+   
    put 1 into whichColor
    
    put the ColorScriptedObjects of this stack into tCheckScripts
@@ -669,58 +668,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
       put "Nav: Stack List" into fld "Navigator Title"
       disable btn "whichCard" of this stack
-      
-      
-      put the mainStacks into tStackList
-      sort lines of tStackList
       put the pObjectLimit of this stack into tObjectLimit
-      put empty into tControlList
-      put 0 into tCurrentLine
       
-      --put cr & ticks(),showAllStacks,showSoStacks after message
-      repeat for each line tStack in tStackList
-         if (not showAllStacks) and (filterStacksList(tStack) is empty) then next repeat
-         if (not showSoStacks) and the scriptonly of stack tStack then next repeat
-         put tStack & cr & the substacks of stack tStack after newStackList
-         if char -1 of newStackList is not cr then put cr after newStackList
-      end repeat
-      
-      repeat for each line tStack in newStackList
-         put the name of stack tStack into tStackName
-         if tMatchString is not empty and tMatchString is not in tStackName then next repeat
-         if tFilterString is not empty then
-            put tFilterString into tTempFilterString
-            replace "tID" with tStackName in tTempFilterString
-            try
-               if not value(tTempFilterString) then next repeat
-            catch someErr
-               next repeat
-            end try
-         end if
-         if the mainstack of tStackName is tStack
-         then put empty into tStackIndentString
-         else put tIndentString into tStackIndentString
-         
-         
-         add 1 to tCurrentLine
-         if tCurrentLine > tObjectLimit then exit repeat
-         if tCheckScripts and (the password of tStackName is empty) 
-         then put tColor[whichColor(tStackName)] & tStackIndentString & tStackName after tControlList 
-         else put tColor[1] & tStackIndentString & tStackName after tControlList
-         put tCurrentLine into newIDArray[tStackName]
-         put tStackName into newLineArray[tCurrentLine]
-      end repeat
-      --put tControlList into message
-      delete line 1 of tControlList -- deletes the "</font></p>" at the start
-      
-      
+      put stackListDetails(allStacks,soStacks,tMatchString,tFilterString,the pObjectLimit of this stack) into D
+      put D["html"] into tControlList
+      --debug tControlList
+      put D["id"] into newIDArray
+      put D["line"] into newLineArray
    else
-      
-      enable btn "whichCard" of this stack
       if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
-      if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
-      
-      
+      enable btn "whichCard" of this stack
       put the value of word -1 of checkCurrentNavTarget() into tStackName
       
       put the long id of stack tStackName into tStackID
@@ -740,52 +697,39 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
       put the uDisplay of this stack into tDisplay
       put tDisplay contains "tIS" into isTis
-      put the name of stack tStackName into tStackNameRef
-      if tCheckScripts and (the password of tStackNameRef is empty) then 
-         put whichColor(tStackNameRef) into tStackColor
-         put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
-      else 
-         put (char 12 to -1 of tColor[1]) & "<b>" & tStackNameRef & "</b>" into tControlList
-      end if
-      
+      put the name of tStackID into tStackNameRef
+      if the password of tStackID is not empty then put false into tCheckScripts
+      if tCheckScripts then put whichColor(tStackNameRef) into tStackColor else put 1 into tStackColor
+      put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
       put tStackID into newLineArray[1]
       
-      
-      if the password of tStackID is not empty then put false into tCheckScripts
       if gSBShowList[tThisStack] then
          put 1 into tCurrentLine
          put 1 into tCurrentIndentLine
-         if gSBCardOrBackground[tThisStack] is "card" then
-            put the number of cds of tStackID into tControlCount
-            put "Nav: Cards of" && the name of tStackID into fld "Navigator Title"
-         else
-            put the number of bgs of tStackID into tControlCount
-            put "Nav: Backgrounds of" && the name of tStackID into fld "Navigator Title"
-         end if
-         
+         if gSBCardOrBackground[tThisStack] is "card" 
+         then put the number of cds of tStackID into tControlCount
+         else put the number of bgs of tStackID into tControlCount
+         put format("Nav: %s%ss of %s",char 1 of gSBCardOrBackground[tThisStack],char 2 to -1 of gSBCardOrBackground[tThisStack],tStackNameRef) into fld "Navigator Title"
       else
-         if tCheckScripts
-         then put tColor[whichColor(tCardOrBGid)] & "<b>" & the name of tCardOrBGid & "</b>"after tControlList
-         else put tColor[1] & "<b>" & the name of tCardOrBGid & "</b>"after tControlList
+         put 2 into tCurrentLine
+         put 2 into tCurrentIndentLine
+         if tCheckScripts then put whichColor(tCardOrBGid) into tCardOrBGColor else put 1 into tCardOrBGColor
+         put tColor[tCardOrBGColor] & "<b>" & the name of tCardOrBGid & "</b>" after tControlList
          
          put tCardOrBGid into newLineArray[2]
-         if tCardOrBGid is not tLastCardOrBGid and the pDefaultFold of stack tThisStack is not "Show All" then
-            setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
-         end if
+         if tCardOrBGid is not tLastCardOrBGid and the pDefaultFold of stack tThisStack is not "Show All"
+         then setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
+         
          put tCardOrBGid into tLastCardOrBGid
          put tCardOrBGid into gSBContainerID[tThisStack]
          
          put the number of controls of tCardOrBGid into tControlCount
          
-         if word -5 of tCardOrBGid is "stack" \
-               then put word -5 to -4 of tCardOrBGid into stackNameForTitle \
-               else put the name of stack (char 2 to -2 of word -1 of tCardOrBGid) into stackNameForTitle
-         put "Nav:" && the name of tCardOrBGid && "of" && stackNameForTitle  into fld "Navigator Title"
-         put 2 into tCurrentLine
-         put 2 into tCurrentIndentLine
+         put "Nav:" && simpleName(tCardOrBGid) into fld "Navigator Title"
       end if
       
       put min(the pObjectLimit of this stack,tControlCount) into tControlCount
+      
       if gSBWhichStack[tThisStack] is "the topStack" then
          put the short name of the topStack into tStackName
          if filterStacksList(tStackName) is empty then
@@ -798,31 +742,19 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       repeat with i = 1 to tControlCount
          add 1 to tCurrentIndentLine
          if foldB[tCurrentIndentLine] then next repeat
-         if gSBShowList[tThisStack] then
-            if gSBCardOrBackground[tThisStack] is "card" then
-               put the long id of cd i of tStackID into tID  --defaultStack test
-            else
-               put the long id of bg i of tStackID into tID  --defaultStack test
-            end if
-         else
-            put the long id of control i of tCardOrBGid into tID
-         end if
+         if gSBShowList[tThisStack] is false 
+         then put the long id of control i of tCardOrBGid into tID
+         else if gSBCardOrBackground[tThisStack] is "card" 
+         then put the long id of cd i of tStackID into tID
+         else put the long id of bg i of tStackID into tID         
          put the name of tID into tName
          if word 1 of tName is "group" and (not gSBShowList[tThisStack]) then
-            --put "-</a> " after tIndent[tCurrentIndentLine]
-            --put "- " after tIndent[tCurrentIndentLine]
-            --put "<a name=" & quote & "g" & quote & ">" before tIndent[tCurrentIndentLine]
-            if foldedIDArray[tID] then
-               put the number of controls of tID into foldedControlCount
-               put tIndentString & tIndent[tCurrentIndentLine] & foldedControlCount && "folded controls" into tFoldNote
-               repeat with tFoldCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + foldedControlCount)
-                  put true into foldB[tFoldCount]
-               end repeat
-            else
-               repeat with tWhichIndentCount = (tCurrentIndentLine +1) to (tCurrentIndentLine + (the number of controls of tID))
-                  put tIndentString before tIndent[tWhichIndentCount]
-               end repeat
-            end if
+            put the number of controls of tID into childControlCount
+            repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
+               if foldedIDArray[tID]
+               then put true into foldB[childIndex]
+               else put tIndentString after tIndent[childIndex]
+            end repeat
          end if
          
          if tFilterString is not empty then
@@ -836,8 +768,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          end if
          
          if (tNamedObjectsOnly and (quote is not in tName or item 2 of tName is among the lines of tRejectList))  \
-               or (tScriptedObjectsOnly and (the script of tID is empty)) then \
-               next repeat
+               or (tScriptedObjectsOnly and (the script of tID is empty))
+         then next repeat
          
          switch tDisplay
             case "name"; put tIndent[tCurrentIndentLine] before tName;break
@@ -860,17 +792,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          if tMatchString is not empty and tMatchString is not in tName then next repeat
          add 1 to tCurrentLine
          
-         if tCheckScripts 
-         then put tColor[whichColor(tID)] & tName after tControlList
-         else put tColor[1] & tName after tControlList
+         if tCheckScripts then put whichColor(tID) into tIDColor else put 1 into tIDColor
+         put tColor[tIDColor] & tName after tControlList
          
          put tCurrentLine into newIDArray[tID]
          put tID into newLineArray[tCurrentLine]
-         if foldedIDArray[tID] and foldedControlCount > 0 then
-            put tColor[1] & tFoldNote after tControlList
+         if foldedIDArray[tID] and childControlCount > 0 then
+            put tColor[1] & tIndentString & tIndent[tCurrentIndentLine] & childControlCount && "folded controls" after tControlList
             add 1 to tCurrentLine
             put empty into newLineArray[tCurrentLine]
-            repeat with j = 1 to the number of controls of tID
+            repeat with j = 1 to childControlCount
                put the long id of control j of tID into jID
                put jID & cr after newLineArray[tCurrentLine]
                put tCurrentLine into newIDArray[jID]
@@ -880,8 +811,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       end repeat
       
       set the defaultStack to tPrevDefaultStack
+      put "</font></p>" after tControlList
    end if
-   put "</font></p>" after tControlList
    if gSBWhichStack[tThisStack] is "the topStack" \
          and char 1 to 3 of the short name of the topStack is "rev" then
       delete line tStart + 1 to -1 of fld "list" of this stack
@@ -906,6 +837,60 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       hiliteLines
    end if
 end doUpdateDisplay
+
+function stackListDetails showAllStacks,showSoStacks,matchString,filterString,objectLimit
+   
+   put the mainStacks into tStackList
+   sort lines of tStackList
+   put 0 into tCurrentLine
+   put the pIndentString of this stack into tIndentString 
+   if showAllStacks is empty then put the showIDEStacks of stack "revNavigator" into showAllStacks
+   if showSoStacks is empty then put the showSOStacks of stack "revNavigator" into showSoStacks
+
+   
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorMissing of this stack) into tColor[0]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptedObject of this stack) into tColor[2]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorScripted of this stack) into tColor[3]
+   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptandBehavior of this stack) into tColor[4]
+   
+   
+   repeat for each line tStack in tStackList
+      if (not showAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+      if (not showSoStacks) and the scriptonly of stack tStack then next repeat
+      put tStack & cr & the substacks of stack tStack after newStackList
+      if char -1 of newStackList is not cr then put cr after newStackList
+   end repeat
+   repeat for each line tStack in newStackList
+      put the name of stack tStack into tStackName
+      if matchString is not empty and matchString is not in tStackName then next repeat
+      if filterString is not empty then
+         put filterString into tTempFilterString
+         replace "tID" with tStackName in tTempFilterString
+         try
+            if not value(tTempFilterString) then next repeat
+         catch someErr
+            next repeat
+         end try
+      end if
+      
+      add 1 to tCurrentLine
+      if tCurrentLine > tObjectLimit then exit repeat
+      
+      if tCheckScripts and (the password of tStackName is empty) 
+      then put tColor[whichColor(tStackName)] after R["html"]
+      else put tColor[1] after R["html"]
+      
+      if the mainstack of tStackName is not tStack then put tIndentString after R["html"]
+      put tStackName after R["html"]
+      
+      put tCurrentLine into R["ID"][tStackName]
+      put tStackName into R["line"][tCurrentLine]
+   end repeat
+   delete line 1 of R["html"] -- deletes the "</font></p>" at the start
+   put "</font></p>" after R["html"]
+   return R
+end stackListDetails
 
 function testF
    return "F"
@@ -949,7 +934,7 @@ function getCardOrBGid tStackID
          put "card" && Q(gSBWhichCard[N]) && "of" && tStackID into tReturnID
       end if
    else if gSBCardOrBackground[N] is "background" then
-      if word 1 to 2 of gSBWhichBackground[N] is "group id" then
+      if word 2 of gSBWhichBackground[N] is "id" then
          put gSBWhichBackground[N] && "of" && tStackID into tReturnID
       else
          put "background" && Q(gSBWhichBackground[N]) && "of" && tStackID into tReturnID
