@@ -1,8 +1,5 @@
 ﻿script "rev_b_Actions"
 global gSBControlSets
-global gSBshowTooltip -- if true, show tooltip
-global gSBshowListLines -- if true, show list lines in fld "list"
-global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList,gSBLeadSpaces
 
 local addPropertiesForType
 
@@ -28,9 +25,7 @@ on menuPick pWhich
          clone this stack
          set the name of it to sName
          set the backgroundcolor of grc "navTitleBar" of stack sName to "180,180,180"
-         repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList,gSBLeadSpaces"
-            do ("put" && V & "[" & quote & the short name of this stack & quote & "] into" && V & "[" & quote & sName & quote & "]")
-         end repeat
+         setNavigatorTarget sName,checkCurrentNavTarget()
          cleangREVMessageDispatch
          dispatch "updateDisplay" to stack sName with true
          break

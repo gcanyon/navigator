@@ -1,13 +1,9 @@
 ﻿script "rev_s_revNavigator"
 //>GLOBALS
 global gREVMessageDispatch, gSBControlSets
-global gSBLeadSpaces
-global gSBShowAllStacks
 global gSBShowList -- should be true for gSBCardOrBackground in "stack list, card list, background list"
 global gSBCardOrBackground -- for lists should be in "stack list, card list, background list" otherwise should be in "card, group"
-global gSBshowTooltip -- maybe obsolete? need to check
 global gSBWhichBackground, gSBWhichCard, gSBWhichStack
-global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
 
 //>LOCALS
@@ -103,8 +99,6 @@ on doSetup
    show this stack
    set the minHeight of N to 120
    set the minWidth of N to 170
-   put the showToolTip of N into gSBshowTooltip
-   put "     " into gSBLeadSpaces[SN]
    put false into gSBShowList[SN]
    put "the topStack" into gSBWhichStack[SN]
    put "this card" into gSBWhichCard[SN]
@@ -654,7 +648,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    put the pIndentString of this stack into tIndentString
    
    
-   put empty into gSBContainerID[tThisStack]
+   set the containerID of fld "list" to empty
    put the byTest of group "filter toggle" into tFilterByTest
    
    if tFilterByTest and fld "filter" is not empty 
@@ -721,7 +715,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          then setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
          
          put tCardOrBGid into tLastCardOrBGid
-         put tCardOrBGid into gSBContainerID[tThisStack]
+         set the containerID of fld "list" to tCardOrBGid
          
          put the number of controls of tCardOrBGid into tControlCount
          
@@ -997,14 +991,14 @@ on setBookmarks pWhichLine,pIDList
    put line 1 to tLowerLimit of fld "list" into tList
    repeat for each line tID in pIDList
       if tID is empty or (not (there is a tID)) then next repeat
-      put gSBLeadSpaces[the short name of this stack] into tObjectName
+      put the leadSpaces of stack "revNavigator" into tObjectName
       if the uDisplay of this stack contains "name" then
-         put (the long name of tID) after tObjectName
+         put simpleName(tID) after tObjectName
          if the uDisplay of this stack contains "id" then
             put " [" & the short id of tID & "]" after word 2 of tObjectName
          end if
       else
-         put (the long id of tID) after tObjectName
+         put simpleID(tID) after tObjectName
       end if
       
       if lineOffset(tObjectName,tList) > 0 then next repeat
@@ -2035,9 +2029,9 @@ function backgroundsOf stackID,bFilter,returnType,typeModifier
       switch 
          case word 1 of returnType = "name"
             switch typeModifier
-               case empty; put (the name of background i of stackID) after R; break
+               case empty; put "background" && Q(the short name of background i of stackID) after R; break
                case "short"; put (the short name of background i of stackID) after R; break
-               case "long"; put (the long name of background i of stackID) after R; break
+               case "long"; put "background" && (word 2 to -1 of the long name of background i of stackID) after R; break
             end switch
             if returnType = "name" then break
             put tab after R
@@ -2508,25 +2502,17 @@ function currentNavTargetIsValidID N
    if exists(tID) then return true else return false
 end currentNavTargetIsValidID
 
-function checkCurrentNavTarget N,checkOnly
+function checkCurrentNavTarget N,checkOnly,noWarning
    if N is empty then put the short name of this stack into N
-   
    put currentNavTarget(N) into tID
-   if gSBShowList[N] or word 1 to 2 of tID is "this card" then return tID
-   if checkOnly then
-      if not exists(tID) then 
-         return empty
-      end if
-   else
-      if existenceWarning(tID) is not empty then return tID
-   end if
+   if word 1 to 2 of tID is among the items of "this card,card list,background list,stack list" or exists(tID) then return tID
+   if checkOnly then return empty
+   if not noWarning then get existenceWarning(tID)
    setNavigatorTarget N,"the topstack"
    return currentNavTarget(N)
 end checkCurrentNavTarget
 
 function currentNavTarget N
-   --    put the executioncontexts
-   --    exit to top
    if N is empty then put the short name of this stack into N
    if gSBWhichStack[N] is "the topstack" or (gSBCardOrBackground[N] is "card" and gSBWhichCard[N] is "this card") then 
       put false into gSBShowList[N]
@@ -2538,26 +2524,6 @@ function currentNavTarget N
    else if gSBCardOrBackground[N] is "card" then return gSBWhichCard[N] && R
    else return gSBWhichBackground[N] && R
 end currentNavTarget
-
-
-
-function targetFromNavigatorGlobals navName
-   if navName is empty then put the short name of me into navName
-   if navName is the short name of me then return targetFromGlobals(gSBWhichStack[navName],gSBShowList[navName],gSBCardOrBackground[navName],gSBWhichCard[navName],gSBWhichBackground[navName])
-   dispatch function "targetFromGlobals" to stack navName with navName
-   return the result
-end targetFromNavigatorGlobals
-
-function targetFromGlobals whichStack,showList,cardOrBackground,whichCard,whichBackground
-   put whichStack into SN
-   if SN is not "the topStack" and SN is not empty then put the long id of stack SN into SN
-   if showList is "true" then 
-      if cardOrBackground = "stack" then return "stack list"
-      return cardOrBackground && "list of" && SN
-   end if
-   if cardOrBackground is "background" then return the long id of group (whichBackground && "of" && SN)
-   return whichCard && "of" && SN 
-end targetFromGlobals
 
 local recentTargetList,recentTargetArray
 

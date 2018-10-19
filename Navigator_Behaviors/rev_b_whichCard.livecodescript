@@ -1,23 +1,15 @@
 ﻿script "rev_b_whichCard"
-global gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground
-global gSBShowList
-
 local nonTargetCount,tList,SBG
 
 on mouseDown
    put the short name of this stack into thisStack
    put the showBackgrounds of me is true into SBG
    put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" into tDefault
-   --    put recentTargets() into RT
-   --    if RT is not empty then put cr & line 1 to 7 of RT & cr & "-" after tDefault
    put the number of lines of tDefault into nonTargetCount
-   --put gSBShowList[thisStack] && gSBCardOrBackground[thisStack] into message
-   if gSBShowList[thisStack] is false or gSBCardOrBackground[thisStack] is not "stack" then
-      if SBG then 
-         put cr & backgroundsOf((the long id of stack getStackName()),"base","name and id","short") into tList
-         replace cr & "group" with cr & "background" in tList
-         delete char 1 of tList
-      else put cardsOf(the long id of stack getStackName()) into tList
+   put getStackName() into SN
+   if SN is not empty then
+      if SBG then put backgroundsOf((the long id of stack SN),"base","name and id","short") into tList
+      else put cardsOf(the long id of stack SN) into tList
       set the itemDel to tab
       if the shiftKey is "down" then sort lines of tList by item 1 of each
       repeat for each line L in tList

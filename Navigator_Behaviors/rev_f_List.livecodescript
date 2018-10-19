@@ -1,11 +1,9 @@
 ﻿script "rev_f_List"
-global gLastLineClicked
-global gSBWhichStack,gSBWhichCard,gSBlastHilitedLines,gSBshowTooltip
+global gSBWhichStack
 global gSBShowList -- if true, show a list of cards/backgrounds
 global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 global gSBDragStartNav -- the short name of the Navigator originating a drag
-global gSBContainerID -- the id of the container displayed if gSBShowList is false; empty if gSBShowList
 
 local tStartDragMessage
 local sDropLines -- the items that actually need to be rearranged on dropping.
@@ -155,10 +153,8 @@ end mouseDown
 
 
 on relayerControlList pTargetLine,pLinesToRelayerList
-   --put pTargetLine & cr & cr & pLinesToRelayerList into message;exit relayerControlList
-   --put gSBWhichCard[the short name of this stack] into message;exit relayerControlList
    put the short name of this stack into navID
-   --put gSBContainerID[navID] into message; exit relayerControlList
+   put the containerID of me into tContainerID
    put 1 into i
    repeat for each line tID in getID(pLinesToRelayerList)
       put tID into dragArray[i]
@@ -168,18 +164,17 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       add 1 to i
    end repeat
    put the number of lines of fld "list" into tLineCount
-   put the number of controls of gSBContainerID[navID] into tLayerCount
+   put the number of controls of tContainerID into tLayerCount
    
-   --put gSBContainerID[navID] into message
    lock messages
    lock screen   
-   if not (gSBContainerID[navID] is (the long id of this card of the owner of gSBContainerID[navID]))
-   then put "go" && (the long id of this card of the owner of gSBContainerID[navID]) & cr into returnMSG
+   if not (tContainerID is (the long id of this card of the owner of tContainerID))
+   then put "go" && (the long id of this card of the owner of tContainerID) & cr into returnMSG
    
-   if not (the name of the topstack is the owner of gSBContainerID[navID]) 
+   if not (the name of the topstack is the owner of tContainerID) 
    then put "go" && the name of the topstack after returnMSG
    
-   if returnMSG is not empty then go gSBContainerID[navID]
+   if returnMSG is not empty then go tContainerID
    
    set the relayergroupedcontrols to the optionkey is "up"   
    

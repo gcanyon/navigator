@@ -1,6 +1,4 @@
 ﻿script "rev_b_whichStack"
-//>GLOBALS
-global gSBCardOrBackground, gSBShowAllStacks, gSBShowList, gSBWhichCard, gSBWhichStack
 local recentStartLine, recentEndLine
 
 on mouseDown

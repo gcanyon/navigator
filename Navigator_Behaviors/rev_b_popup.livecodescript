@@ -1,20 +1,9 @@
 ﻿script "rev_b_popup"
-global gLastLineClicked
-global gSBlastHilitedLines,gSBshowTooltip
+global gSBControlSets
 
-global gSBLeadSpaces,gSBControlSets
-
-global gSBCardOrBackground -- are we displaying card controls or group controls
-global gSBWhichCard -- which card are we displaying
-global gSBWhichStack -- which stack are we displaying
-global gSBWhichBackground -- which background/group are we displaying
-global gSBShowList -- true: show list of cards or bgs | false: show controls
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 
-local tDoneStackList -- a list of the stacks that have already been done when counting scripts
 
-local tIDArray -- an array of IDs -- used to store line counts of scripts
-local tSizeArray -- an array of the size of the scripts being counted in characters
 local tClickedLine -- the line the user clicked on
 local tClickedID -- the id of the object the user clicked on
 local sSearchString -- the search string for finding in enclosed scripts
@@ -387,13 +376,7 @@ on menuPick pWhich
                if there is a stack l then delete stack l
             end repeat
          end repeat
-         
-         put gSBWhichStack[the short name of this stack] into tS
-         if tS is not empty and tS is not "the topStack" and (not (there is a stack tS)) then
-            put "this card" into gSBWhichCard[the short name of this stack]
-            put "card" into gSBCardOrBackground[the short name of this stack]
-            put "the topStack" into gSBWhichStack[the short name of this stack]
-         end if
+         get checkCurrentNavTarget(,,true)
          break
       case "Remove All"
          removeAllBookmarks; break
@@ -416,7 +399,7 @@ on menuPick pWhich
             if tLine > tSeparator then exit repeat
             ask "Set the bookmark text to:" with word 1 to -1 of line tLine of fld "list"
             if the result is not empty then exit repeat
-            put gSBLeadSpaces[the short name of this stack] & word 1 to -1 of it into line tLine of fld "list"
+            put (the leadSpaces of stack "revNavigator") & word 1 to -1 of it into line tLine of fld "list"
          end repeat
          set the hilitedLines of fld "list" to tLineList; break
       case "Command..."
