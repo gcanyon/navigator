@@ -14,14 +14,15 @@ local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty 
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
 local showAllStacks
 local showSoStacks
-local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
--- stack list
+local navTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
 -- this card of the topstack
--- this card of stack "<stack name>"
--- <card long id>
--- <group long id>
+-- stack list
 -- card list of stack "<stack name>"
 -- background list of stack "<stack name>"
+-- card id <id> of stack "<stack name>"
+-- group id <id> of stack "<stack name>"
+-- CAN BE SET TO ANY OF THE ABOVE OR A LONG ID OF A CONTAINER
+
 local tLastCardOrBGid -- the last thing displayed, to check for default fold
 
 
@@ -99,10 +100,7 @@ on doSetup
    show this stack
    set the minHeight of N to 120
    set the minWidth of N to 170
-   put false into gSBShowList[SN]
-   put "the topStack" into gSBWhichStack[SN]
-   put "this card" into gSBWhichCard[SN]
-   put "card" into gSBCardOrBackground[SN]
+   setNavigatorTarget ,"the topstack"
    
    set the customPropertySet of me to "gSBControlSetsProp"
    put the customProperties of me into gSBControlSets
@@ -437,13 +435,10 @@ end doCommandCode
 
 
 function dontUpdate
+   return not (navTarget is "this card of the topstack")
    if not (the autoUpdateSelection of this stack) then return true
-   put the short name of this stack into tStack
-   if gSBShowList[tStack] then return true
-   return not (((gSBWhichStack[tStack] is "the topStack") \
-         or (gSBWhichStack[tStack] is the short name of the topstack)) and \ 
-         ((gSBWhichCard[tStack] is "this card") \
-         or (gSBWhichCard[tStack] is the currentcard of the topstack)))
+   if word 2 of navTarget is "list" then return true
+   if navTarget is "this card of the topstack" then return true
 end dontUpdate
 
 on setFoldDepth tContainer,tDepth
@@ -659,7 +654,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    then put empty into tMatchString 
    else put fld "filter" into tMatchString
    
-   if (gSBShowList[tThisStack] and gSBCardOrBackground[tThisStack] is "stack") then
+   if navTarget is empty then exit doUpdateDisplay
+   else if (navTarget is "stack list") then
       put "Nav: Stack List" into fld "Navigator Title"
       disable btn "whichCard" of this stack
       put the pObjectLimit of this stack into tObjectLimit
@@ -670,15 +666,14 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put D["id"] into newIDArray
       put D["line"] into newLineArray
    else
-      if gSBWhichStack[tThisStack] is empty then exit doUpdateDisplay
       enable btn "whichCard" of this stack
-      put the value of word -1 of checkCurrentNavTarget() into tStackName
+      put navTargetStack() into tStackID
+      if not exists(tStackID) then exit doUpdateDisplay
+      put short name of tStackID into  tStackName
       
-      put the long id of stack tStackName into tStackID
-      if not gSBShowList[tThisStack] then
+      if not navTargetIsList() then
          
-         --put getCardOrBGid(tThisStack) into tCardOrBGid
-         put getCardOrBGid(tStackID) into tCardOrBGid
+         put navTargetContainer() into tCardOrBGid
          if tCardOrBGid is empty then exit doUpdateDisplay
       end if -- not gSBShowList[the short name of this stack]
       
@@ -697,10 +692,10 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
       put tStackID into newLineArray[1]
       
-      if gSBShowList[tThisStack] then
+      if navTargetIsList() then
          put 1 into tCurrentLine
          put 1 into tCurrentIndentLine
-         if gSBCardOrBackground[tThisStack] is "card" 
+         if navTargetType() is "card" 
          then put the number of cds of tStackID into tControlCount
          else put the number of bgs of tStackID into tControlCount
          put format("Nav: %s%ss of %s",char 1 of gSBCardOrBackground[tThisStack],char 2 to -1 of gSBCardOrBackground[tThisStack],tStackNameRef) into fld "Navigator Title"
@@ -709,7 +704,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          put 2 into tCurrentIndentLine
          if tCheckScripts then put whichColor(tCardOrBGid) into tCardOrBGColor else put 1 into tCardOrBGColor
          put tColor[tCardOrBGColor] & "<b>" & the name of tCardOrBGid & "</b>" after tControlList
-         
          put tCardOrBGid into newLineArray[2]
          if tCardOrBGid is not tLastCardOrBGid and the pDefaultFold of stack tThisStack is not "Show All"
          then setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
@@ -724,7 +718,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       
       put min(the pObjectLimit of this stack,tControlCount) into tControlCount
       
-      if gSBWhichStack[tThisStack] is "the topStack" then
+      if navTarget is "this card of the topStack" then
          put the short name of the topStack into tStackName
          if filterStacksList(tStackName) is empty then
             put 0 into tControlCount
@@ -736,12 +730,14 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       repeat with i = 1 to tControlCount
          add 1 to tCurrentIndentLine
          if foldB[tCurrentIndentLine] then next repeat
+         debug i,tStackID,tCardOrBGid
          if gSBShowList[tThisStack] is false 
          then put the long id of control i of tCardOrBGid into tID
          else if gSBCardOrBackground[tThisStack] is "card" 
          then put the long id of cd i of tStackID into tID
          else put the long id of bg i of tStackID into tID         
          put the name of tID into tName
+         
          if word 1 of tName is "group" and (not gSBShowList[tThisStack]) then
             put the number of controls of tID into childControlCount
             repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
@@ -807,7 +803,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       set the defaultStack to tPrevDefaultStack
       put "</font></p>" after tControlList
    end if
-   if gSBWhichStack[tThisStack] is "the topStack" \
+   
+   if navTarget is "this card of the topStack" \
          and char 1 to 3 of the short name of the topStack is "rev" then
       delete line tStart + 1 to -1 of fld "list" of this stack
       put "Nav:" into fld "Navigator Title"
@@ -899,25 +896,15 @@ function QQ S
 end QQ
 
 on reportStack
-   put the short name of this stack into N
-   answer gSBWhichStack[N] 
+   answer navTargetStack() 
 end reportStack
 
 
 function getCardOrBGid tStackID
-   local N, tReturnID
+   return navTargetContainer()
    put the short name of this stack into N
-   if tStackID is empty then 
-      if gSBWhichStack[N] is "the topStack" then
-         put the topStack into tStackID
-      else
-         put "stack" && Q(gSBWhichStack[N]) into tStackID
-      end if
-   end if
-   if existenceWarning(tStackID) is empty then
-      put "the topStack" into gSBWhichStack[N]
-      put the name of the topStack into tStackID
-   end if
+   if tStackID is empty then put navTargetStack() into tStackID
+
    --put cr & gSBCardOrBackground[N] after message
    if gSBCardOrBackground[N] is "card" then
       if gSBWhichCard[N] is "this card" then
@@ -947,8 +934,7 @@ function getStackName obeyLCSetting
    put the short name of this stack into N
    if gSBShowList[N] and gSBCardOrBackground[N] is "stack" then return empty
    if gSBWhichStack[N] is "the topStack" or gSBWhichStack[N] is empty or existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
-      put "the topStack" into gSBWhichStack[N]
-      put "this card" into gSBWhichCard[N]
+      setNavigatorTarget ,"the topstack"
    end if
    if gSBWhichStack[N] is "the topStack"
    then put the short name of the topStack into tStackName
@@ -2471,9 +2457,20 @@ on setNavigatorTarget navName,targetContainer
       exit setNavigatorTarget
    end if
    if navName is empty then put the short name of me into navName
-   put targetContainer into navigatorTarget
+   switch 
+      case targetContainer is among the items of "this card,the topstack,this card of the topstack"
+         put "this card of the topstack" into navTarget; break
+      case targetContainer is "stack list"
+         put targetContainer into navTarget; break
+      case word 2 of targetContainer is "list"
+         put (word 1 to 3 of targetContainer) && stackNameFromID(targetContainer) into navTarget; break
+      case word 1 of targetContainer is "stack" 
+         put "card id" && (the id of this card of targetContainer) & " " before targetContainer
+      default
+         put simpleID(targetContainer) into navTarget
+   end switch
    addRecentTarget
-   setGlobalsFromTarget navigatorTarget
+   setGlobalsFromTarget navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
@@ -2486,7 +2483,7 @@ end reportGlobals
 
 on setGlobalsFromTarget targetContainer
    put the short name of me into navName
-   
+   debug targetContainer
    put globalsFromTarget(targetContainer) into V
    put V["WhichStack"] into gSBWhichStack[navName]
    put V["WhichCard"] into gSBWhichCard[navName]
@@ -2497,19 +2494,19 @@ end setGlobalsFromTarget
 
 function currentNavTargetIsValidID N
    if N is empty then put the short name of this stack into N
-   put currentNavTarget(N) into tID
-   if gSBShowList[N] or word 1 to 2 of tID is "this card" then return false
+   put navigatorTarget(N) into tID
+   if word 2 of tID is "list" or word 1 to 2 of tID is "this card" then return false
    if exists(tID) then return true else return false
 end currentNavTargetIsValidID
 
 function checkCurrentNavTarget N,checkOnly,noWarning
    if N is empty then put the short name of this stack into N
-   put currentNavTarget(N) into tID
+   put navigatorTarget(N) into tID
    if word 1 to 2 of tID is among the items of "this card,card list,background list,stack list" or exists(tID) then return tID
    if checkOnly then return empty
    if not noWarning then get existenceWarning(tID)
    setNavigatorTarget N,"the topstack"
-   return currentNavTarget(N)
+   return navigatorTarget(N)
 end checkCurrentNavTarget
 
 function currentNavTarget N
@@ -2544,7 +2541,7 @@ on reportRecent
 end reportRecent
 
 on addRecentTarget pTargetID
-   if pTargetID is empty then put currentNavTarget() into pTargetID
+   if pTargetID is empty then put navigatorTarget() into pTargetID
    if not exists(pTargetID) then exit addRecentTarget
    
    if the short name of me is not "revNavigator" then
@@ -2566,17 +2563,18 @@ end addRecentTarget
 
 function globalsFromTarget navTarget
    -- returns an array with whichStack,showList,cardOrBackground,whichCard,whichBackground
-   -- this card (of the topstack)
    
+   -- this card of the topstack
    -- stack list
-   
    -- card list of stack "<stack name>"
    -- background list of stack "<stack name>"
-   
+   -- card id <id> of stack "<stack name>"
+   -- group id <id> of stack "<stack name>"
+   -- CAN BE SET TO ANY OF THE ABOVE OR: A LONG ID OF A CONTAINER:
    -- <card long id>
    -- <group long id>
+   -- OR "this card" or "the topstack", either of which sets the value to "this card of the topstack"
    
-   --addRecentTarget navTarget
    
    put the short name of this stack into N
    --put navTarget;exit to top
@@ -2612,27 +2610,67 @@ function globalsFromTarget navTarget
    return R
 end globalsFromTarget
 
+function navTargetStack N
+   if N is empty or N is the short name of this stack then return stackNameFromID(navTarget,false,false)
+   dispatch function "navTargetStack" to stack N
+   return the result
+end navTargetStack
+
+function navTargetType N
+   if not (N is empty or N is the short name of this stack) then 
+      dispatch function "navTargetType" to stack N
+      return the result
+   end if
+   if word 1 of navTarget is among the items of "card,cd" then return "card"
+   else if word 1 of navTarget is among the items of "background,group,bkgnd,grp" then return "group"
+   return empty
+end navTargetType
+
+function navTargetStackName N
+   if N is empty or N is the short name of this stack then return stackNameFromID(navTarget,false,true)
+   dispatch function "navTargetStack" to stack N
+   return the result
+end navTargetStackName
+
+function navTargetIsList N
+   if N is empty or N is the short name of this stack then return (word 2 of navTarget is "list")
+   dispatch function "navTargetIsList" to stack N
+   return the result
+end navTargetIsList
+
+function navTargetContainer N
+   if not (N is empty or N is the short name of this stack) then 
+      dispatch function "navTargetContainer" to stack N
+      return the result
+   end if
+   if word 2 of navTarget is "list" then return empty
+   --debug "ha the target is just a stack",navTarget
+   
+   if navTarget is "this card of the topstack" then return word 1 to 3 of the long id of this card of the topstack
+   return word 1 to 3 of navTarget
+end navTargetContainer
+
 
 
 function navigatorTarget navName
    -- returns one of the following:
    
-   -- this card (of the topstack)
+   -- this card of the topstack
    
    -- stack list
    
    -- card list of stack "<stack name>"
    -- background list of stack "<stack name>"
    
-   -- <card long id>
-   -- <group long id>
+   -- <card simple id>
+   -- <group simple id>
    
    -- NO -- <card id> of the topstack
    -- NO -- this card of stack "<stack name>" 
    -- NO -- card list of the topstack
    -- NO -- background list of the topstack
    
-   if navName is empty or navName is the short name of me then return navigatorTarget
+   if navName is empty or navName is the short name of me then return navTarget
    dispatch function "navigatorTarget" to stack navName
    return the result
 end navigatorTarget
@@ -2756,7 +2794,7 @@ end forceNControls
 
 local sDebugLastCall
 on debug
-   exit debug
+   --exit debug
    if sDebugLastCall is empty or ticks() - sDebugLastCall > 120 then put empty
    put ticks() into sDebugLastCall
    put line -2 of the executionContexts into LC
