@@ -16,8 +16,6 @@ local sSetupComplete, sStackFileVersion, sUpdatingRevSelection, sWindowLoc
 local navIDArray,navLineArray,navUpdateSelection,navLastLinesSelected,navLastObjectCount,navLastFieldUpdate
 local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
 local externalDrag        #SET TO TRUE WHEN A DRAG LEAVES THE LIST
-local showAllStacks
-local showSoStacks
 local navigatorTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN BE ONE OF:
 -- stack list
 -- this card of the topstack
@@ -632,8 +630,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
-   if allStacks is not empty then put allStacks into showAllStacks
-   if soStacks is not empty then put soStacks into showSoStacks
    if pRetainHilites then
       put hilitedBookmarkList() into tBookmarkLineList
       put hilitedLineIDList() into tHilitedIDList
@@ -838,15 +834,15 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    end if
 end doUpdateDisplay
 
-function stackListDetails showAllStacks,showSoStacks,matchString,filterString,objectLimit
+function stackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit
    
    put the mainStacks into tStackList
    sort lines of tStackList
    put 0 into tCurrentLine
    put the pIndentString of this stack into tIndentString 
-   if showAllStacks is empty then put the showIDEStacks of stack "revNavigator" into showAllStacks
-   if showSoStacks is empty then put the showSOStacks of stack "revNavigator" into showSoStacks
-
+   if pAllStacks is empty then put the showIDEStacks of stack "revNavigator" into pAllStacks
+   if pSoStacks is empty then put the showSOStacks of stack "revNavigator" into pSoStacks
+   
    
    put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorMissing of this stack) into tColor[0]
    put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
@@ -856,8 +852,8 @@ function stackListDetails showAllStacks,showSoStacks,matchString,filterString,ob
    
    
    repeat for each line tStack in tStackList
-      if (not showAllStacks) and (filterStacksList(tStack) is empty) then next repeat
-      if (not showSoStacks) and the scriptonly of stack tStack then next repeat
+      if (not pAllStacks) and (filterStacksList(tStack) is empty) then next repeat
+      if (not pSoStacks) and the scriptonly of stack tStack then next repeat
       put tStack & cr & the substacks of stack tStack after newStackList
       if char -1 of newStackList is not cr then put cr after newStackList
    end repeat
