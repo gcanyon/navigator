@@ -662,7 +662,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       
       put stackListDetails(allStacks,soStacks,tMatchString,tFilterString,the pObjectLimit of this stack) into D
       put D["html"] into tControlList
-      --debug tControlList
       put D["id"] into newIDArray
       put D["line"] into newLineArray
    else
@@ -672,10 +671,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       put short name of tStackID into  tStackName
       
       if not navTargetIsList() then
-         
-         put navTargetContainer() into tCardOrBGid
-         if tCardOrBGid is empty then exit doUpdateDisplay
-      end if -- not gSBShowList[the short name of this stack]
+         put navTarget into tCardOrBGid
+         if not exists(tCardOrBGid) then exit doUpdateDisplay
+      end if
       
       
       put "button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id" into tRejectList
@@ -691,15 +689,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       if tCheckScripts then put whichColor(tStackNameRef) into tStackColor else put 1 into tStackColor
       put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
       put tStackID into newLineArray[1]
+      put not navTargetIsList() into notAList
       
-      if navTargetIsList() then
-         put 1 into tCurrentLine
-         put 1 into tCurrentIndentLine
-         if navTargetType() is "card" 
-         then put the number of cds of tStackID into tControlCount
-         else put the number of bgs of tStackID into tControlCount
-         put format("Nav: %s%ss of %s",char 1 of gSBCardOrBackground[tThisStack],char 2 to -1 of gSBCardOrBackground[tThisStack],tStackNameRef) into fld "Navigator Title"
-      else
+      if notAList then
          put 2 into tCurrentLine
          put 2 into tCurrentIndentLine
          if tCheckScripts then put whichColor(tCardOrBGid) into tCardOrBGColor else put 1 into tCardOrBGColor
@@ -714,6 +706,15 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
          put the number of controls of tCardOrBGid into tControlCount
          
          put "Nav:" && simpleName(tCardOrBGid) into fld "Navigator Title"
+      else
+         put 1 into tCurrentLine
+         put 1 into tCurrentIndentLine
+         if navTargetType() is "card" 
+         then put the number of cds of tStackID into tControlCount
+         else put the number of bgs of tStackID into tControlCount
+         put navTarget into navTitle
+         put "s" into char -5 to -1 of word 1 to 2 of navTitle
+         put "Nav:" && navTitle into fld "Navigator Title"
       end if
       
       put min(the pObjectLimit of this stack,tControlCount) into tControlCount
@@ -730,15 +731,14 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
       repeat with i = 1 to tControlCount
          add 1 to tCurrentIndentLine
          if foldB[tCurrentIndentLine] then next repeat
-         debug i,tStackID,tCardOrBGid
-         if gSBShowList[tThisStack] is false 
+         if notAList 
          then put the long id of control i of tCardOrBGid into tID
-         else if gSBCardOrBackground[tThisStack] is "card" 
+         else if word 1 of navTarget is "card" 
          then put the long id of cd i of tStackID into tID
          else put the long id of bg i of tStackID into tID         
          put the name of tID into tName
          
-         if word 1 of tName is "group" and (not gSBShowList[tThisStack]) then
+         if word 1 of tName is "group" and notAList then
             put the number of controls of tID into childControlCount
             repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
                if foldedIDArray[tID]
@@ -835,6 +835,7 @@ function stackListDetails showAllStacks,showSoStacks,matchString,filterString,ob
    sort lines of tStackList
    put 0 into tCurrentLine
    put the pIndentString of this stack into tIndentString 
+   debug showAllStacks,showSoStacks
    if showAllStacks is empty then put the showIDEStacks of stack "revNavigator" into showAllStacks
    if showSoStacks is empty then put the showSOStacks of stack "revNavigator" into showSoStacks
 
@@ -902,38 +903,39 @@ end reportStack
 
 function getCardOrBGid tStackID
    return navTargetContainer()
-   put the short name of this stack into N
-   if tStackID is empty then put navTargetStack() into tStackID
-
-   --put cr & gSBCardOrBackground[N] after message
-   if gSBCardOrBackground[N] is "card" then
-      if gSBWhichCard[N] is "this card" then
-         put the long id of this cd of tStackID into tReturnID
-      else if word 1 to 2 of gSBWhichCard[N] is "card id" then
-         put gSBWhichCard[N] && "of" && tStackID into tReturnID
-      else
-         put "card" && Q(gSBWhichCard[N]) && "of" && tStackID into tReturnID
-      end if
-   else if gSBCardOrBackground[N] is "background" then
-      if word 2 of gSBWhichBackground[N] is "id" then
-         put gSBWhichBackground[N] && "of" && tStackID into tReturnID
-      else
-         put "background" && Q(gSBWhichBackground[N]) && "of" && tStackID into tReturnID
-      end if
-   end if
-   if existenceWarning(tReturnID) is empty then
-      put "card" into gSBCardOrBackground[N]
-      put "this card" into gSBWhichCard[N]
-      return the long id of this cd of stack tStackID
-   else
-      return tReturnID
-   end if
+   --    put the short name of this stack into N
+   --    if tStackID is empty then put navTargetStack() into tStackID
+   
+   --    --put cr & gSBCardOrBackground[N] after message
+   --    if gSBCardOrBackground[N] is "card" then
+   --       if gSBWhichCard[N] is "this card" then
+   --          put the long id of this cd of tStackID into tReturnID
+   --       else if word 1 to 2 of gSBWhichCard[N] is "card id" then
+   --          put gSBWhichCard[N] && "of" && tStackID into tReturnID
+   --       else
+   --          put "card" && Q(gSBWhichCard[N]) && "of" && tStackID into tReturnID
+   --       end if
+   --    else if gSBCardOrBackground[N] is "background" then
+   --       if word 2 of gSBWhichBackground[N] is "id" then
+   --          put gSBWhichBackground[N] && "of" && tStackID into tReturnID
+   --       else
+   --          put "background" && Q(gSBWhichBackground[N]) && "of" && tStackID into tReturnID
+   --       end if
+   --    end if
+   --    if existenceWarning(tReturnID) is empty then
+   --       put "card" into gSBCardOrBackground[N]
+   --       put "this card" into gSBWhichCard[N]
+   --       return the long id of this cd of stack tStackID
+   --    else
+   --       return tReturnID
+   --    end if
 end getCardOrBGid
 
 function getStackName obeyLCSetting
    put the short name of this stack into N
-   if gSBShowList[N] and gSBCardOrBackground[N] is "stack" then return empty
-   if gSBWhichStack[N] is "the topStack" or gSBWhichStack[N] is empty or existenceWarning("stack" && Q(gSBWhichStack[N])) is empty then
+   if navTarget is "stack list" then return empty
+   put navTargetStack() into tStack
+   if existenceWarning(navTargetStack()) is empty then
       setNavigatorTarget ,"the topstack"
    end if
    if gSBWhichStack[N] is "the topStack"
