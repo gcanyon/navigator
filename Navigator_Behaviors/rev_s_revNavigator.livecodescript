@@ -1,9 +1,6 @@
 ﻿script "rev_s_revNavigator"
 //>GLOBALS
 global gREVMessageDispatch, gSBControlSets
-global gSBShowList -- should be true for gSBCardOrBackground in "stack list, card list, background list"
-global gSBCardOrBackground -- for lists should be in "stack list, card list, background list" otherwise should be in "card, group"
-global gSBWhichBackground, gSBWhichCard, gSBWhichStack
 
 
 //>LOCALS
@@ -898,45 +895,12 @@ end reportStack
 
 function getCardOrBGid tStackID
    return navTargetContainer()
-   --    put the short name of this stack into N
-   --    if tStackID is empty then put navTargetStack() into tStackID
-   
-   --    --put cr & gSBCardOrBackground[N] after message
-   --    if gSBCardOrBackground[N] is "card" then
-   --       if gSBWhichCard[N] is "this card" then
-   --          put the long id of this cd of tStackID into tReturnID
-   --       else if word 1 to 2 of gSBWhichCard[N] is "card id" then
-   --          put gSBWhichCard[N] && "of" && tStackID into tReturnID
-   --       else
-   --          put "card" && Q(gSBWhichCard[N]) && "of" && tStackID into tReturnID
-   --       end if
-   --    else if gSBCardOrBackground[N] is "background" then
-   --       if word 2 of gSBWhichBackground[N] is "id" then
-   --          put gSBWhichBackground[N] && "of" && tStackID into tReturnID
-   --       else
-   --          put "background" && Q(gSBWhichBackground[N]) && "of" && tStackID into tReturnID
-   --       end if
-   --    end if
-   --    if existenceWarning(tReturnID) is empty then
-   --       put "card" into gSBCardOrBackground[N]
-   --       put "this card" into gSBWhichCard[N]
-   --       return the long id of this cd of stack tStackID
-   --    else
-   --       return tReturnID
-   --    end if
 end getCardOrBGid
 
 function getStackName obeyLCSetting
-   put the short name of this stack into N
-   if navTarget is "stack list" then return empty
    put navTargetStack() into tStack
-   if existenceWarning(navTargetStack()) is empty then
-      setNavigatorTarget ,"the topstack"
-   end if
-   if gSBWhichStack[N] is "the topStack"
-   then put the short name of the topStack into tStackName
-   else put gSBWhichStack[N] into tStackName
-   --answer tStackName
+   if not exists(tStackName) then return empty
+   put the short name of tStackName into tStackName
    if obeyLCSetting then return filterStacksList(tStackName)
    return tStackName
 end getStackName
@@ -2453,7 +2417,7 @@ on setNavigatorTarget navName,targetContainer
       dispatch "setNavigatorTarget" to stack navName with empty,targetContainer
       exit setNavigatorTarget
    end if
-   if navName is empty then put the short name of me into navName
+   addRecentTarget
    switch 
       case targetContainer is among the items of "this card,the topstack,this card of the topstack"
          put "this card of the topstack" into navTarget; break
@@ -2466,28 +2430,10 @@ on setNavigatorTarget navName,targetContainer
       default
          put simpleID(targetContainer) into navTarget
    end switch
-   addRecentTarget
-   setGlobalsFromTarget navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
-function reportGlobals
-   repeat for each item V in "gSBWhichStack,gSBWhichCard,gSBCardOrBackground,gSBWhichBackground,gSBShowList"
-      do "put" && V &  "[the short name of this stack] into R[" & Q(V) & "]"
-   end repeat
-   return R
-end reportGlobals
 
-on setGlobalsFromTarget targetContainer
-   put the short name of me into navName
-   debug targetContainer
-   put globalsFromTarget(targetContainer) into V
-   put V["WhichStack"] into gSBWhichStack[navName]
-   put V["WhichCard"] into gSBWhichCard[navName]
-   put V["CardOrBackground"] into gSBCardOrBackground[navName]
-   put V["WhichBackground"] into gSBWhichBackground[navName]
-   put V["ShowList"] into gSBShowList[navName]
-end setGlobalsFromTarget
 
 function currentNavTargetIsValidID N
    if N is empty then put the short name of this stack into N
@@ -2507,16 +2453,7 @@ function checkCurrentNavTarget N,checkOnly,noWarning
 end checkCurrentNavTarget
 
 function currentNavTarget N
-   if N is empty then put the short name of this stack into N
-   if gSBWhichStack[N] is "the topstack" or (gSBCardOrBackground[N] is "card" and gSBWhichCard[N] is "this card") then 
-      put false into gSBShowList[N]
-      put "card" into gSBCardOrBackground[N]
-      return "card id" && the id of this card of the topstack && "of" && the name of the topstack
-   end if
-   put "of stack" && Q(gSBWhichStack[N]) into R
-   if gSBShowList[N] then return gSBCardOrBackground[N] && "list" && R
-   else if gSBCardOrBackground[N] is "card" then return gSBWhichCard[N] && R
-   else return gSBWhichBackground[N] && R
+   return navigatorTarget(N)
 end currentNavTarget
 
 local recentTargetList,recentTargetArray
@@ -2625,7 +2562,7 @@ end navTargetType
 
 function navTargetStackName N
    if N is empty or N is the short name of this stack then return stackNameFromID(navTarget,false,true)
-   dispatch function "navTargetStack" to stack N
+   dispatch function "navTargetStackName" to stack N
    return the result
 end navTargetStackName
 
@@ -2641,7 +2578,6 @@ function navTargetContainer N
       return the result
    end if
    if word 2 of navTarget is "list" then return empty
-   --debug "ha the target is just a stack",navTarget
    
    if navTarget is "this card of the topstack" then return word 1 to 3 of the long id of this card of the topstack
    return word 1 to 3 of navTarget
@@ -2649,7 +2585,7 @@ end navTargetContainer
 
 
 
-function navigatorTarget navName
+function navigatorTarget navName,resolvedID
    -- returns one of the following:
    
    -- this card of the topstack
@@ -2666,10 +2602,14 @@ function navigatorTarget navName
    -- NO -- this card of stack "<stack name>" 
    -- NO -- card list of the topstack
    -- NO -- background list of the topstack
-   
-   if navName is empty or navName is the short name of me then return navTarget
-   dispatch function "navigatorTarget" to stack navName
-   return the result
+   if navName is empty or navName is the short name of me then 
+      put navTarget into R
+   else 
+      dispatch function "navigatorTarget" to stack navName
+      put the result into R
+   end if
+   if resolvedID is true and R is "this card of the topstack" then return simpleID(the long id of this card of the topstack)
+   return R
 end navigatorTarget
 
 

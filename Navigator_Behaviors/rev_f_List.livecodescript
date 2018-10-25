@@ -1,7 +1,4 @@
 ﻿script "rev_f_List"
-global gSBWhichStack
-global gSBShowList -- if true, show a list of cards/backgrounds
-global gSBCardOrBackground -- if card, display cards, if background, display backgrounds, if stack, display stacks
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 global gSBDragStartNav -- the short name of the Navigator originating a drag
 
@@ -309,11 +306,9 @@ on addBookmarkedControls pLineList,pTargetLine
    put getIDFirst(tSeparatorLine+1) into tStackRef
    put the value of word -1 of tStackRef into tStackName
    put the long id of tStackRef into tStackID
-   if gSBShowList[the short name of this stack] then
-      put getIDFirst(pTargetLine) into tCardBGRef
-   else
-      put getIDFirst(tSeparatorLine+2) into tCardBGRef
-   end if
+   if navTargetIsList() 
+   then put getIDFirst(pTargetLine) into tCardBGRef
+   else put getIDFirst(tSeparatorLine+2) into tCardBGRef
    repeat for each line tID in tLineIDList
       put word 1 of tID into tType
       switch tType
@@ -327,7 +322,7 @@ on addBookmarkedControls pLineList,pTargetLine
             else
                put tID into tNewID
             end if
-            if gSBShowList[the short name of this stack] and gSBCardOrBackground[the short name of this stack] is "card" then
+            if word 1 to 2 of navigatorTarget() is "card list" then
                try
                   set the layer of tNewID to tTargetLayer
                catch pSomeErr
@@ -351,7 +346,7 @@ on addBookmarkedControls pLineList,pTargetLine
                copy tID to tCardBGRef
                put it into tNewID
             end if
-            if not gSBShowList[the short name of this stack] then
+            if not navTargetIsList() then
                try
                   set the layer of tNewID to tTargetLayer
                catch pSomeErr
@@ -363,7 +358,7 @@ on addBookmarkedControls pLineList,pTargetLine
             break
          default
             copy tID to tCardBGRef
-            if not gSBShowList[the short name of this stack] then
+            if not navTargetIsList() then
                try
                   set the layer of it to tTargetLayer
                catch pSomeErr
@@ -412,8 +407,8 @@ on dragLines pDragList,pTargetLine
          break
       default -- drag into control list
          put the short name of this stack into SN 
-         if gSBShowList[SN] then 
-            if gSBCardOrBackground[SN] is not "card" then 
+         if navTargetIsList() then 
+            if word 1 of navigatorTarget() is not "card" then 
                put empty into dragA[2] -- we don't rearrange stacks or groups
             else if word 1 of getIDFirst(tWhichLine) is "group" then
                placeGroupOntoCards tWhichLine,dragA[2]
@@ -703,7 +698,7 @@ on startDragging X,Y
    repeat for each line navLine in navWindowRects() 
       -- if word 2 to -1 of navLine is the short name of this stack then next repeat
       put the short name of stack (word 2 to -1 of navLine) into SN
-      if gSBCardOrBackground[SN] is "stack" then next repeat
+      if navigatorTarget(SN) is "stack list" then next repeat
       put subtractList(TL,word 1 of navLine) && word 2 to -1 of navLine & cr after sNavWindowRectList
    end repeat
    delete char -1 of sNavWindowRectList
@@ -787,41 +782,35 @@ on finishReorderExternal idList
    put the htmlText of me into myHTMLtext
    put the separatorLine of me into tSeparatorLine
    put empty into tDragIDList
+   put navigatorTarget(,true) into tNavTarget
    if targetLine <= tSeparatorLine + 1 then -- drag into bookmarks
       setBookmarks targetLine,idList
-   else if gSBShowList[SN] is false then -- drag into live display,  
-      put getCardOrBGid() into tTargetContainer
+   else if navTargetIsList() is false then -- drag into live display,  
       set the relayergroupedcontrols to the optionkey is "up"
       put getLayer(targetLine) into targetLayer
-      -- answer targetLayer
       repeat for each line tID in idList
-         copy tID to tTargetContainer
+         copy tID to tNavTarget
          put it into tCopiedID
-         --answer tCopiedID
          set the layer of tCopiedID to targetLayer
          add 1 to targetLayer 
       end repeat 
-   else if gSBCardOrBackground[SN] is "stack" then -- don't drag into stack lists 
-   else if gSBCardOrBackground[SN] is "card" then -- card list, copy cards 
-      if gSBWhichStack[SN] = "the topstack" then put the topstack into tSN else put "stack" && Q(gSBWhichStack[SN]) into tSN 
+   else if word 1 of tNavTarget is "stack" then -- don't drag into stack lists 
+   else if word 1 of tNavTarget is "card" then -- card list, copy cards 
+      put navTargetStack() into tSN 
       put targetLine - tSeparatorLine - 1 into targetLayer 
       repeat for each line tID in idList 
          if word 1 of tID is not "card" then next repeat 
          copy tID to tSN 
          put it into tCopiedID 
-         --answer tCopiedID 
          set the layer of tCopiedID to targetLayer 
          add 1 to targetLayer 
       end repeat 
-   else if gSBCardOrBackground[SN] is "background" then -- background list, copy backgrounds 
-      if gSBWhichStack[SN] = "the topstack" then put the topstack into tSN else put "stack" && Q(gSBWhichStack[SN]) into tSN 
+   else if word 1 of tNavTarget is "background" then -- background list, copy backgrounds 
+      put navTargetStack() into tSN 
       repeat for each line tID in idList 
          if word 1 of tID is not "group" then next repeat 
          copy tID to tSN 
       end repeat
-      
-      --       relayerControlList targetLine,tDragIDList
-      --       dispatch "dragLines" to me with tDragList,targetLine -- may not be right
    end if   
    put numberItems(targetLine,(targetLine + the number of lines of idList - 1)) into hiliteList
    doUpdateDisplay true

@@ -6,7 +6,8 @@ on mouseDown
    put the showBackgrounds of me is true into SBG
    put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" into tDefault
    put the number of lines of tDefault into nonTargetCount
-   put getStackName() into SN
+   put navTargetStack() into SN
+   debug SN
    if SN is not empty then
       if SBG then put backgroundsOf((the long id of stack SN),"base","name and id","short") into tList
       else put cardsOf(the long id of stack SN) into tList
@@ -25,8 +26,7 @@ end mouseDown
 on menuPick pWhich
    put the short name of this stack into N
    
-   put getStackName() into stackID
-   if stackID is not empty then put the name of stack stackID into stackID
+   put navTargetStack() into stackID
    put the menuHistory of me into MH
    if MH = 1 then 
       setNavigatorTarget ,"the topstack"
