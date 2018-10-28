@@ -306,12 +306,13 @@ on menuPick pWhich
          put true into tTopLevel
       case "Go|Show"
          put empty into reloadConfirmed
-         repeat for each line tID in getID()
+         put getID() into tIDList
+         if tBrowseControls then setNavigatorTarget ,tIDList
+         
+         repeat for each line tID in tIDList
             if not (word 1 of tID is among the items of "bkgnd,group,card,stack") then next repeat
             try
-               if tBrowseControls then
-                  setNavigatorTarget ,tID
-               else if word 1 of tID is among the items of "group,bkgnd" then
+               if word 1 of tID is among the items of "group,bkgnd" then
                   -- no point in continuing, can't save or go
                else if tSaveAll and word 1 of tID is "stack" then
                   saveAll tID
@@ -328,22 +329,6 @@ on menuPick pWhich
                      put item 1 of tStackIDLine into tStackFileStack
                      if there is a stack tStackFileStack and the scriptonly of stack tStackFileStack then delete stack tStackFileStack
                   end repeat
-                  if false then
-                     put the filename of tID into tStackPath
-                     set the itemdel to "/"
-                     delete item -1 of tStackPath
-                     set the itemDel to comma
-                     repeat for each line tStackIDLine in the stackFiles of tID
-                        put item 1 of tStackIDLine into tStackFileStack
-                        if the scriptonly of stack tStackFileStack is false then next repeat
-                        put "file:" & stitchPaths(tStackPath,item 2 to -1 of tStackIDLine) into tURL
-                        put tURL
-                        put url tURL into tScriptData
-                        put tScriptData
-                        set the script of stack tStackFileStack to line 2 to -1 of tScriptData
-                        put "script set"
-                     end repeat
-                  end if
                else if tGo then
                   if tLockMessages is "true" or the optionKey is "down" then lock messages
                   go tID

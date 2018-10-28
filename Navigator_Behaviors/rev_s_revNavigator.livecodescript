@@ -18,7 +18,7 @@ local navTarget -- THE THING BEING DISPLAYED BY THIS INSTANCE OF NAVIGATOR. CAN 
 -- group id <id> of stack "<stack name>"
 -- CAN BE SET TO ANY OF THE ABOVE OR A LONG ID OF A CONTAINER
 
-local tLastCardOrBGid -- the last thing displayed, to check for default fold
+local lastNavTarget -- the last thing displayed, to check for default fold
 
 
 
@@ -429,11 +429,12 @@ end doCommandCode
 
 
 
-function dontUpdate
-   return not (navTarget is "this card of the topstack")
+function dontUpdate N
+   if N is empty then put line 1 of navTarget into tNavTarget else put line N of navTarget into tNavTarget
+   return not (tNavTarget is "this card of the topstack")
    if not (the autoUpdateSelection of this stack) then return true
-   if word 2 of navTarget is "list" then return true
-   if navTarget is "this card of the topstack" then return true
+   if word 2 of tNavTarget is "list" then return true
+   if tNavTarget is "this card of the topstack" then return true
 end dontUpdate
 
 on setFoldDepth tContainer,tDepth
@@ -601,14 +602,14 @@ end updateDisplay
 
 
 
-on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
+on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    
-   local tBookmarkLineList, tCardOrBGid, tCheckScripts, tColor, tControlCount
+   local tBookmarkLineList, tCheckScripts, tColor, tControlCount
    local tControlList, tCurrentIndentLine, tCurrentLine, tDisplay, tFilter
    local tFilterString, tHilitedIDList, tID, tIDLineList, tIndent
    local tIndentString, tKeys, tName, tNamedObjectsOnly, tObjectLimit
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
-   local tStackList, tStackName, tStackNameRef, tStart, tSubstackList
+   local tStackList, tStackName, tStart, tSubstackList
    local tSubstackName, tThisStack, whichColor
    
    
@@ -632,9 +633,17 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    
    put 1 into whichColor
    
+   if pAllStacks is empty then put the showIDEStacks of stack "revNavigator" into pAllStacks
+   if pSoStacks is empty then put the showSOStacks of stack "revNavigator" into pSoStacks
+   
+   put the NamedObjectsOnly of this stack into tNamedObjectsOnly
+   put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
+   put the uDisplay of this stack into tDisplay
+   put tDisplay contains "tIS" into isTis
    put the ColorScriptedObjects of this stack into tCheckScripts
    put the pIndentString of this stack into tIndentString
-   
+   put Q("button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id") into tRejectList
+   replace comma with quote,quote in tRejectList
    
    set the containerID of fld "list" to empty
    put the byTest of group "filter toggle" into tFilterByTest
@@ -648,172 +657,156 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    else put fld "filter" into tMatchString
    
    if navTarget is empty then exit doUpdateDisplay
-   else if (navTarget is "stack list") then
-      put "Nav: Stack List" into fld "Navigator Title"
-      disable btn "whichCard" of this stack
-      put the pObjectLimit of this stack into tObjectLimit
-      
-      put stackListDetails(allStacks,soStacks,tMatchString,tFilterString,the pObjectLimit of this stack) into D
-      put D["html"] into tControlList
-      put D["id"] into newIDArray
-      put D["line"] into newLineArray
-   else
-      enable btn "whichCard" of this stack
-      put navTargetStack() into tStackID
-      if not exists(tStackID) then exit doUpdateDisplay
-      put short name of tStackID into  tStackName
-      
-      if not navTargetIsList() then
-         put navTarget into tCardOrBGid
-         if not exists(tCardOrBGid) then exit doUpdateDisplay
-      end if
-      
-      
-      put "button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id" into tRejectList
-      replace comma with cr in tRejectList
-      set the itemDelimiter to quote
-      
-      put the NamedObjectsOnly of this stack into tNamedObjectsOnly
-      put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
-      put the uDisplay of this stack into tDisplay
-      put tDisplay contains "tIS" into isTis
-      put the name of tStackID into tStackNameRef
-      if the password of tStackID is not empty then put false into tCheckScripts
-      if tCheckScripts then put whichColor(tStackNameRef) into tStackColor else put 1 into tStackColor
-      put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackNameRef & "</b>" into tControlList 
-      put tStackID into newLineArray[1]
-      put not navTargetIsList() into notAList
-      
-      if notAList then
-         put 2 into tCurrentLine
-         put 2 into tCurrentIndentLine
-         if tCheckScripts then put whichColor(tCardOrBGid) into tCardOrBGColor else put 1 into tCardOrBGColor
-         put tColor[tCardOrBGColor] & "<b>" & the name of tCardOrBGid & "</b>" after tControlList
-         put tCardOrBGid into newLineArray[2]
-         if tCardOrBGid is not tLastCardOrBGid and the pDefaultFold of stack tThisStack is not "Show All"
-         then setFoldDepth tCardOrBGid,(the pDefaultFold of stack tThisStack)
-         
-         put tCardOrBGid into tLastCardOrBGid
-         set the containerID of fld "list" to tCardOrBGid
-         
-         put the number of controls of tCardOrBGid into tControlCount
-         
-         put "Nav:" && simpleName(tCardOrBGid) into fld "Navigator Title"
-      else
-         put 1 into tCurrentLine
-         put 1 into tCurrentIndentLine
-         if navTargetType() is "card" 
-         then put the number of cds of tStackID into tControlCount
-         else put the number of bgs of tStackID into tControlCount
-         put navTarget into navTitle
-         put "s" into char -5 to -1 of word 1 to 2 of navTitle
-         put "Nav:" && navTitle into fld "Navigator Title"
-      end if
-      
-      put min(the pObjectLimit of this stack,tControlCount) into tControlCount
-      
-      if navTarget is "this card of the topStack" then
-         put the short name of the topStack into tStackName
-         if filterStacksList(tStackName) is empty then
-            put 0 into tControlCount
-         end if
-      end if
-      
-      put the defaultStack into tPrevDefaultStack
-      set the defaultStack to tStackName
-      repeat with i = 1 to tControlCount
-         add 1 to tCurrentIndentLine
-         if foldB[tCurrentIndentLine] then next repeat
-         if notAList 
-         then put the long id of control i of tCardOrBGid into tID
-         else if word 1 of navTarget is "card" 
-         then put the long id of cd i of tStackID into tID
-         else put the long id of bg i of tStackID into tID         
-         put the name of tID into tName
-         
-         if word 1 of tName is "group" and notAList then
-            put the number of controls of tID into childControlCount
-            repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
-               if foldedIDArray[tID]
-               then put true into foldB[childIndex]
-               else put tIndentString after tIndent[childIndex]
-            end repeat
-         end if
-         
-         if tFilterString is not empty then
-            put tFilterString into tTempFilterString
-            replace "tID" with tID in tTempFilterString
-            try
-               if not value(tTempFilterString) then next repeat
-            catch someErr
-               next repeat
-            end try
-         end if
-         
-         if (tNamedObjectsOnly and (quote is not in tName or item 2 of tName is among the lines of tRejectList))  \
-               or (tScriptedObjectsOnly and (the script of tID is empty))
-         then next repeat
-         
-         switch tDisplay
-            case "name"; put tIndent[tCurrentIndentLine] before tName;break
-            case "id"; put tIndent[tCurrentIndentLine] & the abbreviated id of tID into tName; break
-            case "Name and ID"; put tIndent[tCurrentIndentLine] & tName && "[" & the id of tID & "]" into tName; break
-            case "Long Name"; put tIndent[tCurrentIndentLine] & the long name of tID into tName; break
-            case "Long ID"; put tIndent[tCurrentIndentLine] & tID into tName; break
-            default 
-               put tDisplay into tThisDisplay
-               if isTis then replace "tIS" with Q(tIndent[tCurrentIndentLine]) in tThisDisplay
-               replace "tID" with tID in tThisDisplay
-               try
-                  put line 1 of value(tThisDisplay) into tName
-               catch someErr
-                  put " [" & the id of tID & "]" && someErr after tName
-               end try
-               if not isTis then put tIndent[tCurrentIndentLine] before tName
-               break
-         end switch
-         if tMatchString is not empty and tMatchString is not in tName then next repeat
-         add 1 to tCurrentLine
-         
-         if tCheckScripts then put whichColor(tID) into tIDColor else put 1 into tIDColor
-         put tColor[tIDColor] & tName after tControlList
-         
-         put tCurrentLine into newIDArray[tID]
-         put tID into newLineArray[tCurrentLine]
-         if foldedIDArray[tID] and childControlCount > 0 then
-            put tColor[1] & tIndentString & tIndent[tCurrentIndentLine] & childControlCount && "folded controls" after tControlList
-            add 1 to tCurrentLine
-            put empty into newLineArray[tCurrentLine]
-            repeat with j = 1 to childControlCount
-               put the long id of control j of tID into jID
-               put jID & cr after newLineArray[tCurrentLine]
-               put tCurrentLine into newIDArray[jID]
-            end repeat
-            delete char -1 of newLineArray[tCurrentLine]
-         end if
-      end repeat
-      
-      set the defaultStack to tPrevDefaultStack
-      put "</font></p>" after tControlList
-   end if
    
-   if navTarget is "this card of the topStack" \
-         and char 1 to 3 of the short name of the topStack is "rev" then
-      delete line tStart + 1 to -1 of fld "list" of this stack
-      put "Nav:" into fld "Navigator Title"
-      
-      put empty into navLastFieldUpdate
-   else
-      if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
-      put the scroll of fld "list" into tScroll
-      put cr & " " after fld "List" of this stack
-      lock screen
-      set the htmlText of line tStart + 1 to -1 of fld "list" of this stack to tControlList
-      set the scroll of fld "list" to tScroll
-      put tControlList into navLastFieldUpdate
-      put newIDArray into navIDArray
-      put newLineArray into navLineArray
-   end if
+   put the defaultStack into tPrevDefaultStack
+   put empty into navTitle
+   put 0 into targetIndex
+   put 0 into tCurrentLine
+   put empty into tControlList
+   set the containerID of fld "list" to navTarget
+   
+   repeat for each line tNavTarget in navTarget
+      delete variable foldedIDArray
+      delete variable tIndent
+      add 1 to targetIndex
+      if (tNavTarget is "stack list") then
+         if navTitle is empty then put "Nav: Stack List" into navTitle else put "Nav: Multiple Sources" into navTitle
+         put the pObjectLimit of this stack into tObjectLimit
+         addStackListDetails pAllStacks,pSoStacks,tMatchString,tFilterString,the pObjectLimit of this stack,tControlList,newIDArray,newLineArray,tColor,tCurrentLine
+      else
+         put navTargetStack(targetIndex) into tStackID
+         if not exists(tStackID) then next repeat
+         put the short name of tStackID into  tStackName
+         if (not pAllStacks) and (filterStacksList(tStackName) is empty) then next repeat
+         if (not pSoStacks) and the scriptonly of stack tStackID then next repeat
+         put not navTargetIsList(targetIndex) into notAList
+         if notAList and not exists(tNavTarget) then next repeat
+         
+         put the password of tStackID is empty into tCheckScripts
+         if tCheckScripts then put whichColor(tStackID) into tStackColor else put 1 into tStackColor
+         if tControlList is empty 
+         then put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackID & "</b>" after tControlList 
+         else put tColor[tStackColor] & "<b>" & tStackID & "</b>" after tControlList 
+         add 1 to tCurrentLine
+         put tStackID into newLineArray[tCurrentLine]
+         put tCurrentLine into newIDArray[tStackID]
+         
+         if notAList then
+            put 2 into tCurrentIndentLine
+            if tCheckScripts then put whichColor(tNavTarget) into tCardOrBGColor else put 1 into tCardOrBGColor
+            put tColor[tCardOrBGColor] & "<b>" & the name of tNavTarget & "</b>" after tControlList
+            add 1 to tCurrentLine
+            put tNavTarget into newLineArray[tCurrentLine]
+            put tCurrentLine into newIDArray[tNavTarget]
+            if tNavTarget is not among the lines of lastNavTarget and the pDefaultFold of stack tThisStack is not "Show All"
+            then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
+            
+            if navTitle is empty then put "Nav:" && simpleName(tNavTarget) into navTitle else put "Nav: Multiple Sources" into navTitle
+            put the number of controls of tNavTarget into tControlCount
+         else
+            put 1 into tCurrentIndentLine
+            if navTargetType(targetIndex) is "card" 
+            then put the number of cds of tStackID into tControlCount
+            else put the number of bgs of tStackID into tControlCount
+            put tNavTarget into navTitle
+            put "s" into char -5 to -1 of word 1 to 2 of navTitle
+            if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
+         end if
+         
+         set the defaultStack to tStackName
+         repeat with i = 1 to tControlCount
+            add 1 to tCurrentIndentLine
+            if foldB[tCurrentIndentLine] then next repeat
+            if notAList then put the long id of control i of tNavTarget into tID
+            else if word 1 of tNavTarget is "card" then put the long id of cd i of tStackID into tID
+            else put the long id of bg i of tStackID into tID         
+            put the name of tID into tName
+            
+            if word 1 of tName is "group" and notAList then
+               put the number of controls of tID into childControlCount
+               repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
+                  if foldedIDArray[tID]
+                  then put true into foldB[childIndex]
+                  else put tIndentString after tIndent[childIndex]
+               end repeat
+            end if
+            
+            if tFilterString is not empty then
+               put tFilterString into tTempFilterString
+               replace "tID" with tID in tTempFilterString
+               try
+                  if not value(tTempFilterString) then next repeat
+               catch someErr
+                  next repeat
+               end try
+            end if
+            
+            if (tNamedObjectsOnly and \
+                  (word 2 of tName is "id" or word 2 of tName is among the items of tRejectList))  \
+                  or (tScriptedObjectsOnly and (the script of tID is empty))
+            then next repeat
+            
+            switch tDisplay
+               case "name"; put tIndent[tCurrentIndentLine] before tName;break
+               case "id"; put tIndent[tCurrentIndentLine] & the abbreviated id of tID into tName; break
+               case "Name and ID"; put tIndent[tCurrentIndentLine] & tName && "[" & the id of tID & "]" into tName; break
+               case "Long Name"; put tIndent[tCurrentIndentLine] & the long name of tID into tName; break
+               case "Long ID"; put tIndent[tCurrentIndentLine] & tID into tName; break
+               default 
+                  put tDisplay into tThisDisplay
+                  if isTis then replace "tIS" with Q(tIndent[tCurrentIndentLine]) in tThisDisplay
+                  replace "tID" with tID in tThisDisplay
+                  try
+                     put line 1 of value(tThisDisplay) into tName
+                  catch someErr
+                     put " [" & the id of tID & "]" && someErr after tName
+                  end try
+                  if not isTis then put tIndent[tCurrentIndentLine] before tName
+                  break
+            end switch
+            if tMatchString is not empty and tMatchString is not in tName then next repeat
+            add 1 to tCurrentLine
+            
+            if tCheckScripts then put whichColor(tID) into tIDColor else put 1 into tIDColor
+            put tColor[tIDColor] & tName after tControlList
+            
+            put tCurrentLine into newIDArray[tID]
+            put tID into newLineArray[tCurrentLine]
+            if foldedIDArray[tID] and childControlCount > 0 then
+               put tColor[1] & tIndentString & tIndent[tCurrentIndentLine] & childControlCount && "folded controls" after tControlList
+               add 1 to tCurrentLine
+               put empty into newLineArray[tCurrentLine]
+               repeat with j = 1 to childControlCount
+                  put the long id of control j of tID into jID
+                  put jID & cr after newLineArray[tCurrentLine]
+                  put tCurrentLine into newIDArray[jID]
+               end repeat
+               delete char -1 of newLineArray[tCurrentLine]
+            end if
+         end repeat
+         
+         put "</font></p>" after tControlList
+      end if
+   end repeat
+   
+   --    delete line tStart + 1 to -1 of fld "list" of this stack
+   --    put "Nav:" into fld "Navigator Title"
+   --    put empty into navLastFieldUpdate
+   
+   set the defaultStack to tPrevDefaultStack
+   
+   if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
+   put the scroll of fld "list" into tScroll
+   lock screen
+   put navTitle into fld "Navigator Title"
+   
+   put cr & " " after fld "List" of this stack
+   set the htmlText of line tStart + 1 to -1 of fld "list" of this stack to tControlList
+   set the scroll of fld "list" to tScroll
+   put tControlList into navLastFieldUpdate
+   put newIDArray into navIDArray
+   put newLineArray into navLineArray
+   
    if pRetainHilites then
       put lineListFromIDs(tHilitedIDList) into tIDLineList
       hiliteLines splice(comma,tBookmarkLineList,tIDLineList)
@@ -822,22 +815,14 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
    end if
 end doUpdateDisplay
 
-function stackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit
+on addStackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit,@tControlList,@newIDArray,@newLineArray,@tColor,@tCurrentLine
    
    put the mainStacks into tStackList
    sort lines of tStackList
    put 0 into tCurrentLine
    put the pIndentString of this stack into tIndentString 
    if pAllStacks is empty then put the showIDEStacks of stack "revNavigator" into pAllStacks
-   if pSoStacks is empty then put the showSOStacks of stack "revNavigator" into pSoStacks
-   
-   
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorMissing of this stack) into tColor[0]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptedObject of this stack) into tColor[2]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorScripted of this stack) into tColor[3]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptandBehavior of this stack) into tColor[4]
-   
+   if pSoStacks is empty then put the showSOStacks of stack "revNavigator" into pSoStacks   
    
    repeat for each line tStack in tStackList
       if (not pAllStacks) and (filterStacksList(tStack) is empty) then next repeat
@@ -873,8 +858,12 @@ function stackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLi
    end repeat
    delete line 1 of R["html"] -- deletes the "</font></p>" at the start
    put "</font></p>" after R["html"]
-   return R
-end stackListDetails
+end addStackListDetails
+
+on tryTwo
+   put simpleID(the long id of this cd of stack "navdebugstack") & cr & simpleID(the long id of card 1 of stack "revNavigator") into navTarget
+   doUpdateDisplay true
+end tryTwo
 
 function testF
    return "F"
@@ -2544,48 +2533,59 @@ function globalsFromTarget navTarget
    return R
 end globalsFromTarget
 
-function navTargetStack N
-   if N is empty or N is the short name of this stack then return stackNameFromID(navTarget,false,false)
-   dispatch function "navTargetStack" to stack N
+function navTargetStack whichLine,N
+   if N is empty or N is the short name of this stack then 
+      if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+      return stackNameFromID(line whichLine of navTarget,false,false)
+   end if
+   dispatch function "navTargetStack" to stack N with whichLine
    return the result
 end navTargetStack
 
-function navTargetType N
+function navTargetType whichLine,N
    if not (N is empty or N is the short name of this stack) then 
-      dispatch function "navTargetType" to stack N
+      dispatch function "navTargetType" to stack N with whichLine
       return the result
    end if
-   if word 1 of navTarget is among the items of "card,cd" then return "card"
-   else if word 1 of navTarget is among the items of "background,group,bkgnd,grp" then return "group"
+   if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+   if word 1 of line whichLine of navTarget is among the items of "card,cd" then return "card"
+   else if word 1 of line whichLine of navTarget is among the items of "background,group,bkgnd,grp" then return "group"
    return empty
 end navTargetType
 
-function navTargetStackName N
-   if N is empty or N is the short name of this stack then return stackNameFromID(navTarget,false,true)
-   dispatch function "navTargetStackName" to stack N
+function navTargetStackName whichLine,N
+   if N is empty or N is the short name of this stack then 
+      if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+      return stackNameFromID(line whichLine of navTarget,false,true)
+   end if
+   dispatch function "navTargetStackName" to stack N with whichLine
    return the result
 end navTargetStackName
 
-function navTargetIsList N
-   if N is empty or N is the short name of this stack then return (word 2 of navTarget is "list")
-   dispatch function "navTargetIsList" to stack N
+function navTargetIsList whichLine,N
+   if N is empty or N is the short name of this stack then 
+      if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+      return (word 2 of line whichLine of navTarget is "list")
+   end if
+   dispatch function "navTargetIsList" to stack N with whichLine
    return the result
 end navTargetIsList
 
-function navTargetContainer N
+function navTargetContainer whichLine,N
    if not (N is empty or N is the short name of this stack) then 
-      dispatch function "navTargetContainer" to stack N
+      dispatch function "navTargetContainer" to stack N with whichLine
       return the result
    end if
-   if word 2 of navTarget is "list" then return empty
+   if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+   if word 2 of line whichLine of navTarget is "list" then return empty
    
-   if navTarget is "this card of the topstack" then return word 1 to 3 of the long id of this card of the topstack
-   return word 1 to 3 of navTarget
+   if line whichLine of navTarget is "this card of the topstack" then return word 1 to 3 of the long id of this card of the topstack
+   return word 1 to 3 of line whichLine of navTarget
 end navTargetContainer
 
 
 
-function navigatorTarget navName,resolvedID
+function navigatorTarget whichLine,navName,resolvedID
    -- returns one of the following:
    
    -- this card of the topstack
@@ -2603,9 +2603,10 @@ function navigatorTarget navName,resolvedID
    -- NO -- card list of the topstack
    -- NO -- background list of the topstack
    if navName is empty or navName is the short name of me then 
-      put navTarget into R
+      if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
+      put line whichLine of navTarget into R
    else 
-      dispatch function "navigatorTarget" to stack navName
+      dispatch function "navigatorTarget" to stack navName with whichLine
       put the result into R
    end if
    if resolvedID is true and R is "this card of the topstack" then return simpleID(the long id of this card of the topstack)
