@@ -287,7 +287,14 @@ on menuPick pWhich
          if newNavContainerList is not empty then get newNavigator(newNavContainerList)
          break
       case "Browse Controls"
-         put true into tBrowseControls
+         setNavigatorTarget ,getID();break
+      case "Browse Cards"
+      case "Browse Backgrounds"
+         put char 1 to -2 of word 2 of pWhich into tType
+         put tType && "list of" && getID() into idList
+         replace cr with cr & tType && "list of " in idList
+         --put idList;break
+         setNavigatorTarget ,idList;break
       case "Save All"
          if pWhich is "Save All" then put true into tSaveAll
       case "Save"
@@ -307,7 +314,6 @@ on menuPick pWhich
       case "Go|Show"
          put empty into reloadConfirmed
          put getID() into tIDList
-         if tBrowseControls then setNavigatorTarget ,tIDList
          
          repeat for each line tID in tIDList
             if not (word 1 of tID is among the items of "bkgnd,group,card,stack") then next repeat

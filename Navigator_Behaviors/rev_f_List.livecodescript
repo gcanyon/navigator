@@ -151,7 +151,12 @@ end mouseDown
 
 on relayerControlList pTargetLine,pLinesToRelayerList
    put the short name of this stack into navID
-   put the containerID of me into tContainerID
+   --put the containerID of me into tContainerID
+   put getIDFirst(pTargetLine) into tContainerID
+   put the long id of tContainerID into tContainerID
+   repeat until word 1 of tContainerID is "card"
+      delete word 1 to 4 of tContainerID
+   end repeat
    put 1 into i
    repeat for each line tID in getID(pLinesToRelayerList)
       put tID into dragArray[i]
