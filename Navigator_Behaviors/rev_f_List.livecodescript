@@ -152,13 +152,29 @@ end mouseDown
 on relayerControlList pTargetLine,pLinesToRelayerList
    put the short name of this stack into navID
    --put the containerID of me into tContainerID
-   put getIDFirst(pTargetLine) into tContainerID
+   if pTargetLine > 1 then 
+      put pTargetLine - 1 into tContainerLine
+      put getIDLast(tContainerLine) into tContainerID
+   else 
+      put pTargetLine into tContainerLine
+      put getIDFirst(tContainerLine) into tContainerID
+   end if
+   if word 1 of tContainerID is "stack" then 
+      put getIDFirst(tContainerLine + 1) into tContainerIDNew
+      if word 1 of tContainerIDNew is among the items of "card,group" then put tContainerIDNew into tContainerID
+      else put "card id" && (the id of this card of tContainerID) && "of " before tContainerID
+   end if
+   put the layer of tContainerID into tTargetLayerTest
+   --debug pTargetLine,tContainerID
    put the long id of tContainerID into tContainerID
    repeat until word 1 of tContainerID is "card"
       delete word 1 to 4 of tContainerID
+      if tContainerID is empty then exit relayerControlList
    end repeat
+   put the number of words of tContainerID into tContainerWordCount
    put 1 into i
    repeat for each line tID in getID(pLinesToRelayerList)
+      
       put tID into dragArray[i]
       put i into indexFromIDArray[tID]
       put the layer of tID into layerFromIDArray[tID]
@@ -182,7 +198,8 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    
    if pTargetLine > tLineCount 
    then put 1 + tLayerCount into tTargetLayer
-   else put the layer of getIDFirst(pTargetLine) into tTargetLayer
+   else put 1 + tTargetLayerTest into tTargetLayer --put the layer of getIDFirst(pTargetLine) into tTargetLayer
+   --debug pTargetLine,tContainerID,tTargetLayer,tTargetLayerTest
    
    put empty into tAfterLayer
    repeat with tAfterIndexLayer = tTargetLayer to tLayerCount + 1
@@ -572,21 +589,6 @@ after mouseUp
       cleanUpExternalDrag  
    else 
       if tDragListClickLine > 0 then cleanUp sHiliteList -- fieldClickLine
-      repeat with i = 1 to the number of controls of group "commandBars"
-         if within (grc ("commandBar" & i),the mouseLoc) then 
-            put ("commandBar" & i) & cr & getID()
-         end if
-      end repeat
-      --       if not (sHiliteList contains comma) then
-      --          put getClickedID() into tID
-      --          if word 1 of tID is "group" then
-      --             --put the mouseLoc
-      --             if within (grc "groupFoldBar",the mouseLoc) then 
-      --                setFolded tID
-      --                doUpdateDisplay true
-      --             end if
-      --          end if
-      --       end if
    end if
    
 end mouseUp
@@ -756,28 +758,27 @@ function trackReorderExternal
    end if
    set the topLeft of theDraggerID to (X + 8),(Y + 8)
    autoScrollTheField
-   put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .5))) into targetLine
+   put targetLine(X,Y) into targetLine
    put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
    set the top of thePointerID to pointerTop
    set the points of thePointerID to the points of thePointerID
 end trackReorderExternal
+
+function targetLine X,Y
+   return max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .9)))
+end targetLine
 
 on trackReorder X,Y
    if not (X,Y is within noFlyRect) then 
       tidyUp
       exit trackReorder
    end if
-   --put hilitedLineIDList() into message
    set the topLeft of theDraggerID to (X + 8),(Y + 8)
    autoScrollTheField
-   put max(1,min(1 + myLineCount,round((Y + the scroll of me - the top of me) / myTH + .9))) into targetLine
-   --put -4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me into pointerTop
+   put targetLine(X,Y) into targetLine
    put max(35,-4 + item (item (1 + 1 div targetLine) of "4,2") of the formattedRect of line max(1,targetLine - 1) of me) into pointerTop
    set the top of thePointerID to pointerTop
    set the points of thePointerID to the points of thePointerID
-   --if the optionkey is down then set the topLeft of thePointerID to X,(Y+20)
-   
-   --put X,Y && noFlyRect && the vis of thePointerID && pointerTop & cr & the top of thePointerID & cr & the points of thePointerID
 end trackReorder
 
 on finishReorderExternal idList
@@ -824,26 +825,7 @@ end finishReorderExternal
 
 on finishReorder
    cleanUp
-   --    if not the reportDragAndDropOnly of me then 
-   --       put the scroll of me into S
-   --       set the wholeMatches to true 
-   --       repeat for each line L in myHTMLtext  --the HTMLtext of me
-   --          add 1 to LC
-   --          if tDragArray[LC] is not empty then put L & cr after H[0]
-   --          else if LC < targetLine then put L & cr after H[1]
-   --          else put L & cr after H[2]
-   --       end repeat
-   --       repeat with i = the number of lines of H[1] + 1 to myLineCount - the number of lines of H[2]
-   --          put i & comma after newHilite
-   --       end repeat
-   --       delete char -1 of newHilite
-   --       set the HTMLtext of me to H[1] & H[0] & H[2]
-   --       set the hilitedLines of me to newHilite
-   --       set the scroll of me to S
-   --    end if
    dragLines tDragList,targetLine
-   --dispatch "dragLines" to me with tDragList,newHilite
-   --put the hilitedLines of me into tDragList
 end finishReorder
 
 

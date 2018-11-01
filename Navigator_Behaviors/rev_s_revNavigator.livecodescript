@@ -430,7 +430,9 @@ end doCommandCode
 
 
 function dontUpdate N
-   if N is empty then put line 1 of navTarget into tNavTarget else put line N of navTarget into tNavTarget
+   return false
+   if N is empty then put 1 into N
+   put line N of navTarget into tNavTarget
    return not (tNavTarget is "this card of the topstack")
    if not (the autoUpdateSelection of this stack) then return true
    if word 2 of tNavTarget is "list" then return true
@@ -673,12 +675,12 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put the pObjectLimit of this stack into tObjectLimit
          addStackListDetails pAllStacks,pSoStacks,tMatchString,tFilterString,the pObjectLimit of this stack,tControlList,newIDArray,newLineArray,tColor,tCurrentLine
       else
-         put navTargetStack(targetIndex) into tStackID
+         put stackNameFromID(tNavTarget,false,false) into tStackID
          if not exists(tStackID) then next repeat
          put the short name of tStackID into  tStackName
          if (not pAllStacks) and (filterStacksList(tStackName) is empty) then next repeat
          if (not pSoStacks) and the scriptonly of stack tStackID then next repeat
-         put not navTargetIsList(targetIndex) into notAList
+         put not (word 2 of tNavTarget is "list") into notAList
          if notAList and not exists(tNavTarget) then next repeat
          
          put the password of tStackID is empty into tCheckScripts
@@ -704,7 +706,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             put the number of controls of tNavTarget into tControlCount
          else
             put 1 into tCurrentIndentLine
-            if navTargetType(targetIndex) is "card" 
+            if word 1 of tNavTarget is "card" 
             then put the number of cds of tStackID into tControlCount
             else put the number of bgs of tStackID into tControlCount
             put tNavTarget into navTitle
@@ -784,9 +786,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             end if
          end repeat
          
-         put "</font></p>" after tControlList
       end if
    end repeat
+   put "</font></p>" after tControlList
    
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
@@ -795,6 +797,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    set the defaultStack to tPrevDefaultStack
    
    if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
+   
    put the scroll of fld "list" into tScroll
    lock screen
    put navTitle into fld "Navigator Title"
@@ -882,22 +885,22 @@ function QQ S
    return quote && "& quote &" && quote & S & quote && "& quote &" && quote
 end QQ
 
-on reportStack
-   answer navTargetStack() 
-end reportStack
+-- on reportStack
+--    answer navTargetStack() 
+-- end reportStack
 
 
-function getStackName obeyLCSetting
-   put navTargetStack() into tStack
-   if not exists(tStackName) then return empty
-   put the short name of tStackName into tStackName
-   if obeyLCSetting then return filterStacksList(tStackName)
-   return tStackName
-end getStackName
+-- function getStackName obeyLCSetting
+--    put navTargetStack() into tStack
+--    if not exists(tStackName) then return empty
+--    put the short name of tStackName into tStackName
+--    if obeyLCSetting then return filterStacksList(tStackName)
+--    return tStackName
+-- end getStackName
 
-function testFunction
-   return "FML"
-end testFunction
+-- function testFunction
+--    return "FML"
+-- end testFunction
 
 on setBookmarksByMouse pMouseData
    if pMouseData["control"] is not empty then setBookmarks ,pMouseData["control"]
@@ -2402,28 +2405,35 @@ function newNavigator targetContainerList,navNameList
    return navName
 end newNavigator
 
-on setNavigatorTarget navName,targetContainer
+on setNavigatorTarget navName,targetList
    if navName is not empty and navName is not the short name of me then 
-      dispatch "setNavigatorTarget" to stack navName with empty,targetContainer
+      dispatch "setNavigatorTarget" to stack navName with empty,targetList
       exit setNavigatorTarget
    end if
-   addRecentTarget
-   repeat for each line tID in targetContainer
+   put not (the showIDEStacks of stack "revNavigator") into hideIDE
+   repeat for each line tID in targetList
       switch 
          case tID is among the items of "this card,the topstack,this card of the topstack"
-            put "this card of the topstack" into NT; break
+            put "this card of the topstack" & cr after NTlist; break
          case tID is "stack list"
-            put tID into NT; break
+            put tID & cr after NTlist; break
          case word 2 of tID is "list"
-            put (word 1 to 3 of tID) && stackNameFromID(tID) into NT; break
+            put stackNameFromID(tID) into stackName
+            put the short name of stackName into shortStackName
+            if hideIDE and (filterStacksList(shortStackName) is empty) then break
+            put (word 1 to 3 of tID) && stackName & cr after NTlist; break
          case word 1 of tID is "stack" 
             put "card id" && (the id of this card of tID) & " " before tID
          default
-            put simpleID(tID) into NT
+            put simpleID(tID) into sID
+            put the value of word -1 of sID into shortStackName 
+            if hideIDE and (filterStacksList(shortStackName) is empty) then break
+            put sID & cr after NTlist
       end switch
-      put NT & cr after NTlist
    end repeat
-   put char 1 to -2 of NTList into navTarget
+   delete char -1 of NTList
+   if NTList is empty then exit setNavigatorTarget
+   put NTList into navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
@@ -2450,15 +2460,15 @@ function checkCurrentNavTarget N,checkOnly,noWarning
       then put tID & cr after newTarget
       else if not noWarning then get existenceWarning(tID)
    end repeat
-   if checkOnly then return newTarget
    delete char -1 of newTarget
+   if checkOnly then return newTarget
    setNavigatorTarget N,newTarget
    return navTarget
 end checkCurrentNavTarget
 
-function currentNavTarget N
-   return navigatorTarget(N)
-end currentNavTarget
+-- function currentNavTarget N
+--    return navigatorTarget(N)
+-- end currentNavTarget
 
 local recentTargetList,recentTargetArray
 
