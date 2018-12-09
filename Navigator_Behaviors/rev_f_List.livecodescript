@@ -309,7 +309,6 @@ on relayerBookmarkList pTargetLine,pLinesToRelayerList
    repeat for each line tLine in tLineList
       add 1 to tCurrentLine
       if tCurrentLine is among the items of pLinesToRelayerList then
-         if tCurrentLine < pTargetLine then add 1 to pTargetLine
          put tLine & cr after tDraggedLines
       else if tCurrentLine < pTargetLine then
          put tLine & cr after tBeforeLines

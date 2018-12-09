@@ -421,14 +421,7 @@ on menuPick pWhich
             end if
             if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
          end if
-         if item 1 of pWhich is "Command" then
-            put commandRead(item 2 of pWhich) into tCommandData
-            set the commandCode of button "do" of group "commandcontrols" to tCommandData
-            put getID() into tIDList
-            if tIDList is empty or tCommandData is empty then break
-            set the pWorkingLines of group "commandGroup" to tIDList
-            send "doCode" to button "do" of group "commandcontrols"
-         end if
+         if item 1 of pWhich is "Command" then doCommandCode commandRead(item 2 of pWhich)
    end switch
 end menuPick
 
