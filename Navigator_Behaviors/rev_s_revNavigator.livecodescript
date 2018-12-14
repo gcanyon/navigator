@@ -617,7 +617,10 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    lock screen
    lock messages
    put the short name of this stack into tThisStack
+   --debug "test 1:" && word 1 of tThisStack
+   
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
+   --debug "test 2:" && (the autoUpdateList of this stack),pForceUpdate
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
    if pRetainHilites then
@@ -657,6 +660,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    if tFilterByTest
    then put empty into tMatchString 
    else put fld "filter" into tMatchString
+   
+   --debug "test 3:" && navTarget
    
    if navTarget is empty then exit doUpdateDisplay
    
@@ -1099,6 +1104,100 @@ end layerOfLine
 function getIDLast pWhichLines
    return line -1 of getList(false,item -1 of pWhichLines)
 end getIDLast
+
+on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
+   lock messages
+   lock screen
+   put the long id of cTargetContainer into cTargetContainer
+   put stackNameFromID(cTargetContainer) into cTargetStack
+   put the name of the topstack into tReturn2
+   put the long id of this card of cTargetStack into tReturn1
+   
+   if word 1 of cTargetContainer is "card" then 
+      go cTargetContainer
+      put cTargetContainer into cTargetCard
+   else if word 1 of cTargetContainer is "group" then
+      start editing cTargetContainer
+      put cardIDFromID(cTargetContainer) into cTargetCard
+      put true into targetGroup
+   end if
+   set relayerGroupedControls to false
+   repeat for each line cID in cList
+      put stackNameFromID(cID) into cIDStackName
+      put cardIDFromID(cID) into cIDCardID
+      put word 1 of cID is "group" into isGroup
+      put isGroup and word 5 of cID is "card" into isBaseGroup
+      put cIDStackName is cTargetStack into sameStack
+      put sameStack and cIDCardID is cTargetCard into sameCard
+      switch
+         case not sameCard
+            if targetGroup or (not isBaseGroup) then
+               copy cID to cTargetContainer
+               if cMoveControls then delete cID
+               put it into cID
+            else if cMoveControls then 
+               copy cID to cTargetContainer
+               put it into cID
+            else 
+               place cID onto cTargetContainer
+               put cTargetCard into word 5 to -1 of cID
+            end if
+            break
+         case cMoveControls
+            if the layer of cID <= cTargetLayer then add 1 to cTargetLayer
+            clone cID
+            put it into cID
+            break
+      end switch
+      put targetGroup and cID contains cTargetContainer into targetInGroup
+      
+      if targetInGroup then put cTargetCard into word 5 to -1 of cID
+      
+      put the layer of cID into cIDLayer
+      switch
+         case (targetGroup and not targetInGroup) or cIDLayer > cTargetLayer
+            try
+               set the layer of cID to cTargetLayer
+            catch someErr
+               debug "boop"
+               set relayerGroupedControls to true
+               if targetGroup then 
+                  stop editing cTargetContainer
+                  put false into targetGroup
+                  add the layer of cTargetContainer to cTargetLayer
+                  if the layer of cID < cTargetLayer then subtract 1 from cTargetLayer
+                  put cardIDFromID(cTargetContainer) into cTargetContainer
+               end if
+               --debug "beep",cID,there is a cID,cTargetLayer
+               set the layer of cID to cTargetLayer
+               --debug "bop"
+            end try
+         case cIDLayer = cTargetLayer
+            add 1 to cTargetLayer
+            break
+         case cIDLayer < cTargetLayer - 1
+            try
+               set the layer of cID to cTargetLayer - 1
+            catch someErr
+               debug "boo",cTargetLayer
+               set relayerGroupedControls to true
+               if targetGroup then 
+                  stop editing cTargetContainer
+                  put false into targetGroup
+                  add the layer of cTargetContainer to cTargetLayer
+                  put cardIDFromID(cTargetContainer) into cTargetContainer
+               end if
+               set the layer of cID to cTargetLayer - 1
+            end try
+      end switch
+   end repeat
+   if targetGroup then stop editing cTargetContainer
+   go tReturn1
+   go tReturn2
+   unlock screen
+   unlock messages
+   dispatch "doUpdateDisplay" to me with true
+end relayerControls
 
 function getLayer lineNumber,beforeAfter
    if beforeAfter is "before" 
@@ -1632,6 +1731,12 @@ function stackNameFromID tID,onlyMainstacks,shortName
    if not(there is a stack tStackName) then return empty
    if shortName is true then return the short name of stack tStackName else return the name of stack tStackName
 end stackNameFromID
+
+function cardIDFromID tID
+   if exists(tID) then put the long id of tID into tID
+   if word -9 of tID is "card" then return word -9 to -1 of tID else return word -6 to -1 of tID
+end cardIDFromID
+
 
 function idWithoutStack tID
    if exists(tID) then return word 1 to 3 of the long id of tID

@@ -150,6 +150,38 @@ end mouseDown
 
 
 on relayerControlList pTargetLine,pLinesToRelayerList
+   
+   -- new code
+   put pTargetLine into tNewTargetLine
+   put getIDFirst(tNewTargetLine) into tContainerID
+   if word 1 of tContainerID is "stack" then 
+      add 1 to tNewTargetLine
+      put getIDFirst(tNewTargetLine) into tContainerID
+   end if
+   if word 1 of tContainerID is "card" then 
+      add 1 to tNewTargetLine
+      put getIDFirst(tNewTargetLine) into tContainerID
+   end if
+   if tContainerID is empty then 
+      put true into lastSpot
+      put getIDLast(tNewTargetLine - 1) into tContainerID
+   end if
+   if word 1 of tContainerID is "stack" then exit relayerControlList
+   if word 1 of tContainerID is "card" then put 1 into targetLayer
+   else
+      put the layer of tContainerID into targetLayer
+      if lastSpot then add 1 to targetLayer
+      delete word 1 to 4 of tContainerID
+   end if
+   --put cardIDFromID(tContainerID) into tContainerID
+   if word 1 of tContainerID is not "card" then subtract the layer of tContainerID from targetLayer
+   put getID(pLinesToRelayerList) into idList
+   put (the optionkey is "down") into optKey
+   --debug idList,tContainerID,targetLayer
+   relayerControls idList,tContainerID,targetLayer,optKey -- cMoveControls
+   
+   exit relayerControlList
+   
    put the short name of this stack into navID
    --put the containerID of me into tContainerID
    if pTargetLine > 1 then 
