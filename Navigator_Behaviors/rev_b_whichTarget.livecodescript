@@ -11,7 +11,9 @@ on mouseUp
 end mouseUp
 
 on mouseStillDown
-   if ticks() - popTicks > 30 then dispatch "popMe" to button "whichStack" -- popup button "whichStack"
+   if ticks() - popTicks < 31 then exit mouseStillDown
+   dispatch "popMe" to button "whichStack" -- popup button "whichStack"
+   put ticks() + 999999 into popTicks
 end mouseStillDown
 
 on setTargetToMouse pMouseData
