@@ -118,11 +118,19 @@ on resultMessage pText
 end resultMessage
 
 on setValue pText
+   if (not (the cCustomProperties of me is true)) and pText is "No Gradient" then
+      if sProp is "fillGradient[" & Q("type") & "]" then
+         put "fillGradient" into sProp
+         put empty into pText
+      else if sProp is "strokeGradient[" & Q("type") & "]" then
+         put "strokeGradient" into sProp
+         put empty into pText 
+      end if
+   end if
    repeat for each line tID in the cIDList of me
       if the cCustomProperties of me is true 
       then set the customPropertySet of tID to (the cCustomPropertySet of me)
       else put 1 into typeList[word 1 of tID]
-      
       set the sProp of tID to pText
    end repeat
    if the cCustomProperties of me is false then setRecentProp (the keys of typeList),sProp
