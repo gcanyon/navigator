@@ -672,7 +672,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put empty into tControlList
    
    repeat for each line tNavTarget in navTarget
-      delete variable foldedIDArray
       delete variable tIndent
       add 1 to targetIndex
       if (tNavTarget is "stack list") then
