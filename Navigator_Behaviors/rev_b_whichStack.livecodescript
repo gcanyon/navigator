@@ -1,6 +1,4 @@
 ﻿script "rev_b_whichStack"
-//>GLOBALS
-global gSBCardOrBackground, gSBShowAllStacks, gSBShowList, gSBWhichCard, gSBWhichStack
 local recentStartLine, recentEndLine
 
 on mouseDown
@@ -65,8 +63,6 @@ on menuPick pWhich
             if the optionKey is "down" 
             then toplevel pWhich 
             else go pWhich
-         else if the scriptonly of pWhich then
-            editObjectScriptsID pWhich
          else
             setRecentNavigatorTarget pWhich 
          end if
@@ -78,10 +74,6 @@ on menuPick pWhich
          break
       case not (pWhich is among the items of "the topstack,stack list")
          put "stack" && Q(pWhich) into pWhich
-         if exists(pWhich) and the scriptonly of pWhich then
-            editObjectScriptsID pWhich
-            break
-         end if
       default
          setNavigatorTarget ,pWhich
          break

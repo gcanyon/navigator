@@ -1,20 +1,9 @@
 ﻿script "rev_b_popup"
-global gLastLineClicked
-global gSBlastHilitedLines,gSBshowTooltip
+global gSBControlSets
 
-global gSBLeadSpaces,gSBControlSets
-
-global gSBCardOrBackground -- are we displaying card controls or group controls
-global gSBWhichCard -- which card are we displaying
-global gSBWhichStack -- which stack are we displaying
-global gSBWhichBackground -- which background/group are we displaying
-global gSBShowList -- true: show list of cards or bgs | false: show controls
 global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 
-local tDoneStackList -- a list of the stacks that have already been done when counting scripts
 
-local tIDArray -- an array of IDs -- used to store line counts of scripts
-local tSizeArray -- an array of the size of the scripts being counted in characters
 local tClickedLine -- the line the user clicked on
 local tClickedID -- the id of the object the user clicked on
 local sSearchString -- the search string for finding in enclosed scripts
@@ -298,7 +287,14 @@ on menuPick pWhich
          if newNavContainerList is not empty then get newNavigator(newNavContainerList)
          break
       case "Browse Controls"
-         put true into tBrowseControls
+         setNavigatorTarget ,getID();break
+      case "Browse Cards"
+      case "Browse Backgrounds"
+         put char 1 to -2 of word 2 of pWhich into tType
+         put tType && "list of" && getID() into idList
+         replace cr with cr & tType && "list of " in idList
+         --put idList;break
+         setNavigatorTarget ,idList;break
       case "Save All"
          if pWhich is "Save All" then put true into tSaveAll
       case "Save"
@@ -317,12 +313,12 @@ on menuPick pWhich
          put true into tTopLevel
       case "Go|Show"
          put empty into reloadConfirmed
-         repeat for each line tID in getID()
+         put getID() into tIDList
+         
+         repeat for each line tID in tIDList
             if not (word 1 of tID is among the items of "bkgnd,group,card,stack") then next repeat
             try
-               if tBrowseControls then
-                  setNavigatorTarget ,tID
-               else if word 1 of tID is among the items of "group,bkgnd" then
+               if word 1 of tID is among the items of "group,bkgnd" then
                   -- no point in continuing, can't save or go
                else if tSaveAll and word 1 of tID is "stack" then
                   saveAll tID
@@ -339,22 +335,6 @@ on menuPick pWhich
                      put item 1 of tStackIDLine into tStackFileStack
                      if there is a stack tStackFileStack and the scriptonly of stack tStackFileStack then delete stack tStackFileStack
                   end repeat
-                  if false then
-                     put the filename of tID into tStackPath
-                     set the itemdel to "/"
-                     delete item -1 of tStackPath
-                     set the itemDel to comma
-                     repeat for each line tStackIDLine in the stackFiles of tID
-                        put item 1 of tStackIDLine into tStackFileStack
-                        if the scriptonly of stack tStackFileStack is false then next repeat
-                        put "file:" & stitchPaths(tStackPath,item 2 to -1 of tStackIDLine) into tURL
-                        put tURL
-                        put url tURL into tScriptData
-                        put tScriptData
-                        set the script of stack tStackFileStack to line 2 to -1 of tScriptData
-                        put "script set"
-                     end repeat
-                  end if
                else if tGo then
                   if tLockMessages is "true" or the optionKey is "down" then lock messages
                   go tID
@@ -387,13 +367,7 @@ on menuPick pWhich
                if there is a stack l then delete stack l
             end repeat
          end repeat
-         
-         put gSBWhichStack[the short name of this stack] into tS
-         if tS is not empty and tS is not "the topStack" and (not (there is a stack tS)) then
-            put "this card" into gSBWhichCard[the short name of this stack]
-            put "card" into gSBCardOrBackground[the short name of this stack]
-            put "the topStack" into gSBWhichStack[the short name of this stack]
-         end if
+         get checkCurrentNavTarget(,,true)
          break
       case "Remove All"
          removeAllBookmarks; break
@@ -416,7 +390,7 @@ on menuPick pWhich
             if tLine > tSeparator then exit repeat
             ask "Set the bookmark text to:" with word 1 to -1 of line tLine of fld "list"
             if the result is not empty then exit repeat
-            put gSBLeadSpaces[the short name of this stack] & word 1 to -1 of it into line tLine of fld "list"
+            put (the leadSpaces of stack "revNavigator") & word 1 to -1 of it into line tLine of fld "list"
          end repeat
          set the hilitedLines of fld "list" to tLineList; break
       case "Command..."
@@ -447,14 +421,7 @@ on menuPick pWhich
             end if
             if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
          end if
-         if item 1 of pWhich is "Command" then
-            put commandRead(item 2 of pWhich) into tCommandData
-            set the commandCode of button "do" of group "commandcontrols" to tCommandData
-            put getID() into tIDList
-            if tIDList is empty or tCommandData is empty then break
-            set the pWorkingLines of group "commandGroup" to tIDList
-            send "doCode" to button "do" of group "commandcontrols"
-         end if
+         if item 1 of pWhich is "Command" then doCommandCode commandRead(item 2 of pWhich)
    end switch
 end menuPick
 
