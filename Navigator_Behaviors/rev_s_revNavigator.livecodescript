@@ -1773,10 +1773,12 @@ end safeNameSerial
 
 
 on editObjectScripts pWhichLine,B
-   local idList
-   put getList(false,pWhichLine) into idList
+   editObjectScriptsID getList(false,pWhichLine),B
+end editObjectScripts
+
+on editObjectScriptsID pIDList,B
    try
-      repeat for each line tID in idList
+      repeat for each line tID in pIDList
          if B and the behavior of tID is not empty then put the behavior of tID into xID else put tID into xID
          repeat until not B or the script of xID is not empty  or the behavior of xID is empty
             put the behavior of xID into xID
@@ -1789,8 +1791,8 @@ on editObjectScripts pWhichLine,B
          end repeat
       end repeat
    catch someErr
-   end try
-end editObjectScripts
+   end try 
+end editObjectScriptsID
 
 
 on positionWindow
@@ -2481,6 +2483,8 @@ function propertiesInCommon tIDList
    put the keys of R["propList"] into R["propList"]
    put lineOffset("fillGradient",R["propList"]) into fillGradientLine
    if fillGradientLine > 0 then put the fillGradientPropList of me into line fillGradientLine of R["propList"]
+   put lineOffset("strokeGradient",R["propList"]) into strokeGradientLine
+   if strokeGradientLine > 0 then put the strokeGradientPropList of me into line strokeGradientLine of R["propList"]
    return R
 end propertiesInCommon
 
