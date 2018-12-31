@@ -1772,10 +1772,12 @@ end safeNameSerial
 
 
 on editObjectScripts pWhichLine,B
-   local idList
-   put getList(false,pWhichLine) into idList
+   editObjectScriptsID getList(false,pWhichLine),B
+end editObjectScripts
+
+on editObjectScriptsID pIDList,B
    try
-      repeat for each line tID in idList
+      repeat for each line tID in pIDList
          if B and the behavior of tID is not empty then put the behavior of tID into xID else put tID into xID
          repeat until not B or the script of xID is not empty  or the behavior of xID is empty
             put the behavior of xID into xID
@@ -1788,8 +1790,9 @@ on editObjectScripts pWhichLine,B
          end repeat
       end repeat
    catch someErr
-   end try
-end editObjectScripts
+   end try 
+end editObjectScriptsID
+
 
 
 on positionWindow
