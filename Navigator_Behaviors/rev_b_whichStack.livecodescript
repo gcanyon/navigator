@@ -60,9 +60,11 @@ on menuPick pWhich
       case MH >= recentStartLine and MH <= recentEndLine
          if not exists(pWhich) then break
          if the commandKey is "down" then 
-            if the optionKey is "down" 
-            then toplevel pWhich 
+            if the scriptonly of pWhich then setRecentNavigatorTarget pWhich 
+            else if the optionKey is "down" then toplevel pWhich 
             else go pWhich
+         else if the scriptonly of pWhich then
+            editObjectScriptsID pWhich
          else
             setRecentNavigatorTarget pWhich 
          end if
@@ -72,13 +74,18 @@ on menuPick pWhich
          if the optionKey is "down" then toplevel stack pWhich
          else go stack pWhich
          break
-      case not (pWhich is among the items of "the topstack,stack list")
-         put "stack" && Q(pWhich) into pWhich
-      default
+      case  pWhich is among the items of "the topstack,stack list"
          setNavigatorTarget ,pWhich
+         break
+      default
+         put "stack" && Q(pWhich) into pWhich
+         if not exists(pWhich) then break
+         if the scriptonly of pWhich then editObjectScriptsID pWhich
+         else setNavigatorTarget ,pWhich
          break
    end switch
 end menuPick
+
 
 on setTargetToMouse pMouseData
    if pMouseData["stack"] is empty then exit setTargetToMouse
