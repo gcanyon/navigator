@@ -2531,6 +2531,8 @@ function propertiesInCommon tIDList
    put the keys of R["propList"] into R["propList"]
    put lineOffset("fillGradient",R["propList"]) into fillGradientLine
    if fillGradientLine > 0 then put the fillGradientPropList of me into line fillGradientLine of R["propList"]
+   put lineOffset("strokeGradient",R["propList"]) into strokeGradientLine
+   if strokeGradientLine > 0 then put the strokeGradientPropList of me into line strokeGradientLine of R["propList"]
    return R
 end propertiesInCommon
 
