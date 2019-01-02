@@ -2682,8 +2682,10 @@ end addRecentTarget
 
 function navTargetStack whichLine,N
    if N is empty or N is the short name of this stack then 
-      if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
-      return stackNameFromID(line whichLine of navTarget,false,false)
+      if whichLine is not a number then put 1 into whichLine
+      put line whichLine of navTarget into NTLine
+      if NTLine is empty then put line 1 of navTarget into NTLine
+      return stackNameFromID(NTLine,false,false)
    end if
    dispatch function "navTargetStack" to stack N with whichLine
    return the result
