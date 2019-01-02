@@ -37,7 +37,7 @@ end getMouse
 
 on trackPointer
    if not sTracking then exit trackPointer
-   if the shiftkey is "down" then cleanUp
+   if the controlkey is "down" then cleanUp
    set the loc of this stack to the screenmouseLoc
    send "trackPointer" to me in 3 ticks
 end trackPointer

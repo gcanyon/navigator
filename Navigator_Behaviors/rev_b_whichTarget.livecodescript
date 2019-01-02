@@ -18,7 +18,7 @@ end mouseStillDown
 
 on setTargetToMouse pMouseData
    if pMouseData["stack"] is empty then exit setTargetToMouse
-   setNavigatorTarget ,("stack" && Q(pMouseData["stack"]))
+   setNavigatorTarget ,("card id" && (the id of this cd of stack pMouseData["stack"]) && "of stack" && Q(pMouseData["stack"])),(the shiftkey is "down")
    put lineListFromIDs(pMouseData["control"]) into tLine
    --if tLine is a number then hiliteLines tLine
    dispatch "setHilites" to fld "list" of this stack with tLine

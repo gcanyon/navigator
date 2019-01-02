@@ -1,6 +1,4 @@
 ﻿script "rev_b_whichStack"
-//>GLOBALS
-global gSBCardOrBackground, gSBShowAllStacks, gSBShowList, gSBWhichCard, gSBWhichStack
 local recentStartLine, recentEndLine
 
 on mouseDown
@@ -62,13 +60,13 @@ on menuPick pWhich
       case MH >= recentStartLine and MH <= recentEndLine
          if not exists(pWhich) then break
          if the commandKey is "down" then 
-            if the optionKey is "down" 
-            then toplevel pWhich 
+            if word 1 of pWhich is "stack" and the scriptonly of pWhich then setRecentNavigatorTarget pWhich,(the shiftkey is "down")
+            else if the optionKey is "down" then toplevel pWhich 
             else go pWhich
-         else if the scriptonly of pWhich then
+         else if word 1 of pWhich is "stack" and the scriptonly of pWhich then
             editObjectScriptsID pWhich
          else
-            setRecentNavigatorTarget pWhich 
+            setRecentNavigatorTarget pWhich,(the shiftkey is "down")
          end if
          break
       case the commandKey is "down"
@@ -76,21 +74,22 @@ on menuPick pWhich
          if the optionKey is "down" then toplevel stack pWhich
          else go stack pWhich
          break
-      case not (pWhich is among the items of "the topstack,stack list")
-         put "stack" && Q(pWhich) into pWhich
-         if exists(pWhich) and the scriptonly of pWhich then
-            editObjectScriptsID pWhich
-            break
-         end if
+      case  pWhich is among the items of "the topstack,stack list"
+         setNavigatorTarget ,pWhich,(the shiftkey is "down")
+         break
       default
-         setNavigatorTarget ,pWhich
+         put "stack" && Q(pWhich) into pWhich
+         if not exists(pWhich) then break
+         if word 1 of pWhich is "stack" and the scriptonly of pWhich then editObjectScriptsID pWhich
+         else setNavigatorTarget ,pWhich,(the shiftkey is "down")
          break
    end switch
 end menuPick
 
+
 on setTargetToMouse pMouseData
    if pMouseData["stack"] is empty then exit setTargetToMouse
-   setNavigatorTarget ,("stack" && Q(pMouseData["stack"]))
+   setNavigatorTarget ,("stack" && Q(pMouseData["stack"])),(the shiftkey is "down")
    put lineListFromIDs(pMouseData["control"]) into tLine
    --if tLine is a number then hiliteLines tLine
    dispatch "setHilites" to fld "list" of this stack with tLine
