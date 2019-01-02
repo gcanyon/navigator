@@ -1,6 +1,4 @@
 ﻿script "rev_b_popprop"
-global gSBControlSets
-
 local sProp -- the name of the property to be set
 local OPA -- objects and properties to edit
 local tClickedID -- the object clicked

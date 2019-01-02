@@ -1,6 +1,4 @@
 ﻿script "rev_b_pophandlers"
-global gSBControlSets
-
 local tMenuText
 local tID
 local tHandlerList

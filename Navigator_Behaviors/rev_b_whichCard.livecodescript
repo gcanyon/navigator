@@ -28,11 +28,11 @@ on menuPick pWhich
    put navTargetStack() into stackID
    put the menuHistory of me into MH
    if MH = 1 then 
-      setNavigatorTarget ,"the topstack"
+      setNavigatorTarget ,"the topstack",(the shiftkey is "down")
    else if MH is among the items of "3,4" then 
       set the showBackgrounds of me to (MH is 4)
       if stackID is not empty then 
-         setNavigatorTarget ,(pWhich && "of" && stackID)
+         setNavigatorTarget ,(pWhich && "of" && stackID),(the shiftkey is "down")
       end if
       
    else if MH <= nonTargetCount then 
@@ -41,6 +41,6 @@ on menuPick pWhich
       set the itemDel to tab
       put item 2 of line MH - nonTargetCount of tList into itemID
       put iff(SBG,"group","card") && "id" && itemID && "of" && stackID into itemLongID
-      setNavigatorTarget ,itemLongID
+      setNavigatorTarget ,itemLongID,(the shiftkey is "down")
    end if
 end menuPick

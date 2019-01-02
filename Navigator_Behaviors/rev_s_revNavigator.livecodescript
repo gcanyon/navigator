@@ -167,6 +167,7 @@ end prefsLoad
 
 on prefsSave
    fileWrite "navigatorPrefs.txt",prefsText()
+   navSelectionUpdateSetting
 end prefsSave
 
 function prefsLine U,pID,V
@@ -205,6 +206,7 @@ end prefsLoadFromText
 on updateCommandBars
    repeat with i = 1 to 6
       set the vis of grc ("commandBar" & i) to (i <= the pCommandBarCount of stack "revNavigator")
+      set the toolTip of grc ("commandBar" & i) to the clickAction of grc ("commandBar" & i)
    end repeat
    navResizeStack
 end updateCommandBars
@@ -267,7 +269,7 @@ function prefsText
    repeat for each item U in "pCommandBarCount,Double-Click:,Option-Double-Click:,Shift-Double-Click:,Command-Double-Click:,Option-Shift-Double-Click:,Option-Command-Double-Click:,Shift-Command-Double-Click:,Option-Shift-Command-Double-Click"
       put prefsLine(U,navID,the U of navID) after R
    end repeat
-
+   
    
    -- List Display Strings
    put prefsLine("pIndentString",navID,the pIndentString of navID) after R
@@ -276,6 +278,12 @@ function prefsText
    
    -- Other
    put prefsLine("navigatorStackFileVersion",navID,the navigatorStackFileVersion of navID) after R
+   
+   -- Command Bars
+   repeat with i = 1 to 6
+      put prefsLine(the clickAction of grc ("commandBar" & i) of navID) after R
+      set the toolTip of grc sCallerName of stack N to C
+   end repeat
    
    return R   
 end prefsText
@@ -430,10 +438,10 @@ end doCommandCode
 
 
 function dontUpdate N
+   return not (navTarget is "this card of the topstack")
    return false
    if N is empty then put 1 into N
    put line N of navTarget into tNavTarget
-   return not (tNavTarget is "this card of the topstack")
    if not (the autoUpdateSelection of this stack) then return true
    if word 2 of tNavTarget is "list" then return true
    if tNavTarget is "this card of the topstack" then return true
@@ -494,7 +502,10 @@ on updateRevSelectedObjects
    --if the number of items of tLineNumbers > 1 then lock screen
    lock screen
    put true into sUpdatingRevSelection
-   do tLinesToSelect
+   try
+      do tLinesToSelect
+   catch someErr
+   end try
    --if the result is not empty then answer warning the result with "OK"
    if the lastClickedLine of fld "list" is a number then
       --select line (the lastClickedLine of fld "list") of fld "list"
@@ -1107,7 +1118,12 @@ end getIDLast
 on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
    lock messages
    lock screen
+   --debug the executioncontexts
    put the long id of cTargetContainer into cTargetContainer
+   if word 1 of cTargetContainer is "group" then 
+      put cTargetContainer into cOriginalTargetContainer
+      put "background" into word 1 of cOriginalTargetContainer
+   end if
    put stackNameFromID(cTargetContainer) into cTargetStack
    put the name of the topstack into tReturn2
    put the long id of this card of cTargetStack into tReturn1
@@ -1128,6 +1144,7 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
       put isGroup and word 5 of cID is "card" into isBaseGroup
       put cIDStackName is cTargetStack into sameStack
       put sameStack and cIDCardID is cTargetCard into sameCard
+      
       switch
          case not sameCard
             if targetGroup or (not isBaseGroup) then
@@ -1158,7 +1175,7 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             try
                set the layer of cID to cTargetLayer
             catch someErr
-               debug "boop"
+               --debug "boop"
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1178,7 +1195,7 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             try
                set the layer of cID to cTargetLayer - 1
             catch someErr
-               debug "boo",cTargetLayer
+               --debug "boo",cTargetLayer
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1190,13 +1207,40 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             end try
       end switch
    end repeat
-   if targetGroup then stop editing cTargetContainer
+   --debug cTargetContainer,cOriginalTargetContainer
+   if cOriginalTargetContainer is not empty then
+      --send "flashBackground" && cOriginalTargetContainer to me in 3 ticks
+      try
+         stop editing cOriginalTargetContainer
+      catch someErr
+      end try
+      flashBackground cOriginalTargetContainer
+   end if
    go tReturn1
    go tReturn2
    unlock screen
    unlock messages
    dispatch "doUpdateDisplay" to me with true
 end relayerControls
+
+on flashBackground bgID
+   --debug bgID
+   lock screen
+   --unlock screen
+   try
+      put "group" into word 1 of bgID
+      start editing bgID
+   catch someErr
+      answer someErr
+   end try
+   --answer "editing?"
+   try
+      stop editing bgID
+   catch someErr
+      answer someErr
+   end try
+   unlock screen
+end flashBackground
 
 function getLayer lineNumber,beforeAfter
    if beforeAfter is "before" 
@@ -1318,9 +1362,13 @@ on deleteObjects pWhichLine
       end if
       if proceedWarning(("Are you certain you want to delete" && tString),"Delete","Cancel") is not "Delete" then exit deleteObjects
    end if
+   lock screen
+   lock messages
    repeat for each line tID in idList
       if there is a tID then delete tID
    end repeat
+   unlock messages
+   unlock screen
    send ("doUpdateDisplay true") to me in 6 ticks
 end deleteObjects
 
@@ -2512,9 +2560,24 @@ function newNavigator targetContainerList,navNameList
    return navName
 end newNavigator
 
-on setNavigatorTarget navName,targetList
+on removeNavigatorTarget navName,tIDList
    if navName is not empty and navName is not the short name of me then 
-      dispatch "setNavigatorTarget" to stack navName with empty,targetList
+      dispatch "removeNavigatorTarget" to stack navName with empty,tIDList
+      exit removeNavigatorTarget
+   end if
+   set wholeMatches to true
+   repeat for each line tID in tIDList
+      put lineOffset(tID,navTarget) into lineNo
+      if lineNo > 0 then delete line lineNo of navTarget
+   end repeat
+   doUpdateDisplay true
+end removeNavigatorTarget
+
+
+on setNavigatorTarget navName,targetList,bAddTargets
+   if not bAddTargets then addRecentTarget
+   if navName is not empty and navName is not the short name of me then 
+      dispatch "setNavigatorTarget" to stack navName with empty,targetList,(bAddTargets is true)
       exit setNavigatorTarget
    end if
    put not (the showIDEStacks of stack "revNavigator") into hideIDE
@@ -2540,7 +2603,9 @@ on setNavigatorTarget navName,targetList
    end repeat
    delete char -1 of NTList
    if NTList is empty then exit setNavigatorTarget
-   put NTList into navTarget
+   if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
+   else put NTList into navTarget
+   --debug bAddTargets,navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
@@ -2569,13 +2634,9 @@ function checkCurrentNavTarget N,checkOnly,noWarning
    end repeat
    delete char -1 of newTarget
    if checkOnly then return newTarget
-   setNavigatorTarget N,newTarget
+   setNavigatorTarget N,newTarget,(the shiftkey is "down")
    return navTarget
 end checkCurrentNavTarget
-
--- function currentNavTarget N
---    return navigatorTarget(N)
--- end currentNavTarget
 
 local recentTargetList,recentTargetArray
 
@@ -2585,8 +2646,8 @@ function recentTargets
    return the result
 end recentTargets
 
-on setRecentNavigatorTarget pTargetName
-   setNavigatorTarget ,recentTargetArray[pTargetName]
+on setRecentNavigatorTarget pTargetName,bAddTargets
+   setNavigatorTarget ,recentTargetArray[pTargetName],bAddTargets
 end setRecentNavigatorTarget
 
 on reportRecent
@@ -2596,14 +2657,15 @@ on reportRecent
 end reportRecent
 
 on addRecentTarget pTargetID
-   if pTargetID is empty then put navigatorTarget() into pTargetID
-   if not exists(pTargetID) then exit addRecentTarget
+   if pTargetID is empty then put navTarget into pTargetID
    
    if the short name of me is not "revNavigator" then
       dispatch "addRecentTarget" to stack "revNavigator" with pTargetID
       exit addRecentTarget
    end if
    repeat for each line tID in pTargetID
+      if not exists(tID) then next repeat
+      
       put simpleName(tID) into targetName
       put simpleID(tID) into targetID
       set wholematches to true
@@ -2761,6 +2823,20 @@ on cleangREVMessageDispatch
   end repeat
 end cleangREVMessageDispatch
 
+on navSelectionUpdateSetting B
+   if B is empty then put the AutoUpdateSelection of stack "revNavigator" into B
+   put the openStacks into tOpenList
+   filter tOpenList with "revNavigator*"
+   repeat for each line S in tOpenList
+      put the customProperties["cREVLoadInfo"] of stack S into CP
+      if B then put true into CP["revSelectedObjectChanged"]
+      else delete variable CP["revSelectedObjectChanged"]
+      set customProperties["cREVLoadInfo"] of stack S to CP
+   end repeat
+   cleangREVMessageDispatch
+end navSelectionUpdateSetting
+
+
 on doCodeNN S,xIDList,yIDList
    repeat for each line xID in xIDList
       repeat for each line yID in yIDList
@@ -2817,6 +2893,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
+   exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString

@@ -1,7 +1,5 @@
 ﻿script "rev_b_popup"
-global gSBControlSets
-
-global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
+local gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 
 
 local tClickedLine -- the line the user clicked on
@@ -287,14 +285,21 @@ on menuPick pWhich
          if newNavContainerList is not empty then get newNavigator(newNavContainerList)
          break
       case "Browse Controls"
-         setNavigatorTarget ,getID();break
+         setNavigatorTarget ,getID(),(the shiftkey is "down");break
       case "Browse Cards"
       case "Browse Backgrounds"
          put char 1 to -2 of word 2 of pWhich into tType
          put tType && "list of" && getID() into idList
          replace cr with cr & tType && "list of " in idList
          --put idList;break
-         setNavigatorTarget ,idList;break
+         setNavigatorTarget ,idList,(the shiftkey is "down");break
+      case "Stop Browsing"
+         repeat for each line lineNo in the hilitedlines of field "list"
+            put getList(false,lineNo) into tID
+            if word 1 of tID is "stack" then put getList(false,lineNo + 1) into tID 
+            put tID & cr after tIDList
+         end repeat
+         removeNavigatorTarget ,(char 1 to -2 of tIDList);break
       case "Save All"
          if pWhich is "Save All" then put true into tSaveAll
       case "Save"
@@ -419,7 +424,7 @@ on menuPick pWhich
                   end try
                end repeat
             end if
-            if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName)
+            if there is a stack tStackName then setNavigatorTarget ,(the name of stack tStackName),(the shiftkey is "down")
          end if
          if item 1 of pWhich is "Command" then doCommandCode commandRead(item 2 of pWhich)
    end switch

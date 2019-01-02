@@ -1,5 +1,4 @@
 ﻿script "rev_f_List"
-global gSBLastCopiedObjectList -- a list of the IDs of the last copied objects 
 global gSBDragStartNav -- the short name of the Navigator originating a drag
 
 local tStartDragMessage
@@ -150,18 +149,20 @@ end mouseDown
 
 
 on relayerControlList pTargetLine,pLinesToRelayerList
-   
    -- new code
    put pTargetLine into tNewTargetLine
    put getIDFirst(tNewTargetLine) into tContainerID
+   --debug pTargetLine,tNewTargetLine,tContainerID
    if word 1 of tContainerID is "stack" then 
+      subtract 1 from tNewTargetLine
+      put getIDLast(tNewTargetLine) into tContainerID
+      put true into lastSpot
+   else if word 1 of tContainerID is "card" then 
       add 1 to tNewTargetLine
-      put getIDFirst(tNewTargetLine) into tContainerID
+      put getIDFirst(tNewTargetLine) into testContainerID
+      if word 1 of testContainerID is "stack" then subtract 1 from tNewTargetLine else put testContainerID into tContainerID
    end if
-   if word 1 of tContainerID is "card" then 
-      add 1 to tNewTargetLine
-      put getIDFirst(tNewTargetLine) into tContainerID
-   end if
+   --debug pTargetLine,tNewTargetLine,tContainerID
    if tContainerID is empty then 
       put true into lastSpot
       put getIDLast(tNewTargetLine - 1) into tContainerID
