@@ -468,6 +468,7 @@ end setFoldDepth
 
 on setFolded pID,F
    --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
+   --debug pID,F,foldedIDArray[pID]
    if F is empty then put not foldedIDArray[pID] into F
    if F 
    then put true into foldedIDArray[pID]
@@ -714,6 +715,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             add 1 to tCurrentLine
             put tNavTarget into newLineArray[tCurrentLine]
             put tCurrentLine into newIDArray[tNavTarget]
+            --debug tNavTarget,lastNavTarget
             if tNavTarget is not among the lines of lastNavTarget and the pDefaultFold of stack tThisStack is not "Show All"
             then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
             
@@ -815,6 +817,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    
    put the scroll of fld "list" into tScroll
    lock screen
+   put navTarget into lastNavTarget
    put navTitle into fld "Navigator Title"
    
    put cr & " " after fld "List" of this stack
