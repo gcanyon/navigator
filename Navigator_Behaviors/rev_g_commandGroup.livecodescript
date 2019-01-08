@@ -21,7 +21,6 @@ end setSize
 
 on showMe tIDList,forceStyle,forceTab,saveCallBackID,saveCallbackMessage
    if tIDList is empty then put getID() into tIDList
-   if tIDList is empty then exit showMe
    if ((the optionKey is "down") is (the EditorsAsPalettes of stack "revNavigator") or forceStyle is "popup") and forceStyle is not "palette" then
       doSetup forceTab,saveCallBackID,saveCallbackMessage
       setSize
@@ -57,7 +56,7 @@ on setCommandIDList pID,pIDList
       put the number of lines of pIDList into objectCount   
       if objectCount > 1 then put " and" && objectCount - 1 && "others" into commandTitle
       put the name of pID && "[" & the short id of pID & "]" before commandTitle
-   else put "Object not found" into commandTitle
+   else put "Object not found/no object selected" into commandTitle
    put commandTitle into fld "command title"
 end setCommandIDList
 
