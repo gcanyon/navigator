@@ -171,6 +171,7 @@ on prefsSave
 end prefsSave
 
 function prefsLine U,pID,V
+   if V is empty then put the U of pID into V
    put the long name of pID into pID
    if word -5 of pID is "stack"
    then delete word -3 to -1 of pID
@@ -233,22 +234,20 @@ end prefsLoadFromTextOld
 
 function prefsText
    put the long id of stack navStack() into navID
+   put the long id of card 1 of stack "revNavigatorPrefs" into pID
    set the customPropertySet of navID to empty
    put prefsLine("uPrefsFormat",navID,"2.0") into R
-   repeat for each line CS in the customKeys of group "colors" of stack "revNavigatorPrefs"
-      put prefsLine(CS,(the long id of group "colors" of stack "revNavigatorPrefs"),the CS of group "colors" of stack "revNavigatorPrefs") after R
+   repeat for each line CS in the customKeys of group "colors" of pID
+      put prefsLine(CS,(the long id of group "colors" of pID)) after R
    end repeat
    
    -- Display Options
-   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes"
-      put prefsLine(P,navID,the P of navID) after R
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes,pDefaultFold,pObjectLimit,pMenuLimit"
+      put prefsLine(P,navID) after R
    end repeat
-   put prefsLine("pDefaultFold",navID,the pDefaultFold of navID) after R
-   put prefsLine("pObjectLimit",navID,the pObjectLimit of navID) after R
-   put prefsLine("pMenuLimit",navID,the pMenuLimit of navID) after R
-   put prefsLine("textFont",the long id of fld "list" of navID,the textFont of fld "list" of navID) after R
-   put prefsLine("textSize",the long id of fld "list" of navID,the textSize of fld "list" of navID) after R
-   put prefsLine("textHeight",the long id of fld "list" of navID,the textHeight of fld "list" of navID) after R
+   put prefsLine("textFont",the long id of fld "list" of navID) after R
+   put prefsLine("textSize",the long id of fld "list" of navID) after R
+   put prefsLine("textHeight",the long id of fld "list" of navID) after R
    
    -- Object Properties
    put the customProperties["gSBAddPropsProp"] of navID into addPropArray
@@ -261,28 +260,27 @@ function prefsText
    -- List Colors
    repeat for each item C in "Default,ScriptedObject,BehaviorScripted,ScriptandBehavior,ObjectMissing,FilterText,HighLight,ListLines,Background"
       put "pColor" & C into U
-      put prefsLine(U,navID,the U of navID) after R
+      put prefsLine(U,navID) after R
    end repeat
    
    -- List Actions
    
    repeat for each item U in "pCommandBarCount,Double-Click:,Option-Double-Click:,Shift-Double-Click:,Command-Double-Click:,Option-Shift-Double-Click:,Option-Command-Double-Click:,Shift-Command-Double-Click:,Option-Shift-Command-Double-Click"
-      put prefsLine(U,navID,the U of navID) after R
+      put prefsLine(U,navID) after R
    end repeat
    
    
    -- List Display Strings
-   put prefsLine("pIndentString",navID,the pIndentString of navID) after R
-   put prefsLine("text",(the long id of button "List Display String" of stack "revNavigatorPrefs"),the text of button "List Display String" of stack "revNavigatorPrefs") after R
+   put prefsLine("pIndentString",navID) after R
+   put prefsLine("text",(the long id of button "List Display String" of pID)) after R
    
    
    -- Other
-   put prefsLine("navigatorStackFileVersion",navID,the navigatorStackFileVersion of navID) after R
+   put prefsLine("navigatorStackFileVersion",navID) after R
    
    -- Command Bars
    repeat with i = 1 to 6
-      put prefsLine(the clickAction of grc ("commandBar" & i) of navID) after R
-      set the toolTip of grc sCallerName of stack N to C
+      put prefsLine("clickAction",(the long id of grc ("commandBar" & i) of navID)) after R
    end repeat
    
    return R   
@@ -468,7 +466,6 @@ end setFoldDepth
 
 on setFolded pID,F
    --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
-   --debug pID,F,foldedIDArray[pID]
    if F is empty then put not foldedIDArray[pID] into F
    if F 
    then put true into foldedIDArray[pID]
@@ -629,10 +626,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    lock screen
    lock messages
    put the short name of this stack into tThisStack
-   --debug "test 1:" && word 1 of tThisStack
    
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
-   --debug "test 2:" && (the autoUpdateList of this stack),pForceUpdate
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
    if pRetainHilites then
@@ -673,7 +668,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    then put empty into tMatchString 
    else put fld "filter" into tMatchString
    
-   --debug "test 3:" && navTarget
    
    if navTarget is empty then exit doUpdateDisplay
    
@@ -684,6 +678,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put empty into tControlList
    
    repeat for each line tNavTarget in navTarget
+      if tNavTarget is "this card of the topstack" then put the long id of this card of the topstack into tNavTarget
       delete variable tIndent
       add 1 to targetIndex
       if (tNavTarget is "stack list") then
@@ -715,7 +710,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             add 1 to tCurrentLine
             put tNavTarget into newLineArray[tCurrentLine]
             put tCurrentLine into newIDArray[tNavTarget]
-            --debug tNavTarget,lastNavTarget
             if tNavTarget is not among the lines of lastNavTarget and the pDefaultFold of stack tThisStack is not "Show All"
             then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
             
@@ -810,7 +804,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
-   --debug tPrevDefaultStack
    set the defaultStack to tPrevDefaultStack
    
    if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
@@ -877,7 +870,6 @@ on addStackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit
       if tControlList is empty 
       then put (char 12 to -1 of tColor[tStackColor]) after tControlList
       else put tColor[tStackColor] after tControlList 
-      --debug tStackName,tStack,(the mainstack of tStackName is tStack)
       put tIndentString[the mainstack of tStackName is tStack] & "<b>" & tStackName & "</b>" after tControlList 
       
       put tCurrentLine into newIDArray[tStackName]
@@ -1119,12 +1111,91 @@ function getIDLast pWhichLines
 end getIDLast
 
 on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
+   --subtract 1 from cTargetLayer
+   put the long id of cTargetContainer into cTargetContainer
+   put word 1 of cTargetContainer is "group" into targetIsGroup
+   put word 1 of cTargetContainer is "card" into targetIsCard 
+   if not (targetIsGroup or targetIsCard) then exit relayerControls -- need to deal with pure backgrounds
    lock messages
    lock screen
-   --debug the executioncontexts
+   put cardIDFromID(cTargetContainer) into cTargetCard
+   put stackNameFromID(cTargetContainer) into cTargetStack
+   put the name of the topstack into tReturn2
+   put the long id of this card of cTargetStack into tReturn1
+   go cTargetCard
+   
+   repeat for each line cID in cList
+      if word 1 of cID is among the items of "card,stack" then next repeat
+      if not (exists(cID)) then next repeat
+      put the long id of cID into cID
+      put cardIDFromID(cID) into cIDCardID
+      put word 1 of cID is "group" or word 1 of cID is "background" into isGroup
+      --put isGroup and (word 5 of cID is "card" or word 5 of cID is "stack") into isBackground 
+      put cIDCardID is cTargetCard into sameCard
+      
+      --put cIDStackName is cTargetStack into stackIsTargetStack
+      --put isBackground and targetIsCard and stackIsTargetStack and not cardIsTargetCard and not cMoveControls and not targetIsGroup and word 5 of cID is "card" into placeGroup
+      if not sameCard then
+         copy cID to cTargetContainer
+         if cMoveControls then delete cID
+         put it into cID
+      end if
+      put cardIDFromID(cID) into cIDCardID
+      put stackNameFromID(cID) into cIDStackName
+      put simpleID(cID) into simpleCID
+      
+      put 1 into controlItemCount
+      if isGroup then add the number of controls of cID to controlItemCount
+      put cID contains cTargetContainer into targetInContainer
+      if not targetInContainer then
+         put the layer of cTargetContainer into containerLayer
+         if the layer of cID > containerLayer then add 1 to containerLayer
+         set relayerGroupedControls to true
+         set the layer of cID to containerLayer
+         set relayerGroupedControls to false
+      end if
+      if targetIsGroup then start editing cTargetContainer
+      put the layer of simpleCID into cIDlayer
+      if targetInContainer and cIDLayer = cTargetLayer then
+         if targetIsGroup then stop editing cTargetContainer
+         add controlItemCount to cTargetLayer
+         next repeat
+      end if
+      set relayerGroupedControls to true
+      if cMoveControls and sameCard then 
+         clone simpleCID
+         put it into cID
+         put simpleID(cID) into simpleCID
+         if cIDlayer < cTargetLayer then add controlItemCount to cTargetLayer
+      end if
+      set the layer of simpleCID to 1
+      set relayerGroupedControls to false
+      
+      --if cIDLayer > cTargetLayer or not targetInContainer then add controlItemCount to cTargetLayer
+      if not targetInContainer or cIDlayer >= cTargetLayer then 
+         set the layer of simpleCID to cTargetLayer
+         add controlItemCount to cTargetLayer
+      else
+         set the layer of simpleCID to cTargetLayer - controlItemCount
+      end if
+      if targetIsGroup then stop editing cTargetContainer
+   end repeat
+   go tReturn1
+   go tReturn2
+   unlock screen
+   unlock messages
+   dispatch "doUpdateDisplay" to me with true
+   
+   
+end relayerControls
+
+on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
+   lock messages
+   lock screen
+   --exit relayerControls
    put the long id of cTargetContainer into cTargetContainer
    if word 1 of cTargetContainer is "group" then 
-      put cTargetContainer into cOriginalTargetContainer
+      put simpleID(cTargetContainer) into cOriginalTargetContainer
       put "background" into word 1 of cOriginalTargetContainer
    end if
    put stackNameFromID(cTargetContainer) into cTargetStack
@@ -1148,37 +1219,45 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
       put cIDStackName is cTargetStack into sameStack
       put sameStack and cIDCardID is cTargetCard into sameCard
       
+      put targetGroup and cID contains cTargetContainer into targetInGroup
+      
+      if targetInGroup then put cTargetCard into word 5 to -1 of cID
+      
+      if word 1 of cTargetContainer is "group" then stop editing cTargetContainer
       switch
          case not sameCard
             if targetGroup or (not isBaseGroup) then
                copy cID to cTargetContainer
                if cMoveControls then delete cID
-               put it into cID
+               put simpleID(it) into cID
             else if cMoveControls then 
                copy cID to cTargetContainer
-               put it into cID
+               put simpleID(it) into cID
             else 
                place cID onto cTargetContainer
                put cTargetCard into word 5 to -1 of cID
             end if
             break
          case cMoveControls
-            if the layer of cID <= cTargetLayer then add 1 to cTargetLayer
+            --if the layer of cID <= cTargetLayer then add 1 to cTargetLayer
             clone cID
-            put it into cID
+            --set the loc of it to the loc of cID
+            put simpleID(it) into cID
+         case targetGroup and not targetInGroup
+            if the layer of cID > cTargetLayer then add 1 to cTargetLayer
+            set relayerGroupedControls to true
+            set the layer of cID to 1
+            set relayerGroupedControls to false
             break
       end switch
-      put targetGroup and cID contains cTargetContainer into targetInGroup
+      if targetGroup then start editing cTargetContainer
+      put the layer of cID into cIDLayer 
       
-      if targetInGroup then put cTargetCard into word 5 to -1 of cID
-      
-      put the layer of cID into cIDLayer
       switch
          case (targetGroup and not targetInGroup) or cIDLayer > cTargetLayer
             try
                set the layer of cID to cTargetLayer
             catch someErr
-               --debug "boop"
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1187,9 +1266,7 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
                   if the layer of cID < cTargetLayer then subtract 1 from cTargetLayer
                   put cardIDFromID(cTargetContainer) into cTargetContainer
                end if
-               --debug "beep",cID,there is a cID,cTargetLayer
                set the layer of cID to cTargetLayer
-               --debug "bop"
             end try
          case cIDLayer = cTargetLayer
             add 1 to cTargetLayer
@@ -1198,7 +1275,6 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             try
                set the layer of cID to cTargetLayer - 1
             catch someErr
-               --debug "boo",cTargetLayer
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1210,15 +1286,21 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             end try
       end switch
    end repeat
-   --debug cTargetContainer,cOriginalTargetContainer
-   if cOriginalTargetContainer is not empty then
-      --send "flashBackground" && cOriginalTargetContainer to me in 3 ticks
+   if true then
       try
-         stop editing cOriginalTargetContainer
+         if word 1 of cTargetContainer is "group" then stop editing cTargetContainer
       catch someErr
       end try
-      flashBackground cOriginalTargetContainer
-   end if
+   else
+      if cOriginalTargetContainer is not empty then
+         --send "flashBackground" && cOriginalTargetContainer to me in 3 ticks
+         try
+            stop editing cOriginalTargetContainer
+         catch someErr
+         end try
+         flashBackground cOriginalTargetContainer
+      end if
+   end if 
    go tReturn1
    go tReturn2
    unlock screen
@@ -1227,7 +1309,6 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
 end relayerControls
 
 on flashBackground bgID
-   --debug bgID
    lock screen
    --unlock screen
    try
@@ -1784,7 +1865,9 @@ end stackNameFromID
 
 function cardIDFromID tID
    if exists(tID) then put the long id of tID into tID
-   if word -9 of tID is "card" then return word -9 to -1 of tID else return word -6 to -1 of tID
+   if word -9 of tID is "card" then return word -9 to -1 of tID 
+   else if word -6 of tID is "card" then return word -6 to -1 of tID
+   else return empty
 end cardIDFromID
 
 
@@ -2610,7 +2693,6 @@ on setNavigatorTarget navName,targetList,bAddTargets
    if NTList is empty then exit setNavigatorTarget
    if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
    else put NTList into navTarget
-   --debug bAddTargets,navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 

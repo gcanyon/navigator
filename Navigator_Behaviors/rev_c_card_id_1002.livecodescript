@@ -61,7 +61,6 @@ on getPrefs
    end repeat
    set the label of btn "Command Bar Count" to the pCommandBarCount of mainNavID
    
-   --answer "test"
    
    -- List Display Strings
    put the pIndentString of navID into fld "Indent String"

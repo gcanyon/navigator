@@ -152,7 +152,6 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    -- new code
    put pTargetLine into tNewTargetLine
    put getIDFirst(tNewTargetLine) into tContainerID
-   --debug pTargetLine,tNewTargetLine,tContainerID
    if word 1 of tContainerID is "stack" then 
       subtract 1 from tNewTargetLine
       put getIDLast(tNewTargetLine) into tContainerID
@@ -162,7 +161,6 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       put getIDFirst(tNewTargetLine) into testContainerID
       if word 1 of testContainerID is "stack" then subtract 1 from tNewTargetLine else put testContainerID into tContainerID
    end if
-   --debug pTargetLine,tNewTargetLine,tContainerID
    if tContainerID is empty then 
       put true into lastSpot
       put getIDLast(tNewTargetLine - 1) into tContainerID
@@ -171,6 +169,7 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    if word 1 of tContainerID is "card" then put 1 into targetLayer
    else
       put the layer of tContainerID into targetLayer
+      --if word 1 of tContainerID is not "group" then 
       if lastSpot then add 1 to targetLayer
       delete word 1 to 4 of tContainerID
    end if
@@ -178,10 +177,9 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    if word 1 of tContainerID is not "card" then subtract the layer of tContainerID from targetLayer
    put getID(pLinesToRelayerList) into idList
    put (the optionkey is "down") into optKey
-   --debug idList,tContainerID,targetLayer
    relayerControls idList,tContainerID,targetLayer,optKey -- cMoveControls
    
-   exit relayerControlList
+   exit relayerControlList -- since at least 7, 1/1/2019
    
    put the short name of this stack into navID
    --put the containerID of me into tContainerID
@@ -198,7 +196,6 @@ on relayerControlList pTargetLine,pLinesToRelayerList
       else put "card id" && (the id of this card of tContainerID) && "of " before tContainerID
    end if
    put the layer of tContainerID into tTargetLayerTest
-   --debug pTargetLine,tContainerID
    put the long id of tContainerID into tContainerID
    repeat until word 1 of tContainerID is "card"
       delete word 1 to 4 of tContainerID
@@ -232,7 +229,6 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    if pTargetLine > tLineCount 
    then put 1 + tLayerCount into tTargetLayer
    else put 1 + tTargetLayerTest into tTargetLayer --put the layer of getIDFirst(pTargetLine) into tTargetLayer
-   --debug pTargetLine,tContainerID,tTargetLayer,tTargetLayerTest
    
    put empty into tAfterLayer
    repeat with tAfterIndexLayer = tTargetLayer to tLayerCount + 1
