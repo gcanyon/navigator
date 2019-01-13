@@ -7,7 +7,6 @@ on mouseDown
    put "this card" & cr & "-" & cr & iff(SBG,"","!c") & "Card List" & cr & iff(SBG,"!c","") & "Background List" & cr & "-" into tDefault
    put the number of lines of tDefault into nonTargetCount
    put navTargetStack(-1) into stackName
-   --debug stackName
    if stackName is not empty then
       if SBG then put backgroundsOf((the long id of stackName),"base","name and id","short") into tList
       else put cardsOf(the long id of stackName) into tList

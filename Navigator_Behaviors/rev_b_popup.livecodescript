@@ -485,14 +485,11 @@ on prepareItems
    put word 2 of the clickLine into tClickedLine
    if tClickedLine is empty then put the uClickedLine of this card into tClickedLine
    put getID(tClickedLine) into sClickedID --  local to store universally within this script the id that was clicked
-   
-   --put tIDList into message
-   
+      
    put the basicItems of btn "popup" into tItems
    put the customCommandSubmenu of stack "revNavigator" after tItems
    put true into allBehaviors
    put true into tContainer
-   --debug tIDList
    if word 1 of tIDList is "bkgnd" then put "group" into tObjectType else put word 1 of tIDList into tObjectType
    put true into noCardStack
    put true into exportToBehaviors

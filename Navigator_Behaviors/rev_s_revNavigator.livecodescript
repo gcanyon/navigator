@@ -466,7 +466,6 @@ end setFoldDepth
 
 on setFolded pID,F
    --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
-   --debug pID,F,foldedIDArray[pID]
    if F is empty then put not foldedIDArray[pID] into F
    if F 
    then put true into foldedIDArray[pID]
@@ -627,10 +626,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    lock screen
    lock messages
    put the short name of this stack into tThisStack
-   --debug "test 1:" && word 1 of tThisStack
    
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
-   --debug "test 2:" && (the autoUpdateList of this stack),pForceUpdate
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
    if pRetainHilites then
@@ -671,7 +668,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    then put empty into tMatchString 
    else put fld "filter" into tMatchString
    
-   --debug "test 3:" && navTarget
    
    if navTarget is empty then exit doUpdateDisplay
    
@@ -714,7 +710,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             add 1 to tCurrentLine
             put tNavTarget into newLineArray[tCurrentLine]
             put tCurrentLine into newIDArray[tNavTarget]
-            --debug tNavTarget,lastNavTarget
             if tNavTarget is not among the lines of lastNavTarget and the pDefaultFold of stack tThisStack is not "Show All"
             then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
             
@@ -809,7 +804,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
-   --debug tPrevDefaultStack
    set the defaultStack to tPrevDefaultStack
    
    if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
@@ -876,7 +870,6 @@ on addStackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit
       if tControlList is empty 
       then put (char 12 to -1 of tColor[tStackColor]) after tControlList
       else put tColor[tStackColor] after tControlList 
-      --debug tStackName,tStack,(the mainstack of tStackName is tStack)
       put tIndentString[the mainstack of tStackName is tStack] & "<b>" & tStackName & "</b>" after tControlList 
       
       put tCurrentLine into newIDArray[tStackName]
@@ -1199,8 +1192,6 @@ end relayerControls
 on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
    lock messages
    lock screen
-   --debug the executioncontexts
-   debug cList,cTargetContainer,cTargetLayer,cMoveControls
    --exit relayerControls
    put the long id of cTargetContainer into cTargetContainer
    if word 1 of cTargetContainer is "group" then 
@@ -1267,7 +1258,6 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             try
                set the layer of cID to cTargetLayer
             catch someErr
-               --debug "boop"
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1276,9 +1266,7 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
                   if the layer of cID < cTargetLayer then subtract 1 from cTargetLayer
                   put cardIDFromID(cTargetContainer) into cTargetContainer
                end if
-               --debug "beep",cID,there is a cID,cTargetLayer
                set the layer of cID to cTargetLayer
-               --debug "bop"
             end try
          case cIDLayer = cTargetLayer
             add 1 to cTargetLayer
@@ -1287,7 +1275,6 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             try
                set the layer of cID to cTargetLayer - 1
             catch someErr
-               --debug "boo",cTargetLayer
                set relayerGroupedControls to true
                if targetGroup then 
                   stop editing cTargetContainer
@@ -1299,12 +1286,10 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
             end try
       end switch
    end repeat
-   --debug cTargetContainer,cOriginalTargetContainer
    if true then
       try
          if word 1 of cTargetContainer is "group" then stop editing cTargetContainer
       catch someErr
-         debug "stop editing failed"
       end try
    else
       if cOriginalTargetContainer is not empty then
@@ -1324,7 +1309,6 @@ on relayerControls cList,cTargetContainer,cTargetLayer,cMoveControls
 end relayerControls
 
 on flashBackground bgID
-   --debug bgID
    lock screen
    --unlock screen
    try
@@ -1389,7 +1373,6 @@ function getList pIncludeLines,pWhichLines
       else
          put navLineArray[(tLine - tSeparator)] into tIDList
       end if
-      --debug tIDList
       --put the short name of this stack,(tLine - tSeparator)
       repeat for each line tID in tIDList
          if (there is a tID) then
@@ -2710,7 +2693,6 @@ on setNavigatorTarget navName,targetList,bAddTargets
    if NTList is empty then exit setNavigatorTarget
    if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
    else put NTList into navTarget
-   --debug bAddTargets,navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
@@ -3000,7 +2982,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   --exit debug
+   exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
