@@ -171,6 +171,7 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    if word 1 of tContainerID is "card" then put 1 into targetLayer
    else
       put the layer of tContainerID into targetLayer
+      --if word 1 of tContainerID is not "group" then 
       if lastSpot then add 1 to targetLayer
       delete word 1 to 4 of tContainerID
    end if
@@ -181,7 +182,7 @@ on relayerControlList pTargetLine,pLinesToRelayerList
    --debug idList,tContainerID,targetLayer
    relayerControls idList,tContainerID,targetLayer,optKey -- cMoveControls
    
-   exit relayerControlList
+   exit relayerControlList -- since at least 7, 1/1/2019
    
    put the short name of this stack into navID
    --put the containerID of me into tContainerID

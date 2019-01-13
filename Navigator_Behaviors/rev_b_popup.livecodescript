@@ -492,6 +492,7 @@ on prepareItems
    put the customCommandSubmenu of stack "revNavigator" after tItems
    put true into allBehaviors
    put true into tContainer
+   --debug tIDList
    if word 1 of tIDList is "bkgnd" then put "group" into tObjectType else put word 1 of tIDList into tObjectType
    put true into noCardStack
    put true into exportToBehaviors
