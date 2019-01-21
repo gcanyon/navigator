@@ -11,13 +11,38 @@ on clearEditingLine
 end clearEditingLine
 
 on updateSample
-   set the htmlText of fld "sample" to evaluateListString()
+   put fld "edit list string" into S
+   put fld "indent string" of cd 1 into tIS
+   repeat with i = 2 to 21
+      repeat i - 1
+         put tIS after tISa[i]
+      end repeat
+   end repeat
+   if the hilite of btn "Merge"
+   then set the htmlText of fld "sample" to evaluateListStringMerge(S,tISa)
+   else set the htmlText of fld "sample" to evaluateListString(fld "edit list string")
 end updateSample
+
+on speedTestEval
+   put fld "edit list string" into S
+   put fld "indent string" of cd 1 into tIS
+   repeat with i = 2 to 21
+      repeat i - 1
+         put tIS after tISa[i]
+      end repeat
+   end repeat
+   put the long seconds into T
+   repeat 100
+      get evaluateListStringMerge(S,tISa)
+   end repeat
+   put the long seconds - T
+end speedTestEval
 
 function evaluateListString S
    if S is empty then put fld "edit list string" into S
    if S is empty then return empty
    put fld "indent string" of cd 1 into tIS
+   put S contains "tIS" into hasTis
    try
       repeat with i = 1 to the number of controls of this cd
          put the long id of control i of this cd into tID
@@ -27,7 +52,7 @@ function evaluateListString S
             end repeat
          end if
          put S into sTemp
-         if sTemp contains "tIS" then replace "tIS" with Q(tISa[i]) in sTemp else put Q(tISa[i]) && "& " before sTemp
+         if hasTis then replace "tIS" with Q(tISa[i]) in sTemp else put Q(tISa[i]) && "& " before sTemp
          replace "tID" with tID in sTemp
          put "<p>" & value(sTemp) & "</p>" & cr after R
       end repeat
@@ -36,6 +61,21 @@ function evaluateListString S
    end try
    return char 1 to -2 of R
 end evaluateListString
+
+
+function evaluateListStringMerge S,tISa
+   put "<p>" & S & "</p>" & cr into S
+   try
+      repeat with i = 1 to the number of controls of this cd
+         put the long id of control i of this cd into tID
+         put tISa[wordoffset("stack",tID) div 4] into tIS
+         put merge(S) after R
+      end repeat
+   catch someErr
+      return someErr
+   end try
+   return char 1 to -2 of R
+end evaluateListStringMerge
 
 function notDirty
    return the editingLine of me is empty or line (the editingLine of me) of fld "list strings" is fld "edit list string"

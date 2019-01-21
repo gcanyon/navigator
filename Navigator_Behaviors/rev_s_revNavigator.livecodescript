@@ -626,7 +626,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    lock screen
    lock messages
    put the short name of this stack into tThisStack
-   
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
@@ -725,6 +724,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
          end if
          
+         put the long seconds into tUpdateTimer
+         
          set the defaultStack to tStackName
          repeat with i = 1 to tControlCount
             add 1 to tCurrentIndentLine
@@ -796,11 +797,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
+         debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
          
       end if
    end repeat
    put "</font></p>" after tControlList
-   
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
@@ -2982,7 +2983,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   exit debug
+   --exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
