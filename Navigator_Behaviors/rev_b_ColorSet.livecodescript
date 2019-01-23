@@ -27,8 +27,9 @@ on menuPick pItemName
       end if
    else
       put "u" before pItemName
-      --put the pItemName of the owner of me after message
-      repeat for each line CS in the pItemName of the owner of me
+      put the long id of the owner of me into oID
+      put the pItemName of oID into propList
+      repeat for each line CS in propList
          set the backgroundColor of grc (item 1 of CS) to item 2 to -1 of CS
       end repeat
    end if
