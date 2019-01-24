@@ -201,6 +201,16 @@ on prefsLoadFromText pText
          set the pProp of pTarget to pValue
       end if
    end repeat
+   set the itemDel to comma
+   repeat with i = 1 to 3
+      put item i of "uLight Theme,uDark Theme,uLight Theme 2" into uProp
+      if the uProp of group "Colors" of card id 1002 of stack "revNavigatorPrefs" is empty
+      then set the uProp of group "Colors" of card id 1002 of stack "revNavigatorPrefs" to replaceF("\b",cr,(line i of \
+            ("Default,110,110,110\bScriptedObject,16,26,234\bBehaviorScripted,0,150,0\bScriptAndBehavior,146,17,164\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,50,50,50\bHighlight,190,210,250\bListLines,140,140,140\bBackground,250,250,250" & cr & \
+            "Default,170,170,170\bScriptedObject,240,240,240\bBehaviorScripted,76,187,95\bScriptAndBehavior,136,136,204\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,255,255,255\bHighlight,121,119,97\bListLines,80,80,80\bBackground,40,43,52" & cr & \
+            "Default,110,110,70\bScriptedObject,66,26,204\bBehaviorScripted,0,120,70\bScriptAndBehavior,146,17,164\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,50,50,50\bHighlight,190,210,250\bListLines,140,140,140\bBackground,230,230,230")))
+   end repeat
+   send "buildColorSetMenu" to card 1 of stack "revNavigatorPrefs"
    updateCommandBars
 end prefsLoadFromText
 
@@ -626,7 +636,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    lock screen
    lock messages
    put the short name of this stack into tThisStack
-   
    if word 1 of tThisStack is not "revNavigator" then exit doUpdateDisplay
    if not ((the autoUpdateList of this stack) or pForceUpdate) then exit doUpdateDisplay
    
@@ -725,6 +734,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
          end if
          
+         put the long seconds into tUpdateTimer
+         
          set the defaultStack to tStackName
          repeat with i = 1 to tControlCount
             add 1 to tCurrentIndentLine
@@ -796,11 +807,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
+         --debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
          
       end if
    end repeat
    put "</font></p>" after tControlList
-   
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
