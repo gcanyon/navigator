@@ -12,6 +12,21 @@ on buildActionsList
    set the menuItemList of group "list action buttons" to BMIL
 end buildActionsList
 
+on buildColorSetMenu
+   put the label of button "ColorSet" of group "Colors" into tChosenItem
+   put the customproperties of group "Colors" into colorSets
+   repeat for each key K in colorSets 
+      if K is empty or colorSets[K] is empty 
+      then delete variable colorSets[K]
+      else put (char 2 to -1 of K) & cr after T2
+   end repeat 
+   set the customproperties of group "Colors" to colorSets
+   put "Save Current..." into T
+   if T2 is not empty then put cr & "-" & cr & char 1 to -2 of T2 after T
+   put T into button "ColorSet" of group "Colors"
+   set the label of button "ColorSet" of group "Colors" to tChosenItem
+end buildColorSetMenu
+
 on getPrefs
    put the long id of stack (the pNavigatorName of this stack) into navID
    put the long id of stack navStack() into mainNavID
@@ -70,6 +85,8 @@ on getPrefs
    
    -- Other
    set the label of btn "stackFileVersion" to the navigatorStackFileVersion of mainNavID
+   
+   buildColorSetMenu
    
 end getPrefs
 

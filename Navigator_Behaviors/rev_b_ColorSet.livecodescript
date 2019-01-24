@@ -13,10 +13,6 @@ on menuPick pItemName
          exit menuPick
       else
          put it into CSname
-         put the text of me into T
-         put it & cr before line -1 of T
-         put T into me
-         set the label of me to it
          repeat for each line CGid in the childcontrolids of the owner of me
             if word 1 of the name of control id CGid of the owner of me is not "graphic" then next repeat
             put the short name of control id CGid of the owner of me into CN
@@ -24,6 +20,8 @@ on menuPick pItemName
          end repeat
          put "u" before CSname
          set the CSname of the owner of me to colorList
+         buildColorSetMenu
+         set the label of me to CSname
       end if
    else
       put "u" before pItemName

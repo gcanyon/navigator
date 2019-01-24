@@ -201,6 +201,16 @@ on prefsLoadFromText pText
          set the pProp of pTarget to pValue
       end if
    end repeat
+   set the itemDel to comma
+   repeat with i = 1 to 3
+      put item i of "uLight Theme,uDark Theme,uLight Theme 2" into uProp
+      if the uProp of group "Colors" of card id 1002 of stack "revNavigatorPrefs" is empty
+      then set the uProp of group "Colors" of card id 1002 of stack "revNavigatorPrefs" to replaceF("\b",cr,(line i of \
+            ("Default,110,110,110\bScriptedObject,16,26,234\bBehaviorScripted,0,150,0\bScriptAndBehavior,146,17,164\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,50,50,50\bHighlight,190,210,250\bListLines,140,140,140\bBackground,250,250,250" & cr & \
+            "Default,170,170,170\bScriptedObject,240,240,240\bBehaviorScripted,76,187,95\bScriptAndBehavior,136,136,204\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,255,255,255\bHighlight,121,119,97\bListLines,80,80,80\bBackground,40,43,52" & cr & \
+            "Default,110,110,70\bScriptedObject,66,26,204\bBehaviorScripted,0,120,70\bScriptAndBehavior,146,17,164\bObjectMissing,231,74,77\bBehaviorMissing,231,74,77\bFilterText,50,50,50\bHighlight,190,210,250\bListLines,140,140,140\bBackground,230,230,230")))
+   end repeat
+   send "buildColorSetMenu" to card 1 of stack "revNavigatorPrefs"
    updateCommandBars
 end prefsLoadFromText
 
@@ -797,7 +807,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
-         debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
+         --debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
          
       end if
    end repeat
@@ -2983,7 +2993,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   --exit debug
+   exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
