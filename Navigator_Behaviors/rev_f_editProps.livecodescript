@@ -21,13 +21,18 @@ on mouseDown
       -- do values popup here
       put the cSourceID of me into tSourceID
       put the cCustomProperties of me into customPropertyB
-      put the sProp of tSourceID into tIDVal
+      put the cCustomPropertySet of me into pCustomPropertySet
+      if customPropertyB 
+      then put value(merge("the [[pCustomPropertySet]][ [[quote]][[sProp]][[quote]]] of [[tSourceID]]")) into tIDVal
+      else put the sProp of tSourceID into tIDVal
       if not customPropertyB and tIDVal is empty then put the effective sProp of tSourceID into tIDVal
       put tSourceID into valToID[tIDVal]
       put truncateString(tIDVal,30) into tIDtoVal[tSourceID]
       put -1 into tIDAddCount[tSourceID]
       repeat for each line tID in the cIDList of me
-         put the sProp of tID into tIDVal
+         if customPropertyB 
+         then put value(merge("the [[pCustomPropertySet]][ [[quote]][[sProp]][[quote]]] of [[tID]]")) into tIDVal
+         else put the sProp of tID into tIDVal
          if not customPropertyB and tIDVal is empty then put the effective sProp of tID into tIDVal
          if valToID[tIDVal] is empty then 
             put tID into valToID[tIDVal]
@@ -100,12 +105,16 @@ on mouseUp
    set the uID of group "editContents" to the long id of me
    put the cSourceID of me into tID
    
-   if the cCustomProperties of me is true then set the customPropertySet of tID to (the cCustomPropertySet of me)
-   
-   put the sProp of tID into tDefaultVal
+   if the cCustomProperties of me is true then 
+      --set the customPropertySet of tID to (the cCustomPropertySet of me)
+      put the cCustomPropertySet of me into pCustomPropertySet
+      put value(merge("the [[pCustomPropertySet]][ [[quote]][[sProp]][[quote]]] of [[tID]]")) into tDefaultVal
+   else
+      put the sProp of tID into tDefaultVal
+   end if
    set the uDialogText of group "editContents" to tDefaultVal
    dispatch "showMe" to group "editContents" with true,(sProp is "htmlText"),(the cCustomProperties of me is false and sProp is among the lines of the oneLiners of stack "revNavigator")
-
+   
    --put value(the clickline)
 end mouseUp
 
@@ -118,17 +127,22 @@ on resultMessage pText
 end resultMessage
 
 on setValue pText
-   repeat for each line tID in the cIDList of me
-      if the cCustomProperties of me is true 
-      then set the customPropertySet of tID to (the cCustomPropertySet of me)
-      else put 1 into typeList[word 1 of tID]
-      
-      set the sProp of tID to pText
-   end repeat
-   if the cCustomProperties of me is false then setRecentProp (the keys of typeList),sProp
-   
+   put the cCustomPropertySet of me into pCustomPropertySet
+   if the cCustomProperties of me is true then
+      repeat for each line tID in the cIDList of me
+         do merge("set the [[pCustomPropertySet]][ [[quote]][[sProp]][[quote]]] of [[tID]] to [[pText]]")
+      end repeat
+   else
+      repeat for each line tID in the cIDList of me
+         add 1 to typeList[word 1 of tID]
+         
+         set the sProp of tID to pText
+      end repeat
+      setRecentProp (the keys of typeList),sProp
+   end if
    set the itemDelimiter to tab
    put line 1 of pText into item 2 of line sWhichLine of me
+   updateDisplay ,true
 end setValue
 
 on scrollbardrag

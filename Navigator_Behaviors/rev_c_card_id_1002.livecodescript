@@ -37,7 +37,7 @@ on getPrefs
    set the text of button "colorset" to BT & "Save Current..."
    
    -- Display Options
-   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes"
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes,FoldDataGrids"
       set the highlight of btn P to the P of navID
    end repeat
    put the fontNames into FN
@@ -108,7 +108,7 @@ on setPrefs
    repeat for each line navID in navIDList
       
       -- Display Options
-      repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes"
+      repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes,FoldDataGrids"
          set the P of navID to the highlight of btn P
       end repeat
       set the hGrid of fld "list" of navID to the highlight of btn "showListLines"

@@ -84,10 +84,17 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
             put false into allSame
             exit repeat
          end repeat 
-      else 
+      else if (not pCustomProperties) or pCustomPropertySet is empty then
          put the P of pID into pIDP
          repeat for each line tID in pIDList
             if the P of tID is pIDP then next repeat
+            put false into allSame
+            exit repeat
+         end repeat
+      else
+         put value(merge("the [[pCustomPropertySet]][ [[quote]][[P]][[quote]]] of [[pID]]")) into pIDP
+         repeat for each line tID in pIDList
+            if value(merge("the [[pCustomPropertySet]][ [[quote]][[P]][[quote]]] of [[tID]]")) is pIDP then next repeat
             put false into allSame
             exit repeat
          end repeat
@@ -96,7 +103,7 @@ on showProps pID,pIDList,pPropList,pCustomProperties,pCustomPropertySet
       if effectiveB
       then put line 1 of the effective P of pID into tProp
       else  put line 1 of pIDP into tProp
-      if P is "htmlText" then put char 4 to -4 of tProp into tProp
+      if (pCustomProperties is not true) and P is "htmlText" then put char 4 to -4 of tProp into tProp
       put tag[1] & P & tag[2][effectiveB][allSame] & tProp & tag[3][effectiveB][allSame] after tHTML
    end repeat
    -- if tHTML is empty then put empty into fld "editProps" of me else 

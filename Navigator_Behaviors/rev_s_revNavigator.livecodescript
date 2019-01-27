@@ -252,7 +252,7 @@ function prefsText
    end repeat
    
    -- Display Options
-   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes,pDefaultFold,pObjectLimit,pMenuLimit"
+   repeat for each item P in "ColorScriptedObjects,AutoUpdateList,AutoUpdateSelection,namedObjectsOnly,scriptedObjectsOnly,showListLines,EditorsAsPalettes,pDefaultFold,pObjectLimit,pMenuLimit,FoldDataGrids"
       put prefsLine(P,navID) after R
    end repeat
    put prefsLine("textFont",the long id of fld "list" of navID) after R
@@ -463,12 +463,11 @@ on setFoldDepth tContainer,tDepth
    put the long id of tContainer into tContainerID
    if not (word 1 of tContainerID is among the items of "group,card") then exit setFoldDepth
    if word 1 of tContainerID is "group" then setFolded tContainerID,(tDepth = 0)
-   repeat with i = 1 to the number of controls of tContainerID
-      put the long id of control i of tContainerID into tID
+   put the number of words of tContainerID into tContainerWordCount
+   repeat for each line shortID in the controlIDs of tContainerID
+      put the long id of control id shortID of tContainerID into tID
       if word 1 of tID is not "group" then next repeat
-      put tID into tDepthCount
-      replace tContainerID with empty in tDepthCount
-      put (the number of words of tDepthCount) div 4 into tDepthCount
+      put ((the number of words of tID) - tContainerWordCount) div 4 into tDepthCount
       if tDepthCount < tDepth then setFolded tID,false
       else if tDepthCount = tDepth then setFolded tID,true
    end repeat
@@ -660,6 +659,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    
    put the NamedObjectsOnly of this stack into tNamedObjectsOnly
    put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
+   put the FoldDataGrids of this stack into tFoldDataGrids
    put the uDisplay of this stack into tDisplay
    put tDisplay contains "tIS" into isTis
    put the ColorScriptedObjects of this stack into tCheckScripts
@@ -719,9 +719,16 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             add 1 to tCurrentLine
             put tNavTarget into newLineArray[tCurrentLine]
             put tCurrentLine into newIDArray[tNavTarget]
-            if tNavTarget is not among the lines of lastNavTarget and the pDefaultFold of stack tThisStack is not "Show All"
-            then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
-            
+            if tNavTarget is not among the lines of lastNavTarget then
+               if the pDefaultFold of stack tThisStack is not "Show All" then setFoldDepth tNavTarget,(the pDefaultFold of stack tThisStack)
+               if tFoldDataGrids then 
+                  repeat for each line shortID in the controlIDs of tNavTarget
+                     put the long id of control id shortID of tNavTarget into tID
+                     if word 1 of tID is "group" and the dgProps["allow editing"] of tID is not empty
+                     then setFolded tID,true
+                  end repeat
+               end if
+            end if
             if navTitle is empty then put "Nav:" && simpleName(tNavTarget) into navTitle else put "Nav: Multiple Sources" into navTitle
             put the number of controls of tNavTarget into tControlCount
          else
@@ -796,7 +803,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             put tCurrentLine into newIDArray[tID]
             put tID into newLineArray[tCurrentLine]
             if foldedIDArray[tID] and childControlCount > 0 then
-               put tColor[1] & tIndentString & tIndent[tCurrentIndentLine] & childControlCount && "folded controls" after tControlList
+               put tColor[1] & tIndentString & tIndentString & tIndent[tCurrentIndentLine] & "*** " & childControlCount && "folded controls" after tControlList
                add 1 to tCurrentLine
                put empty into newLineArray[tCurrentLine]
                repeat with j = 1 to childControlCount

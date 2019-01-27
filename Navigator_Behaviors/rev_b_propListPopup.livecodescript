@@ -6,15 +6,18 @@ local idList
 local customPropertyB
 
 on menuPick pWhich
-   -- put valueMenu,propertyName,idList,customPropertyB,customPropertySetName 
    if valueMenu then
       dispatch "setValue" to fld "editProps" with pWhich 
    else
       put line (the menuHistory of me) of idList into tID
-      if customPropertyB is true then set the custompropertySet of tID to customPropertySetName
-      dispatch "setValue" to fld "editProps" with the propertyName of tID 
+      if customPropertyB is true 
+      then put value(merge("the [[customPropertySetName]][ [[quote]][[propertyName]][[quote]]] of [[tID]]")) into propValue
+      else put the propertyName of tID into propValue
+      dispatch "setValue" to fld "editProps" with propValue
    end if
 end menuPick
+
+
 
 on doSetup pvalueMenu,ppropertyName,pidList,pcustomPropertyB,pcustomPropertySetName
    put pvalueMenu into valueMenu
