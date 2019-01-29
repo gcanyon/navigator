@@ -630,7 +630,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    local tIndentString, tKeys, tName, tNamedObjectsOnly, tObjectLimit
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStart, tSubstackList
-   local tSubstackName, tThisStack, whichColor
+   local tSubstackName, tThisStack, whichColor,foldB
    
    lock screen
    lock messages
@@ -685,7 +685,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put 0 into targetIndex
    put 0 into tCurrentLine
    put empty into tControlList
-   
    repeat for each line tNavTarget in navTarget
       if tNavTarget is "this card of the topstack" then put the long id of this card of the topstack into tNavTarget
       delete variable tIndent
@@ -744,6 +743,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put the long seconds into tUpdateTimer
          
          set the defaultStack to tStackName
+         delete variable foldB
          repeat with i = 1 to tControlCount
             add 1 to tCurrentIndentLine
             if foldB[tCurrentIndentLine] then next repeat
@@ -1698,10 +1698,14 @@ function uniqueStacksFromIDs idList,onlyMainstacks
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function simpleID pID
-   if not exists(pID) then return empty
-   if word 1 of pID is "stack" then return stackNameFromID(pID)
-   return word 1 to 4 of the long id of pID && stackNameFromID(pID)
+function simpleID pIDList
+   repeat for each line pID in pIDList
+      if not exists(pID) then next repeat
+      if word 1 of pID is "stack" 
+      then put stackNameFromID(pID) & cr after R
+      else put (word 1 to 4 of the long id of pID) && stackNameFromID(pID) & cr after R
+   end repeat
+   return char 1 to -2 of R
 end simpleID
 
 function simpleName pID
@@ -2518,11 +2522,12 @@ end removeNavigatorTarget
 
 
 on setNavigatorTarget navName,targetList,bAddTargets
-   if not bAddTargets then addRecentTarget
+   --debug navName,targetList,bAddTargets
    if navName is not empty and navName is not the short name of me then 
       dispatch "setNavigatorTarget" to stack navName with empty,targetList,(bAddTargets is true)
       exit setNavigatorTarget
    end if
+   if not bAddTargets then addRecentTarget
    put not (the showIDEStacks of stack "revNavigator") into hideIDE
    repeat for each line tID in targetList
       switch 
@@ -2548,6 +2553,7 @@ on setNavigatorTarget navName,targetList,bAddTargets
    if NTList is empty then exit setNavigatorTarget
    if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
    else put NTList into navTarget
+   --debug navTarget
    doUpdateDisplay true
 end setNavigatorTarget
 
@@ -2667,6 +2673,7 @@ function navTargetContainer whichLine,N
       dispatch function "navTargetContainer" to stack N with whichLine
       return the result
    end if
+   if whichLine = 0 then return navTarget
    if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
    if word 2 of line whichLine of navTarget is "list" then return empty
    
@@ -2859,7 +2866,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   exit debug
+   --exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString

@@ -132,27 +132,27 @@ on menuPick pWhich
       case "Group"
          lock screen
          put getID() into tIDList
-         put line 1 of tIDList into tOwner
-         delete word 1 to 4 of tOwner
+         put word 5 to -1 of line 1 of tIDList into tOwner
          repeat for each line L in tIDList
-            if word 5 to -1 of L is not tOwner then break
+            if word 5 to -1 of L is not tOwner then 
+               answer warning "You can only group controls that share a container." with "OK"
+               break
+            end if 
          end repeat
+         put simpleID(tOwner) into tOwner
          if word 1 of tOwner is "group" then 
+            put tOwner
             start editing tOwner
-            put empty into tIDNewList
-            repeat for each line L in tIDList
-               put (word 1 to 4 of L && word 9 to -1 of L) & cr after tIDNewList
-            end repeat
-            put char 1 to -2 of tIDNewList into tIDList
+            put simpleID(tIDList) into tIDList
          end if
          replace cr with " and " in tIDList
          put "group " before tIDList
-         set the relayerGroupedControls to true
+         --set the relayerGroupedControls to true
          try
             do tIDList
          catch pError
             answer ("Group failed:" && pError)
-            put pError & cr & cr & cr & tIDList
+            debug pError,tIDList
          end try
          if word 1 of tOwner is  "group" then 
             put "background" into word 1 of tOwner
