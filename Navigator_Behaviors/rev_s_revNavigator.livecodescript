@@ -360,7 +360,7 @@ on doUpdateListSelection
    put the number of controls of the topStack into tNumControls
    if tNumControls is not navLastObjectCount then
       cancel navUpdateDisplayMessage
-      doUpdateDisplay true
+      updateDisplay true
       put tNumControls into navLastObjectCount
    end if
    put the selectedObjects into tObjects
@@ -631,7 +631,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStart, tSubstackList
    local tSubstackName, tThisStack, whichColor,foldB
-   
+   if the vis of stack "revnavigatorcrosshair" then exit doUpdateDisplay
    lock screen
    lock messages
    put the short name of this stack into tThisStack
@@ -814,7 +814,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
-         --debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
+         --debug tNavTarget,(the long seconds - tUpdateTimer),the vis of stack "revnavigatorcrosshair"
          
       end if
    end repeat
@@ -898,7 +898,7 @@ end addStackListDetails
 
 on tryTwo
    put simpleID(the long id of this cd of stack "navdebugstack") & cr & simpleID(the long id of card 1 of stack "revNavigator") into navTarget
-   doUpdateDisplay true
+   updateDisplay true
 end tryTwo
 
 function testF
@@ -1178,7 +1178,7 @@ on relayerControls2 cList,cTargetContainer,cTargetObject,cMoveControls
    go tReturn2
    unlock screen
    unlock messages
-   dispatch "doUpdateDisplay" to me with true
+   dispatch "updateDisplay" to me with true
 end relayerControls2
 
 function getLayer lineNumber,beforeAfter
@@ -1284,7 +1284,7 @@ on renameObjects pWhichLine
       if the result is not empty then next repeat
       set the name of tID to it
    end repeat
-   send ("doUpdateDisplay true") to me in 6 ticks
+   send ("updateDisplay true") to me in 6 ticks
 end renameObjects
 
 
@@ -1308,7 +1308,7 @@ on deleteObjects pWhichLine
    end repeat
    unlock messages
    unlock screen
-   send ("doUpdateDisplay true") to me in 6 ticks
+   send ("updateDisplay true") to me in 6 ticks
 end deleteObjects
 
 
@@ -1341,7 +1341,7 @@ on cloneObjects pWhichLine
       unlock messages
       unlock screen      
    end repeat
-   send ("doUpdateDisplay true") to me in 10 ticks
+   send ("updateDisplay true") to me in 10 ticks
 end cloneObjects
 
 
@@ -2517,7 +2517,7 @@ on removeNavigatorTarget navName,tIDList
       put lineOffset(tID,navTarget) into lineNo
       if lineNo > 0 then delete line lineNo of navTarget
    end repeat
-   doUpdateDisplay true
+   updateDisplay true
 end removeNavigatorTarget
 
 
@@ -2554,7 +2554,7 @@ on setNavigatorTarget navName,targetList,bAddTargets
    if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
    else put NTList into navTarget
    --debug navTarget
-   doUpdateDisplay true
+   updateDisplay true
 end setNavigatorTarget
 
 
@@ -2866,7 +2866,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   --exit debug
+   exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString

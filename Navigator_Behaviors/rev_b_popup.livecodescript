@@ -73,7 +73,7 @@ on menuPick pWhich
                end try
             end repeat
          end repeat
-         send ("doUpdateDisplay") to me in 6 ticks
+         send ("updateDisplay") to me in 6 ticks
          break
       case "Remove Group"
       case "Remove Groups"
@@ -87,7 +87,7 @@ on menuPick pWhich
             catch tErr
             end try
          end repeat
-         send ("doUpdateDisplay") to me in 6 ticks
+         send ("updateDisplay") to me in 6 ticks
          break
       case "Make Copied Stack a SubStack"
       case "Make Copied Stacks into SubStacks"
@@ -406,7 +406,7 @@ on menuPick pWhich
             put getIDFirst(tClickedLine) into tID
             if item 2 of pWhich is "Show All" then put 999999 into tFoldDepth else put item 2 of pWhich into tFoldDepth
             setFoldDepth tID,tFoldDepth
-            doUpdateDisplay true,true
+            updateDisplay true,true
          else if item 1 of pWhich is among the items of "substacks|mainstack" then
             put item 2 of pWhich into tStackName
             if tStackName is "New Substack..." then

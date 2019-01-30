@@ -305,7 +305,7 @@ on dragLines pDragList,pTargetLine
          if dragA[1] is not empty then
             go stack SN
             addBookmarkedControls dragA[1],pTargetLine
-            doUpdateDisplay true
+            updateDisplay true
          end if
          hiliteLines lineListFromIDs(tDragIDList)
    end switch
@@ -682,7 +682,7 @@ on finishReorderExternal idList
       end repeat
    end if   
    put numberItems(targetLine,(targetLine + the number of lines of idList - 1)) into hiliteList
-   doUpdateDisplay true
+   updateDisplay true
    set the hilitedlines of me to hiliteList
 end finishReorderExternal
 
