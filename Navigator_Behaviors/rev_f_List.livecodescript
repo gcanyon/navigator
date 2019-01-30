@@ -79,7 +79,6 @@ end updatesDoubleHiliteList
 
 on mouseDoubleUp
    put the mouseLoc into XY
-   --put sDoubleHiliteList & cr after message
    
    if ticks() > sClickTicks + 60 and (the commandKey is "up" or the optionKey is "up") then exit mouseDoubleUp
    if abs(item 1 of XY - item 1 of the clickloc) >= the dragdelta or abs(item 2 of XY - item 2 of the clickloc) >= the dragdelta then exit mouseDoubleUp
@@ -94,12 +93,12 @@ on mouseDoubleUp
          else put (word 2 of the clickLine) into sHiliteList
          set the hilitedlines of me to sHiliteList
          storeHilites
+      else
+         put the hilitedlines of me into sHiliteList 
       end if
       if the shiftKey is "down" then put "Shift-" before tProperty
       if the optionKey is "down" then put "Option-" before tProperty
       put the tProperty of this stack into tCommand
-      --put tProperty,tCommand && cr after message
-      
       if tCommand is among the items of "Edit Script,Edit Behavior Script,Single Object Inspector,Individual Object Inspectors,Bookmark-Remove"
       then doCommandCode tCommand,sHiliteList
       else
@@ -306,7 +305,7 @@ on dragLines pDragList,pTargetLine
          if dragA[1] is not empty then
             go stack SN
             addBookmarkedControls dragA[1],pTargetLine
-            doUpdateDisplay true
+            updateDisplay true
          end if
          hiliteLines lineListFromIDs(tDragIDList)
    end switch
@@ -683,7 +682,7 @@ on finishReorderExternal idList
       end repeat
    end if   
    put numberItems(targetLine,(targetLine + the number of lines of idList - 1)) into hiliteList
-   doUpdateDisplay true
+   updateDisplay true
    set the hilitedlines of me to hiliteList
 end finishReorderExternal
 

@@ -51,13 +51,13 @@ on menuPick pWhich
          ask "Filter Controls (tID is control reference):" with the filterString of this stack
          if the result is not empty then break
          set the filterString of this stack to it
-         doUpdateDisplay true
+         updateDisplay true
          break
       case "Command..."
          send "showMe" to group "commandGroup"
          break
       case "Update List Now"
-         send ("doUpdateDisplay true") to me in 6 ticks
+         send ("updateDisplay true") to me in 6 ticks
          break
       case "Bookmark|MouseControl..."
          getMouse the owner of the owner of me,"setBookmarksByMouse"

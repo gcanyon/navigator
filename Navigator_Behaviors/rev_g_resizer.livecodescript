@@ -1,6 +1,7 @@
 ﻿script "rev_g_resizer"
 local sID -- the long id of the template object for resizing
 local sIDList -- the list of long ids of objects to resize
+local sIDarray -- array of long ids of objects to resize
 local sResizeMode -- how we are resizing: 
 local sRect -- the rect to resize from for all but proportional
 local sStartRect -- the rect of the template object to resize from for proportional
@@ -28,19 +29,35 @@ on editSizes pID,pIDList
    if pID is empty then exit editSizes
    put pID into sID
    delete variable sUndoArray
-   put the rect of sID into sUndoArray[sID]
-   put empty into sIDList
-   repeat for each line L in pIDList
-      if L is sID then next repeat
-      put the rect of L into sUndoArray[L]
-      put L & cr after sIDList
+   delete variable sIDarray
+   put sID into sIDarray[1]
+   put 1 into i
+   put (the name of sID) && "[" & the id of sID & "]" into menuText
+   repeat for each line tID in pIDList
+      put the rect of tID into sUndoArray[tID]
+      if tID is sID then next repeat
+      add 1 to i
+      put tID into sIDarray[i]
+      put cr & (the name of tID) && "[" & the id of tID & "]" after menuText
    end repeat
-   put (the name of sID) && "[" & the id of sID & "]" into tTitle
-   if sIDList is not empty then put cr & "and" && (the number of lines of sIDList) && "others" after tTitle
-   put tTitle into fld "resize title"
-   setResizeMode
-   put the rect of sID into sRect
+   --    put (the name of sID) && "[" & the id of sID & "]" into tTitle
+   --    if sIDList is not empty then put cr & "and" && (the number of lines of sIDList) && "others" after tTitle
+   --put tTitle into fld "resize title"
+   
+   put menuText into btn "resizer template object"
+   set the menuHistory of btn "resizer template object" to 1
+   setSID 1
 end editSizes
+
+on setSID i
+   put sIDarray[i] into sID
+   put the rect of sID into sRect
+   put sIDarray into sIDList
+   combine sIDList using cr
+   delete line i of sIDList
+   
+   setResizeMode
+end setSID
 
 on resetRects
    repeat for each key tID in sUndoArray
@@ -49,23 +66,23 @@ on resetRects
 end resetRects
 
 on setResizeMode
-  put the label of of btn "resize style" into sResizeMode
-  if sResizeMode <> "proportional" then exit setResizeMode
-  put the rect of sID into sStartRect
-  put the loc of sID into sStartLoc
-  put the width of sID into tW
-  put the height of sID into tH
-  put tW into sDim[1]
-  put tW into sDim[3]
-  put tH into sDim[2]
-  put tH into sDim[4]
-  put 0 into i
-  repeat for each line L in sIDList
-    add 1 to i
-    put the rect of L into sSRa[i]
-    put the width of L into sW[i]
-    put the height of L into sH[i]
-  end repeat
+   put the label of of btn "resize style" into sResizeMode
+   if sResizeMode <> "proportional" then exit setResizeMode
+   put the rect of sID into sStartRect
+   put the loc of sID into sStartLoc
+   put the width of sID into tW
+   put the height of sID into tH
+   put tW into sDim[1]
+   put tW into sDim[3]
+   put tH into sDim[2]
+   put tH into sDim[4]
+   put 0 into i
+   repeat for each line L in sIDList
+      add 1 to i
+      put the rect of L into sSRa[i]
+      put the width of L into sW[i]
+      put the height of L into sH[i]
+   end repeat
 end setResizeMode
 
 on switchToPalette
@@ -174,3 +191,29 @@ on doResize newRect,newLoc
    put the rect of sID into sRect
    unlock screen
 end doResize
+
+on mouseUp
+   put the short name of the target into TSN
+   put empty into tCMD
+   switch TSN
+      case "equal-widths"
+         put merge("set the width of tID to [[the width of sID]]") into tCMD;break
+      case "equal-heights"
+         put merge("set the height of tID to [[the height of sID]]") into tCMD;break
+      case "vertical-alignment"
+         put merge("set the loc of tID to (item 1 of the loc of tID),([[item 2 of the loc of sID]])") into tCMD;break
+      case "horizontal-alignment"
+         put merge("set the loc of tID to ([[item 1 of the loc of sID]]),(item 2 of the loc of tID)") into tCMD;break
+      case "left-alignment"
+      case "top-alignment"
+      case "right-alignment"
+      case "bottom-alignment"
+         put token 1 of TSN into TSNT1
+         put merge("set the [[TSNT1]] of tID to [[the TSNT1 of sID]]") into tCMD;break
+      default
+   end switch
+   if tCMD is empty then exit mouseUp
+   repeat for each line tID in sIDList
+      do tCMD
+   end repeat
+end mouseUp

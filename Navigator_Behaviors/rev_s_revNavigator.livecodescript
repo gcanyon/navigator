@@ -360,7 +360,7 @@ on doUpdateListSelection
    put the number of controls of the topStack into tNumControls
    if tNumControls is not navLastObjectCount then
       cancel navUpdateDisplayMessage
-      doUpdateDisplay true
+      updateDisplay true
       put tNumControls into navLastObjectCount
    end if
    put the selectedObjects into tObjects
@@ -630,8 +630,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    local tIndentString, tKeys, tName, tNamedObjectsOnly, tObjectLimit
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStart, tSubstackList
-   local tSubstackName, tThisStack, whichColor
-   
+   local tSubstackName, tThisStack, whichColor,foldB
+   if the vis of stack "revnavigatorcrosshair" then exit doUpdateDisplay
    lock screen
    lock messages
    put the short name of this stack into tThisStack
@@ -685,7 +685,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put 0 into targetIndex
    put 0 into tCurrentLine
    put empty into tControlList
-   
    repeat for each line tNavTarget in navTarget
       if tNavTarget is "this card of the topstack" then put the long id of this card of the topstack into tNavTarget
       delete variable tIndent
@@ -744,6 +743,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put the long seconds into tUpdateTimer
          
          set the defaultStack to tStackName
+         delete variable foldB
          repeat with i = 1 to tControlCount
             add 1 to tCurrentIndentLine
             if foldB[tCurrentIndentLine] then next repeat
@@ -814,7 +814,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
-         --debug tNavTarget,(the long seconds - tUpdateTimer),the executioncontexts
+         --debug tNavTarget,(the long seconds - tUpdateTimer),the vis of stack "revnavigatorcrosshair"
          
       end if
    end repeat
@@ -898,7 +898,7 @@ end addStackListDetails
 
 on tryTwo
    put simpleID(the long id of this cd of stack "navdebugstack") & cr & simpleID(the long id of card 1 of stack "revNavigator") into navTarget
-   doUpdateDisplay true
+   updateDisplay true
 end tryTwo
 
 function testF
@@ -1178,7 +1178,7 @@ on relayerControls2 cList,cTargetContainer,cTargetObject,cMoveControls
    go tReturn2
    unlock screen
    unlock messages
-   dispatch "doUpdateDisplay" to me with true
+   dispatch "updateDisplay" to me with true
 end relayerControls2
 
 function getLayer lineNumber,beforeAfter
@@ -1284,7 +1284,7 @@ on renameObjects pWhichLine
       if the result is not empty then next repeat
       set the name of tID to it
    end repeat
-   send ("doUpdateDisplay true") to me in 6 ticks
+   send ("updateDisplay true") to me in 6 ticks
 end renameObjects
 
 
@@ -1308,7 +1308,7 @@ on deleteObjects pWhichLine
    end repeat
    unlock messages
    unlock screen
-   send ("doUpdateDisplay true") to me in 6 ticks
+   send ("updateDisplay true") to me in 6 ticks
 end deleteObjects
 
 
@@ -1341,7 +1341,7 @@ on cloneObjects pWhichLine
       unlock messages
       unlock screen      
    end repeat
-   send ("doUpdateDisplay true") to me in 10 ticks
+   send ("updateDisplay true") to me in 10 ticks
 end cloneObjects
 
 
@@ -1698,10 +1698,14 @@ function uniqueStacksFromIDs idList,onlyMainstacks
    return the keys of stackList
 end uniqueStacksFromIDs
 
-function simpleID pID
-   if not exists(pID) then return empty
-   if word 1 of pID is "stack" then return stackNameFromID(pID)
-   return word 1 to 4 of the long id of pID && stackNameFromID(pID)
+function simpleID pIDList
+   repeat for each line pID in pIDList
+      if not exists(pID) then next repeat
+      if word 1 of pID is "stack" 
+      then put stackNameFromID(pID) & cr after R
+      else put (word 1 to 4 of the long id of pID) && stackNameFromID(pID) & cr after R
+   end repeat
+   return char 1 to -2 of R
 end simpleID
 
 function simpleName pID
@@ -2513,16 +2517,17 @@ on removeNavigatorTarget navName,tIDList
       put lineOffset(tID,navTarget) into lineNo
       if lineNo > 0 then delete line lineNo of navTarget
    end repeat
-   doUpdateDisplay true
+   updateDisplay true
 end removeNavigatorTarget
 
 
 on setNavigatorTarget navName,targetList,bAddTargets
-   if not bAddTargets then addRecentTarget
+   --debug navName,targetList,bAddTargets
    if navName is not empty and navName is not the short name of me then 
       dispatch "setNavigatorTarget" to stack navName with empty,targetList,(bAddTargets is true)
       exit setNavigatorTarget
    end if
+   if not bAddTargets then addRecentTarget
    put not (the showIDEStacks of stack "revNavigator") into hideIDE
    repeat for each line tID in targetList
       switch 
@@ -2548,7 +2553,8 @@ on setNavigatorTarget navName,targetList,bAddTargets
    if NTList is empty then exit setNavigatorTarget
    if bAddTargets and navTarget is not empty then put cr & NTList after navTarget
    else put NTList into navTarget
-   doUpdateDisplay true
+   --debug navTarget
+   updateDisplay true
 end setNavigatorTarget
 
 
@@ -2667,6 +2673,7 @@ function navTargetContainer whichLine,N
       dispatch function "navTargetContainer" to stack N with whichLine
       return the result
    end if
+   if whichLine = 0 then return navTarget
    if whichLine is not a number or whichLine > the number of lines of navTarget then put 1 into whichLine
    if word 2 of line whichLine of navTarget is "list" then return empty
    
