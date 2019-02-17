@@ -4,7 +4,10 @@ local addPropertiesForType
 
 global gRevDevelopment
 on mouseDown
-   put the itemList of me into IL
+   put the uBaseText of me into IL
+   put the customProperties["controlSets"] of stack navStack() into CS
+   put the keys of CS into setList
+   if setList is empty then put "ControlSets" after IL else put setList after IL
    if the optionKey is down then put cr & "-" & cr & iff(gRevDevelopment,"!c","") & "Debug IDE" after IL
    set the text of me to IL
 end mouseDown

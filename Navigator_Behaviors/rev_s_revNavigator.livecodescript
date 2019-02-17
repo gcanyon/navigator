@@ -626,7 +626,9 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    local tIndentString, tKeys, tName, tNamedObjectsOnly, tObjectLimit
    local tPrevDefaultStack, tRejectList, tScriptedObjectsOnly, tScroll, tStackID
    local tStackList, tStackName, tStart, tSubstackList
-   local tSubstackName, tThisStack, whichColor,foldB
+   local tSubstackName, tThisStack, whichColor
+   put the long seconds into tUpdateTimer
+   
    if the vis of stack "revnavigatorcrosshair" then exit doUpdateDisplay
    lock screen
    lock messages
@@ -754,10 +756,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
          end if
          
-         put the long seconds into tUpdateTimer
-         
          set the defaultStack to tStackName
-         
          
          if notAList then put the controlIDs of tNavTarget into tShortIDlist
          else if word 1 of tNavTarget is "card" then put the cardIDs of tStackID into tShortIDlist
@@ -827,6 +826,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
    set the defaultStack to tPrevDefaultStack
+   
+   debug the long seconds - tUpdateTimer
    
    if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
    
