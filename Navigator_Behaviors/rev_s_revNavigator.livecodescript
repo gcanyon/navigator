@@ -1,6 +1,6 @@
 ﻿script "rev_s_revNavigator"
 //>GLOBALS
-global gREVMessageDispatch, gSBControlSets
+global gREVMessageDispatch
 
 
 //>LOCALS
@@ -19,6 +19,7 @@ local navTarget -- A LIST OF THE THINGS BEING DISPLAYED BY THIS INSTANCE OF NAVI
 -- CAN BE SET TO ANY OF THE ABOVE OR A LONG ID OF A CONTAINER
 
 local lastNavTarget -- the last list of things displayed, to check for default fold
+local tIndentStringArray -- array of extended indent strings
 
 
 
@@ -97,9 +98,6 @@ on doSetup
    set the minWidth of N to 170
    setNavigatorTarget ,"the topstack"
    
-   set the customPropertySet of me to "gSBControlSetsProp"
-   put the customProperties of me into gSBControlSets
-   set the customPropertySet of me to empty
    
    set the textHeight of fld "list" to 1 + round(4 * the textSize of fld "list" / 3)
    
@@ -118,8 +116,6 @@ on closeStack
    if word 1 of the short name of this stack is not among the items of "Navigator,revNavigator" then exit closeStack
    put the navigatorStackFileVersion of me into sStackFileVersion
    --send "cleanMyControlSets" to btn "Actions"
-   set the customPropertySet of me to "gSBControlSetsProp"
-   set the customProperties of me to gSBControlSets
    put empty into fld "list"
    put empty into fld "filter"
    put empty into fld "command"
@@ -660,12 +656,30 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put the NamedObjectsOnly of this stack into tNamedObjectsOnly
    put the ScriptedObjectsOnly of this stack into tScriptedObjectsOnly
    put the FoldDataGrids of this stack into tFoldDataGrids
-   put the uDisplay of this stack into tDisplay
-   put tDisplay contains "tIS" into isTis
+   switch the uDisplay of this stack
+      case "name"; put "[[tIS]][[tName]]" into tDisplay;break
+      case "id"; put "[[tIS]][[the abbreviated id of tID]]" into tDisplay; break
+      case "Name and ID"; put "[[tIS]][[tName]] ([[the id of tID]])" into tDisplay; break
+      case "Long Name"; put "[[tIS]][[the long name of tID]]" into tDisplay; break
+      case "Long ID"; put "[[tIS]][[tID]]" into tDisplay; break
+      default
+         put the uDisplay of this stack into tDisplay
+         if not (tDisplay contains "[[tIS]]") then put "[[tIS]]" before tDisplay
+   end switch
+   
    put the ColorScriptedObjects of this stack into tCheckScripts
-   put the pIndentString of this stack into tIndentString
-   put Q("button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id") into tRejectList
-   replace comma with quote,quote in tRejectList
+   if the pIndentString of this stack is not tIndentStringArray[1] then
+      put the pIndentString of this stack into tIndentStringArray[1]
+      repeat with i = 2 to 99
+         put tIndentStringArray[i - 1] & tIndentStringArray[1] into tIndentStringArray[i]
+      end repeat
+   end if
+   if tNamedObjectsOnly then
+      put Q("button,check,label field,field,radio,tab menu,table field,Scrolling List Field,List Field,Option Menu,Pulldown Menu,ComboBox Menu,Popup Menu,Progress Scrollbar,Scrollbar,Image,Player,graphic 1,new scrollbar,new graphic,new image,card id,group id") into tRejectList
+      replace comma with quote,quote in tRejectList
+      put "id," before tRejectList
+      split tRejectList by comma as set
+   end if
    
    put the byTest of group "filter toggle" into tFilterByTest
    
@@ -702,8 +716,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put not (word 2 of tNavTarget is "list") into notAList
          if notAList and not exists(tNavTarget) then next repeat
          
-         put the password of tStackID is empty into tCheckScripts
-         if tCheckScripts then put whichColor(tStackID) into tStackColor else put 1 into tStackColor
+         put tCheckScripts and the password of tStackID is empty into tCheckScriptsIndividual
+         if tCheckScriptsIndividual then put whichColor(tStackID) into tStackColor else put 1 into tStackColor
          if tControlList is empty 
          then put (char 12 to -1 of tColor[tStackColor]) & "<b>" & tStackID & "</b>" after tControlList 
          else put tColor[tStackColor] & "<b>" & tStackID & "</b>" after tControlList 
@@ -713,7 +727,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          
          if notAList then
             put 2 into tCurrentIndentLine
-            if tCheckScripts then put whichColor(tNavTarget) into tCardOrBGColor else put 1 into tCardOrBGColor
+            if tCheckScriptsIndividual then put whichColor(tNavTarget) into tCardOrBGColor else put 1 into tCardOrBGColor
             put tColor[tCardOrBGColor] & "<b>" & the name of tNavTarget & "</b>" after tControlList
             add 1 to tCurrentLine
             put tNavTarget into newLineArray[tCurrentLine]
@@ -743,75 +757,65 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put the long seconds into tUpdateTimer
          
          set the defaultStack to tStackName
-         delete variable foldB
-         repeat with i = 1 to tControlCount
+         
+         
+         if notAList then put the controlIDs of tNavTarget into tShortIDlist
+         else if word 1 of tNavTarget is "card" then put the cardIDs of tStackID into tShortIDlist
+         else put the backgroundIDs of tStackID into tShortIDlist         
+         put 0 into nextUnfoldedLine
+         repeat for each line tShortID in tShortIDlist
             add 1 to tCurrentIndentLine
-            if foldB[tCurrentIndentLine] then next repeat
-            if notAList then put the long id of control i of tNavTarget into tID
-            else if word 1 of tNavTarget is "card" then put the long id of cd i of tStackID into tID
-            else put the long id of bg i of tStackID into tID         
+            
+            if notAList then put the long id of control id tShortID of tNavTarget into tID
+            else if word 1 of tNavTarget is "card" then put the long id of cd id tShortID of tStackID into tID
+            else put the long id of bg id tShortID of tStackID into tID 
+            
+            if tCurrentIndentLine < nextUnfoldedLine then 
+               put tID & cr after newLineArray[tCurrentLine]
+               put tCurrentLine into newIDArray[tID]
+               next repeat
+            end if
+            
             put the name of tID into tName
             
             if word 1 of tName is "group" and notAList then
                put the number of controls of tID into childControlCount
-               repeat with childIndex = (tCurrentIndentLine +1) to (tCurrentIndentLine + childControlCount)
-                  if foldedIDArray[tID]
-                  then put true into foldB[childIndex]
-                  else put tIndentString after tIndent[childIndex]
-               end repeat
+               if foldedIDArray[tID] 
+               then put tCurrentIndentLine + childControlCount + 1 into nextUnfoldedLine
             end if
             
-            if tFilterString is not empty then
-               put tFilterString into tTempFilterString
-               replace "tID" with tID in tTempFilterString
-               try
-                  if not value(tTempFilterString) then next repeat
-               catch someErr
-                  next repeat
-               end try
-            end if
+            if tFilterString is not empty and not merge(tTempFilterString) then next repeat
             
-            if (tNamedObjectsOnly and \
-                  (word 2 of tName is "id" or word 2 of tName is among the items of tRejectList))  \
-                  or (tScriptedObjectsOnly and (the script of tID is empty))
+            if (tNamedObjectsOnly and tRejectList[word 2 of tName])\
+            or (tScriptedObjectsOnly and (the script of tID is empty))
             then next repeat
             
-            switch tDisplay
-               case "name"; put tIndentString & tIndent[tCurrentIndentLine] before tName;break
-               case "id"; put tIndentString & tIndent[tCurrentIndentLine] & the abbreviated id of tID into tName; break
-               case "Name and ID"; put tIndentString & tIndent[tCurrentIndentLine] & tName && "[" & the id of tID & "]" into tName; break
-               case "Long Name"; put tIndentString & tIndent[tCurrentIndentLine] & the long name of tID into tName; break
-               case "Long ID"; put tIndentString & tIndent[tCurrentIndentLine] & tID into tName; break
-               default 
-                  put tDisplay into tThisDisplay
-                  if isTis then replace "tIS" with Q(tIndentString & tIndent[tCurrentIndentLine]) in tThisDisplay
-                  replace "tID" with tID in tThisDisplay
-                  try
-                     put line 1 of value(tThisDisplay) into tName
-                  catch someErr
-                     put " [" & the id of tID & "]" && someErr after tName
-                  end try
-                  if not isTis then put tIndentString & tIndent[tCurrentIndentLine] before tName
-                  break
-            end switch
+            put tIndentStringArray[((the number of words of tID) - 6) div 4] into tIS
+            
+            put line 1 of merge(tDisplay) into tName
+            
             if tMatchString is not empty and tMatchString is not in tName then next repeat
             add 1 to tCurrentLine
             
-            if tCheckScripts then put whichColor(tID) into tIDColor else put 1 into tIDColor
+            if tCheckScriptsIndividual then
+               if the script of tID is not empty then put 2 into tIDColor else put 1 into tIDColor
+               if the behavior of tID is not empty then 
+                  if exists(the behavior of tID) 
+                  then add 2 to tIDColor 
+                  else put 0 into tIDColor
+               end if
+            else
+               put 1 into tIDColor
+            end if
+            
             put tColor[tIDColor] & tName after tControlList
             
             put tCurrentLine into newIDArray[tID]
             put tID into newLineArray[tCurrentLine]
-            if foldedIDArray[tID] and childControlCount > 0 then
-               put tColor[1] & tIndentString & tIndentString & tIndent[tCurrentIndentLine] & "*** " & childControlCount && "folded controls" after tControlList
+            if foldedIDArray[tID] and notAList and childControlCount > 0 then
+               put merge("[[tColor[1]]][[tIS]][[tIndentStringArray[1]]]*** [[childControlCount]] folded controls") after tControlList
                add 1 to tCurrentLine
                put empty into newLineArray[tCurrentLine]
-               repeat with j = 1 to childControlCount
-                  put the long id of control j of tID into jID
-                  put jID & cr after newLineArray[tCurrentLine]
-                  put tCurrentLine into newIDArray[jID]
-               end repeat
-               delete char -1 of newLineArray[tCurrentLine]
             end if
          end repeat
          --debug tNavTarget,(the long seconds - tUpdateTimer),the vis of stack "revnavigatorcrosshair"
@@ -1050,12 +1054,6 @@ end bookmarkRemove
 
 
 on setSeparatorLine pOffset
-   if pOffset is empty then
-      put lineoffset(cr & "stack",fld "list" of this stack) into pOffset
-      if pOffset is 0 and (char 1 to 5 of fld "list" of this stack is not "stack") then
-         put the number of lines of fld "list" of this stack into pOffset
-      end if
-   end if
    set the separatorLine of fld "list" of this stack to pOffset
 end setSeparatorLine
 
@@ -2866,7 +2864,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   exit debug
+   --exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
