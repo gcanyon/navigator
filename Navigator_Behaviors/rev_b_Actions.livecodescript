@@ -60,7 +60,8 @@ on menuPick pWhich
          send "showMe" to group "commandGroup"
          break
       case "Update List Now"
-         send ("updateDisplay true") to me in 6 ticks
+         updateDisplay true
+         --send ("updateDisplay true") to me in 6 ticks
          break
       case "Bookmark|MouseControl..."
          getMouse the owner of the owner of me,"setBookmarksByMouse"
