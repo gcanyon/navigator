@@ -701,6 +701,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    put 0 into targetIndex
    put 0 into tCurrentLine
    put empty into tControlList
+   
+   
    repeat for each line tNavTarget in navTarget
       if tNavTarget is "this card of the topstack" then put the long id of this card of the topstack into tNavTarget
       delete variable tIndent
@@ -756,12 +758,14 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
          end if
          
+         --debug tStackName,tNavTarget
          set the defaultStack to tStackName
          
          if notAList then put the controlIDs of tNavTarget into tShortIDlist
          else if word 1 of tNavTarget is "card" then put the cardIDs of tStackID into tShortIDlist
          else put the backgroundIDs of tStackID into tShortIDlist         
          put 0 into nextUnfoldedLine
+         
          repeat for each line tShortID in tShortIDlist
             add 1 to tCurrentIndentLine
             
@@ -777,13 +781,12 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             
             put the name of tID into tName
             
-            if word 1 of tName is "group" and notAList then
+            if notAList and foldedIDArray[tID] then
                put the number of controls of tID into childControlCount
-               if foldedIDArray[tID] 
-               then put tCurrentIndentLine + childControlCount + 1 into nextUnfoldedLine
+               put tCurrentIndentLine + childControlCount + 1 into nextUnfoldedLine
             end if
             
-            if tFilterString is not empty and not merge(tTempFilterString) then next repeat
+            if tFilterString is not empty and not merge(tFilterString) then next repeat
             
             if (tNamedObjectsOnly and tRejectList[word 2 of tName])\
             or (tScriptedObjectsOnly and (the script of tID is empty))
@@ -2865,7 +2868,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   --exit debug
+   exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
