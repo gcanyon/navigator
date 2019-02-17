@@ -1,12 +1,12 @@
 ﻿script "rev_b_Actions"
-global gSBControlSets
 
 local addPropertiesForType
 
 global gRevDevelopment
 on mouseDown
-   if line -1 of the text of me contains "Debug IDE" then set the text of me to line 1 to -3 of the text of me
-   if the optionKey is down then set the text of me to the text of me & cr & "-" & cr & iff(gRevDevelopment,"!c","") & "Debug IDE"
+   put the itemList of me into IL
+   if the optionKey is down then put cr & "-" & cr & iff(gRevDevelopment,"!c","") & "Debug IDE" after IL
+   set the text of me to IL
 end mouseDown
 
 on menuPick pWhich
@@ -82,54 +82,38 @@ on menuPick pWhich
          put it into tSetName
          replace space with empty in tSetName
          replace "-" with empty in tSetName
-         put tHTMLText into gSBControlSets[tSetName]
-         updateMyControlSets
+         put the customProperties["controlSets"] of stack navStack() into CS
+         if CS[tSetName] is not empty then
+            answer warning ("Overwrite existing set:" && tSetName) with "Cancel" or "Overwrite"
+            if it is not "Overwrite" then break
+         end if
+         put tHTMLText into CS[tSetName]
+         set the customProperties["controlSets"] of stack navStack() to CS
          updateDisplay true
          break
       default
          set the itemDelimiter to "-"
-         if pWhich is among the lines of item -1 of me then
-            
-            --put pWhich
-            if pWhich is "ControlSets" then break
-            if the optionKey is "down" then
-               answer "Delete control set" && quote & pWhich & quote & "?" with "Cancel" or "OK"
-               if it is "ok" then
-                  delete variable gSBControlSets[pWhich]
-                  updateMyControlSets
-               end if
-               break
-            end if
-            put the separatorLine of fld "list" into tSeparatorLine
-            if tSeparatorLine is 0 or the commandKey is "down" then
-               put " " & cr before fld "list"
-               put 1 into tSeparatorLine
-            end if
-            --put gSBControlSets[pWhich]
-            set the htmlText of line 1 to tSeparatorLine of fld "list" to gSBControlSets[pWhich]
-            setSeparatorLine
-            updateDisplay true
+         if pWhich is "ControlSets" or pWhich is not among the lines of item -1 of me then break
+         put the customProperties["controlSets"] of stack navStack() into CS
+         if the optionKey is "down" then
+            answer "Delete control set" && quote & pWhich & quote & "?" with "Cancel" or "Delete"
+            if it is not "Delete" then break
+            delete variable CS[pWhich]
+            set the customProperties["controlSets"] of stack navStack() to CS
             break
          end if
+         put the separatorLine of fld "list" into tSeparatorLine
+         if tSeparatorLine is 0 or the commandKey is "down" then
+            put " " & cr before fld "list"
+            put 1 into tSeparatorLine
+         end if
+         set the htmlText of line 1 to tSeparatorLine of fld "list" to CS[pWhich]
+         setSeparatorLine (the number of lines of CS[pWhich])
+         updateDisplay true
+         break
    end switch
 end menuPick
 
-on updateMyControlSets
-  put the keys of gSBControlSets into tList
-  if tList is empty then
-    put "ControlSets" into tList
-  else
-    sort lines of tList
-  end if
-  set the itemDelimiter to "-"
-  put cr & tList into item -1 of me
-end updateMyControlSets
-
-on cleanMyControlSets
-  set the itemDelimiter to "-"
-  put  cr & "ControlSets" into item -1 of me
-  put me into tText
-end cleanMyControlSets
 
 on bookmarkMouseControl
   if the lockCursor is false then set the lockCursor to true
