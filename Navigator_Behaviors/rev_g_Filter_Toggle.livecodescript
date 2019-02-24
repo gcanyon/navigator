@@ -8,8 +8,10 @@ on mouseUp
    set the backgroundcolor of fld "filter" to 220,220,220
    set the opaque of fld "filter" to true
    if the byTest of me 
-   then set the toolTip of fld "filter" to "Filter controls by test" & cr & "tID will be replaced by the control's long ID" & cr & "e.g." && Q("the vis of tID is true") && "will show only visible controls"
-   else set the toolTip of fld "filter" to "Match text to filter controls" & cr & "Text can match any part of the displayed string"
+   then put "Filter controls by test using merge()" & cr & "[[tID]] will be replaced by the control's long ID" & cr & "e.g." && Q("[[the vis of tID is true]]") && "will show only visible controls" into TT
+   else put "Match text to filter controls" & cr & "Text can match any part of the displayed string" into TT
+   put cr & "Searches only unfolded controls. Press return to unfold and search all controls." after TT
+   set the toolTip of fld "filter" to TT
    wait 50 ticks
    set the htmlText of fld "filter" to htmlTextTemp
    set the opaque of fld "filter" to false

@@ -4,9 +4,9 @@ on rawKeyUp
 end rawKeyUp
 
 on enterInField
-   
+   unfoldNavTarget
 end enterInField
 
 on returnInField
-   
+   unfoldNavTarget
 end returnInField
