@@ -460,6 +460,10 @@ on setFoldDepth tContainer,tDepth
    if not (word 1 of tContainerID is among the items of "group,card") then exit setFoldDepth
    if word 1 of tContainerID is "group" then setFolded tContainerID,(tDepth = 0)
    put the number of words of tContainerID into tContainerWordCount
+   put stackNameFromID(tContainerID,false,false) into tStackID
+   if not exists(tStackID) then next repeat
+   put the short name of tStackID into  tStackName
+   set the defaultStack to tStackName -- this line is CRITICAL to performance
    repeat for each line shortID in the controlIDs of tContainerID
       put the long id of control id shortID of tContainerID into tID
       if word 1 of tID is not "group" then next repeat
@@ -468,6 +472,13 @@ on setFoldDepth tContainer,tDepth
       else if tDepthCount = tDepth then setFolded tID,true
    end repeat
 end setFoldDepth
+
+on unfoldNavTarget
+   repeat for each line tNavTarget in navTarget
+      if tNavTarget is "this card of the topstack" then put the long id of this card of the topstack into tNavTarget
+      if exists(tNavTarget) then setFoldDepth tNavTarget,999999
+   end repeat
+end unfoldNavTarget
 
 on setFolded pID,F
    --   local foldedIDArray -- array[ID to be folded] -- true if folded, false or empty if not
@@ -611,6 +622,7 @@ end whichColor
 
 
 on updateDisplay pForceUpdate,pRetainHilites,allStacks,soStacks
+   --debug "update" && ticks()
    cancel navUpdateDisplayMessage
    send ("doUpdateDisplay" && pForceUpdate,pRetainHilites,allStacks,soStacks) to me in 30 ticks
    put the result into navUpdateDisplayMessage
@@ -715,6 +727,8 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          put stackNameFromID(tNavTarget,false,false) into tStackID
          if not exists(tStackID) then next repeat
          put the short name of tStackID into  tStackName
+         set the defaultStack to tStackName -- this line is CRITICAL to performance
+         
          if (not pAllStacks) and (filterStacksList(tStackName) is empty) then next repeat
          if (not pSoStacks) and the scriptonly of stack tStackID then next repeat
          put not (word 2 of tNavTarget is "list") into notAList
@@ -759,7 +773,6 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
          end if
          
          --debug tStackName,tNavTarget
-         set the defaultStack to tStackName
          
          if notAList then put the controlIDs of tNavTarget into tShortIDlist
          else if word 1 of tNavTarget is "card" then put the cardIDs of tStackID into tShortIDlist
@@ -830,7 +843,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    --    put empty into navLastFieldUpdate
    set the defaultStack to tPrevDefaultStack
    
-   debug the long seconds - tUpdateTimer
+   --debug the long seconds - tUpdateTimer
    
    if (not pForceUpdate) and tControlList is navLastFieldUpdate then exit doUpdateDisplay
    
@@ -1988,16 +2001,15 @@ end bookmarkFoundByTestControls
 function findByTest tCondition,tIDList
    put false into ignoreErrors
    repeat for each line tID in tIDList
-      put tCondition into tTest
-      replace "tID" with tID in tTest
-      try
-         if value(tTest) then put tID & cr after R
-      catch tErr
-         if ignoreErrors then next repeat
-         answer "There was a problem evaluating:" & cr & tTest & cr & cr & "Error:" & cr & tErr with "Cancel" or "Ignore Errors" or "OK"
-         if it is "Cancel" then return empty
-         put (it is "Ignore Errors") into ignoreErrors 
-      end try
+      get merge(tCondition)
+      if it is true then 
+         put tID & cr after R
+         next repeat
+      end if
+      if ignoreErrors or it is not tCondition then next repeat
+      answer merge("There was a problem evaluating [[tID]]") with "Cancel" or "Ignore Errors" or "OK"
+      if it is "Cancel" then return empty
+      put true into ignoreErrors 
    end repeat
    return R
 end findByTest
