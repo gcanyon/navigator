@@ -140,10 +140,15 @@ on menuPick pWhich
             end if 
          end repeat
          put simpleID(tOwner) into tOwner
+         put simpleID(tIDList) into tIDList
          if word 1 of tOwner is "group" then 
-            put tOwner
-            start editing tOwner
-            put simpleID(tIDList) into tIDList
+            try
+               set the defaultstack to value(word -1 of tOwner)
+               start editing tOwner
+            catch pError
+               put tOwner && pError
+               exit to top
+            end try
          end if
          replace cr with " and " in tIDList
          put "group " before tIDList
@@ -285,7 +290,7 @@ on menuPick pWhich
          if newNavContainerList is not empty then get newNavigator(newNavContainerList)
          break
       case "Browse Controls"
-         setNavigatorTarget ,getID(),(the shiftkey is "down");break
+         setNavigatorTarget ,getID(,true),(the shiftkey is "down");break
       case "Browse Cards"
       case "Browse Backgrounds"
          put char 1 to -2 of word 2 of pWhich into tType

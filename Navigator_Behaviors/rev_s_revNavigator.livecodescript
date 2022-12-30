@@ -657,11 +657,11 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
    
    
    put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorMissing of this stack) into tColor[0]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptedObject of this stack) into tColor[2]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorScripted of this stack) into tColor[3]
-   put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptandBehavior of this stack) into tColor[4]
-   
+         put format("</font></p>\n<p><font color=\"%s\">",the pColorDefault of this stack) into tColor[1]
+         put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptedObject of this stack) into tColor[2]
+         put format("</font></p>\n<p><font color=\"%s\">",the pColorBehaviorScripted of this stack) into tColor[3]
+         put format("</font></p>\n<p><font color=\"%s\">",the pColorScriptandBehavior of this stack) into tColor[4]
+         
    put 1 into whichColor
    
    if pAllStacks is empty then put the showIDEStacks of stack "revNavigator" into pAllStacks
@@ -761,24 +761,26 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
                end if
             end if
             if navTitle is empty then put "Nav:" && simpleName(tNavTarget) into navTitle else put "Nav: Multiple Sources" into navTitle
-            put the number of controls of tNavTarget into tControlCount
+            put the controlIDs of tNavTarget into tShortIDlist
          else
             put 1 into tCurrentIndentLine
             if word 1 of tNavTarget is "card" 
-            then put the number of cds of tStackID into tControlCount
-            else put the number of bgs of tStackID into tControlCount
-            put tNavTarget into navTitle
-            put "s" into char -5 to -1 of word 1 to 2 of navTitle
-            if navTitle is empty then put "Nav:" && navTitle into navTitle else put "Nav: Multiple Sources" into navTitle
+            then put the cardIDs of tStackID into tShortIDlist
+            else put the backgroundIDs of tStackID into tShortIDlist
+            if navTitle is empty then
+               put "Nav:" && tNavTarget into navTitle
+               put "s" into char -5 to -1 of word 2 to 3 of navTitle
+            else 
+               put "Nav: Multiple Sources" into navTitle
+            end if
          end if
+         put the number of lines of tShortIDlist into tControlCount
          
-         --debug tStackName,tNavTarget
+         --debug "dud",tStackName,tNavTarget,notAList,tControlCount
          
-         if notAList then put the controlIDs of tNavTarget into tShortIDlist
-         else if word 1 of tNavTarget is "card" then put the cardIDs of tStackID into tShortIDlist
-         else put the backgroundIDs of tStackID into tShortIDlist         
+         
          put 0 into nextUnfoldedLine
-         
+         --debug tShortIDlist
          repeat for each line tShortID in tShortIDlist
             add 1 to tCurrentIndentLine
             
@@ -802,7 +804,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
             if tFilterString is not empty and not merge(tFilterString) then next repeat
             
             if (tNamedObjectsOnly and tRejectList[word 2 of tName])\
-            or (tScriptedObjectsOnly and (the script of tID is empty))
+                  or (tScriptedObjectsOnly and (the script of tID is empty))
             then next repeat
             
             put tIndentStringArray[((the number of words of tID) - 6) div 4] into tIS
@@ -838,6 +840,7 @@ on doUpdateDisplay pForceUpdate,pRetainHilites,pAllStacks,pSoStacks
       end if
    end repeat
    put "</font></p>" after tControlList
+
    --    delete line tStart + 1 to -1 of fld "list" of this stack
    --    put "Nav:" into fld "Navigator Title"
    --    put empty into navLastFieldUpdate
@@ -879,13 +882,13 @@ on addStackListDetails pAllStacks,pSoStacks,matchString,filterString,objectLimit
    
    if pAllStacks is empty then put the showIDEStacks of stack "revNavigator" into pAllStacks
    if pSoStacks is empty then put the showSOStacks of stack "revNavigator" into pSoStacks   
-   
    repeat for each line tStack in tStackList
       if (not pAllStacks) and (filterStacksList(tStack) is empty) then next repeat
       if (not pSoStacks) and the scriptonly of stack tStack then next repeat
       put tStack & cr & the substacks of stack tStack after newStackList
       if char -1 of newStackList is not cr then put cr after newStackList
    end repeat
+   --debug newStackList
    repeat for each line tStack in newStackList
       put the name of stack tStack into tStackName
       if matchString is not empty and matchString is not in tStackName then next repeat
@@ -955,8 +958,12 @@ on setBookmarksByMouse pMouseData
    if pMouseData["control"] is not empty then setBookmarks ,pMouseData["control"]
 end setBookmarksByMouse
 
-
-on setBookmarks pWhichLine,pIDList
+function navTargetList
+   return navTarget
+end navTargetList
+   
+   
+on setBookmarks pWhichLine,pIDList,forceAccept
    local tAddList, tCheckScripts, tColor, tEndString, tKey
    local tList, tLowerLimit, tObjectName
    put the separatorLine of fld "list" into tLowerLimit
@@ -978,25 +985,34 @@ on setBookmarks pWhichLine,pIDList
    put "</a></font></p>" & cr into tEndString
    
    put line 1 to tLowerLimit of fld "list" into tList
+   put the leadSpaces of stack "revNavigator" into tLS
+   
    repeat for each line tID in pIDList
-      if tID is empty or (not (there is a tID)) then next repeat
-      put the leadSpaces of stack "revNavigator" into tObjectName
-      if the uDisplay of this stack contains "name" then
-         put simpleName(tID) after tObjectName
-         if the uDisplay of this stack contains "id" then
-            put " [" & the short id of tID & "]" after word 2 of tObjectName
+      if tID is empty or (not (there is a tID or forceAccept)) then next repeat
+      put tLS into tObjectName
+      if there is a tID then
+         if the uDisplay of this stack contains "name" then
+            put simpleName(tID) after tObjectName
+            if the uDisplay of this stack contains "id" then
+               put " [" & the short id of tID & "]" after word 2 of tObjectName
+            end if
+         else
+            put simpleID(tID) after tObjectName
          end if
+         
+         if lineOffset(tObjectName,tList) > 0 then next repeat
+         -- add the object
+         put tColor[tCheckScripts and (the script of tID is not empty)] after tAddList
       else
-         put simpleID(tID) after tObjectName
+         put tColor[false] after tAddList
+         put tID into tObjectName
       end if
-      
-      if lineOffset(tObjectName,tList) > 0 then next repeat
-      -- add the object
-      put tColor[tCheckScripts and (the script of tID is not empty)] after tAddList
       replace quote with numtochar(1) in tID
       put tID & quote & ">" & tObjectName & tEndString after tAddList
    end repeat
    if tAddList is empty then exit setBookmarks
+   --debug tAddList
+   --exit setBookmarks
    put cr before fld "list"
    set the htmlText of line 1 of fld "list" to tAddList
    setSeparatorLine (tLowerLimit + the number of lines of tAddList)
@@ -1124,8 +1140,8 @@ on removeAllBookmarks
 end removeAllBookmarks
 
 
-function getID pWhichLines
-   return getList(false,pWhichLines)
+function getID pWhichLines,forceAccept
+   return getList(false,pWhichLines,forceAccept)
 end getID
 
 function getIDFirst pWhichLines
@@ -1228,7 +1244,7 @@ function listFrom X,Y
 end listFrom
 
 
-function getList pIncludeLines,pWhichLines
+function getList pIncludeLines,pWhichLines,forceAccept
    local R, tColorObjectMissing, tID, tReturnArray, tSeparator
    put the long id of fld "list" of me into fList
    put empty into tReturnArray
@@ -1245,7 +1261,7 @@ function getList pIncludeLines,pWhichLines
       end if
       --put the short name of this stack,(tLine - tSeparator)
       repeat for each line tID in tIDList
-         if (there is a tID) then
+         if (there is a tID or forceAccept) then
             if tReturnArray[tID] is not empty then next repeat
             add 1 to tReturnArray[tID]
             if pIncludeLines then put tLine & " " before tID
@@ -1714,8 +1730,11 @@ function uniqueStacksFromIDs idList,onlyMainstacks
 end uniqueStacksFromIDs
 
 function simpleID pIDList
+   --debug "sid",pIDList
    repeat for each line pID in pIDList
+      --debug "sid",pID
       if not exists(pID) then next repeat
+      --debug "e",pID
       if word 1 of pID is "stack" 
       then put stackNameFromID(pID) & cr after R
       else put (word 1 to 4 of the long id of pID) && stackNameFromID(pID) & cr after R
@@ -2534,6 +2553,10 @@ on removeNavigatorTarget navName,tIDList
    updateDisplay true
 end removeNavigatorTarget
 
+on reportNavigatorTarget
+   put the short name of me & cr & cr & navTarget
+end reportNavigatorTarget
+
 
 on setNavigatorTarget navName,targetList,bAddTargets
    --debug navName,targetList,bAddTargets
@@ -2543,6 +2566,7 @@ on setNavigatorTarget navName,targetList,bAddTargets
    end if
    if not bAddTargets then addRecentTarget
    put not (the showIDEStacks of stack "revNavigator") into hideIDE
+   put not (the showSoStacks of stack "revNavigator") into hideSoS
    repeat for each line tID in targetList
       switch 
          case tID is among the items of "this card,the topstack,this card of the topstack"
@@ -2552,14 +2576,18 @@ on setNavigatorTarget navName,targetList,bAddTargets
          case word 2 of tID is "list"
             put stackNameFromID(tID) into stackName
             put the short name of stackName into shortStackName
-            if hideIDE and (filterStacksList(shortStackName) is empty) then break
+            if hideIDE and (filterStacksList(shortStackName) is empty) then set the showIDEStacks of stack "revNavigator" to true
             put (word 1 to 3 of tID) && stackName & cr after NTlist; break
          case word 1 of tID is "stack" 
+            put stackNameFromID(tID) into stackName
+            put the short name of stackName into shortStackName
+            if hideIDE and (filterStacksList(shortStackName) is empty) then set the showIDEStacks of stack "revNavigator" to true
+            if hideSoS and (the scriptonly of stackName is true) then set the showSoStacks of stack "revNavigator" to true
             put "card id" && (the id of this card of tID) & " " before tID
          default
             put simpleID(tID) into sID
             put the value of word -1 of sID into shortStackName 
-            if hideIDE and (filterStacksList(shortStackName) is empty) then break
+            if hideIDE and (filterStacksList(shortStackName) is empty) then set the showIDEStacks of stack "revNavigator" to true
             put sID & cr after NTlist
       end switch
    end repeat
@@ -2880,7 +2908,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   exit debug
+   --exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
