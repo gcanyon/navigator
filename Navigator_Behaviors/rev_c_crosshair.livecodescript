@@ -12,6 +12,7 @@ on wrapUp
    else if the mouseControl is empty then put (the name of this card of the mouseStack) && "of" && the mouseStack into R["control"]
    else put the long id of the mouseControl into R["control"]
    put the mouseColor into R["color"]
+   --debug R["stack"],sCallbackMessage,sCallbackID
    dispatch sCallbackMessage to sCallbackID with R
 end wrapUp
 

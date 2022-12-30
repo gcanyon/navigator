@@ -20,14 +20,14 @@ on updateSample
    end repeat
    if the hilite of btn "Merge"
    then set the htmlText of fld "sample" to evaluateListStringMerge(S,tISa)
-   else set the htmlText of fld "sample" to evaluateListString(fld "edit list string")
+   else set the htmlText of fld "sample" to evaluateListString(S)
 end updateSample
 
 on speedTestEval
    put fld "edit list string" into S
    put fld "indent string" of cd 1 into tIS
-   repeat with i = 2 to 21
-      repeat i - 1
+   repeat with i = 8 to 84 step 4
+      repeat i div 4 - 1
          put tIS after tISa[i]
       end repeat
    end repeat
@@ -38,7 +38,7 @@ on speedTestEval
    put the long seconds - T
 end speedTestEval
 
-function evaluateListString S
+function evaluateListString S,tISa
    if S is empty then put fld "edit list string" into S
    if S is empty then return empty
    put fld "indent string" of cd 1 into tIS
@@ -68,7 +68,7 @@ function evaluateListStringMerge S,tISa
    try
       repeat with i = 1 to the number of controls of this cd
          put the long id of control i of this cd into tID
-         put tISa[wordoffset("stack",tID) div 4] into tIS
+         put tISa[wordoffset("stack",tID)] into tIS
          put merge(S) after R
       end repeat
    catch someErr

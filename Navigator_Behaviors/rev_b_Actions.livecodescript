@@ -1,5 +1,4 @@
 ﻿script "rev_b_Actions"
-
 local addPropertiesForType
 
 global gRevDevelopment
@@ -70,6 +69,9 @@ on menuPick pWhich
          setBookmarks ,(the selectedObjects)
       case "Bookmark|Selected Lines"
          setBookmarks
+         break
+      case "Bookmark|Nav Targets"
+         setBookmarks ,navTargetList(),true
          break
       case "Remove"
          removeBookmarks
