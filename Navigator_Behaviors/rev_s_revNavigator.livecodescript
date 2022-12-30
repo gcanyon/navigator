@@ -2908,7 +2908,7 @@ end forceNControls
 
 local sDebugString,sDebugMessage
 on debug
-   --exit debug
+   -- --exit debug
    cancel sDebugMessage
    put line -2 of the executionContexts into LC
    put ticks() & cr &  the long name of (item 1 of LC) & cr & item 2 to -1 of LC & cr & cr after sDebugString
